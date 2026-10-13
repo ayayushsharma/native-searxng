@@ -156,7 +156,11 @@ proxy_to=http://127.0.0.1:8889   # Python reference; empty = 503 for unported
 ## 6. Build & verify
 - Phone (Termux): `safe-build.sh cargo check -j4` to iterate (0.8 s warm),
   `safe-build.sh cargo build -j2` to run. Never -j8 (LMK kills the whole app).
-- PC: `cargo build` (dev), `cargo build --release`, cross targets for deploy.
+  Phone pulls via `git pull` (own network + git client) — no manual syncs.
+- GitHub Actions (`.github/workflows/build.yml`): `cargo check` gate, x86_64
+  release + contract smoke test, `aarch64-unknown-linux-musl` (router) and
+  `aarch64-linux-android` (phone) release artifacts. CI owns all releases;
+  nobody cross-builds by hand.
 - Gate every engine: `python3 agentic/evals/check.py --base <native>` (contract
   keys + field presence + latency) and `agentic/diff/diff.py` vs Python ref
   (no key drift). Fixtures: save real engine responses, parse offline.

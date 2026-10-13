@@ -38,7 +38,10 @@ behind the strangler; native ports only verified-clean endpoints until told othe
    peak RAM + 4 minutes); glance at `free -m` before big builds, abort if
    MemAvailable <300 MB (`safe-build.sh` enforces this). If LMK kills happen:
    drop to -j1, preserve logs, report — do not retry harder.
-8. `git init` if absent; commit per engine (`engines: add <name> + fixtures + gate green`).
+8. Repo is github.com/ayayushsharma/native-searxng (already pushed); commit per
+   engine (`engines: add <name> + fixtures + gate green`). Sync = `git pull/push`
+   (phone has own network + git — no manual file transfers). CI builds all
+   releases; on-phone builds are dev-only.
 
 ## Loop per engine (only for oracle-verified-clean endpoints)
 

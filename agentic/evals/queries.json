@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "language_default": "en",
+  "queries": [
+    {"q": "rust async runtime comparison", "categories": "general"},
+    {"q": "exynos 850 specifications", "categories": "general"},
+    {"q": "searxng json api format", "categories": "general"},
+    {"q": "openwrt musl static binary size", "categories": "general"},
+    {"q": "duckduckgo html endpoint parameters", "categories": "general"},
+    {"q": "termux runit termux-services sv", "categories": "general"},
+    {"q": "mojeek search api", "categories": "general"},
+    {"q": "wreq rust crate impersonate", "categories": "general"},
+    {"q": "encoding_rs whatwg gbk", "categories": "general"},
+    {"q": "jiff rust date parsing", "categories": "general"},
+    {"q": "bilateral trade agreement 2026", "categories": "news"},
+    {"q": "transformer architecture paper", "categories": "science"}
+  ]
+}

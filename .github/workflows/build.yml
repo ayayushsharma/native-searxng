@@ -1,5 +1,9 @@
 name: build
 
+permissions:
+  contents: read
+  actions: write
+
 # CREDIT POLICY (see AGENTS.md): CI runs only when needed and never blocks.
 # - Every push / PR: `check` only (one runner, minutes, cached).
 # - Binaries (x86_64 + Android, ONE job, sequential): tags `v*` or manual

@@ -1,0 +1,235 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/UTDt5p1lpNVrw58WTNUZ2a8RQIo</id>
+  <title>arXiv Query: search_query=all:test&amp;id_list=&amp;start=0&amp;max_results=10</title>
+  <updated>2026-10-14T14:34:34Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:test&amp;start=0&amp;max_results=10&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>10</opensearch:itemsPerPage>
+  <opensearch:totalResults>240103</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/1101.4081v3</id>
+    <title>A simple way to speedup Gauss Elimination</title>
+    <updated>2013-08-02T02:26:42Z</updated>
+    <link href="https://arxiv.org/abs/1101.4081v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1101.4081v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This article looks at a simple modification to speedup the conventional Gauss Elimination. The proposed modification speeds up the conventional Gauss Elimination by a factor of nearly 9/7 (in the asymptotic limit).</summary>
+    <category term="math.NA" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2011-01-21T07:50:33Z</published>
+    <arxiv:comment>Withdrawing test file</arxiv:comment>
+    <arxiv:primary_category term="math.NA"/>
+    <author>
+      <name>Sivaram Ambikasaran</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1807.10953v2</id>
+    <title>Goal-Oriented Mutation Testing with Focal Methods</title>
+    <updated>2018-10-09T08:25:45Z</updated>
+    <link href="https://arxiv.org/abs/1807.10953v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1807.10953v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Mutation testing is the state-of-the-art technique for assessing the fault-detection capacity of a test suite. Unfortunately, mutation testing consumes enormous computing resources because it runs the whole test suite for each and every injected mutant. In this paper we explore fine-grained traceability links at method level (named focal methods), to reduce the execution time of mutation testing and to verify the quality of the test cases for each individual method, instead of the usually verified overall test suite quality. Validation of our approach on the open source Apache Ant project shows a speed-up of 573.5x for the mutants located in focal methods with a quality score of 80%.</summary>
+    <category term="cs.SE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2018-07-28T15:38:39Z</published>
+    <arxiv:comment>A-TEST 2018</arxiv:comment>
+    <arxiv:primary_category term="cs.SE"/>
+    <author>
+      <name>Sten Vercammen</name>
+    </author>
+    <author>
+      <name>Mohammad Ghafari</name>
+    </author>
+    <author>
+      <name>Serge Demeyer</name>
+    </author>
+    <author>
+      <name>Markus Borg</name>
+    </author>
+    <arxiv:doi>10.1145/3278186.3278190</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1145/3278186.3278190" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1202.4527v1</id>
+    <title>Study Paper on Test Case generation for GUI Based Testing</title>
+    <updated>2012-02-21T05:12:13Z</updated>
+    <link href="https://arxiv.org/abs/1202.4527v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1202.4527v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>With the advent of WWW and outburst in technology and software development, testing the software became a major concern. Due to the importance of the testing phase in a software development life cycle, testing has been divided into graphical user interface (GUI) based testing, logical testing, integration testing, etc.GUI Testing has become very important as it provides more sophisticated way to interact with the software. The complexity of testing GUI increased over time. The testing needs to be performed in a way that it provides effectiveness, efficiency, increased fault detection rate and good path coverage. To cover all use cases and to provide testing for all possible (success/failure) scenarios the length of the test sequence is considered important. Intent of this paper is to study some techniques used for test case generation and process for various GUI based software applications.</summary>
+    <category term="cs.SE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2012-02-21T05:12:13Z</published>
+    <arxiv:comment>GUI Testing, Test case generation</arxiv:comment>
+    <arxiv:primary_category term="cs.SE"/>
+    <arxiv:journal_ref>International Journal of Software Engineering &amp; Applications (IJSEA), Vol.3, No.1, January 2012</arxiv:journal_ref>
+    <author>
+      <name>A. Isabella</name>
+    </author>
+    <author>
+      <name>Emi Retna</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2311.05033v2</id>
+    <title>Distribution-free tests for lossless feature selection in classification and regression</title>
+    <updated>2024-11-23T16:40:02Z</updated>
+    <link href="https://arxiv.org/abs/2311.05033v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2311.05033v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We study the problem of lossless feature selection for a $d$-dimensional feature vector $X=(X^{(1)},\dots ,X^{(d)})$ and label $Y$ for binary classification as well as nonparametric regression. For an index set $S\subset \{1,\dots ,d\}$, consider the selected $|S|$-dimensional feature subvector $X_S=(X^{(i)}, i\in S)$. If $L^*$ and $L^*(S)$ stand for the minimum risk based on $X$ and $X_S$, respectively, then $X_S$ is called lossless if $L^*=L^*(S)$. For classification, the minimum risk is the Bayes error probability, while in regression, the minimum risk is the residual variance. We introduce nearest-neighbor based test statistics to test the hypothesis that $X_S$ is lossless. This test statistic is an estimate of the excess risk $L^*(S)-L^*$. Surprisingly, estimating this excess risk turns out to be a functional estimation problem that does not suffer from the curse of dimensionality in the sense that the convergence rate does not depend on the dimension $d$. For the threshold $a_n=\log n/\sqrt{n}$, the corresponding tests are proved to be consistent under conditions on the distribution of $(X,Y)$ that are significantly milder than in previous work. Also, our threshold is universal (dimension independent), in contrast to earlier methods where for large $d$ the threshold becomes too large to be useful in practice.</summary>
+    <category term="math.ST" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-11-08T21:44:26Z</published>
+    <arxiv:comment>To appear in Test</arxiv:comment>
+    <arxiv:primary_category term="math.ST"/>
+    <author>
+      <name>László Györfi</name>
+    </author>
+    <author>
+      <name>Tamás Linder</name>
+    </author>
+    <author>
+      <name>Harro Walk</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2402.18105v3</id>
+    <title>JEL ratio test for independence between a continuous and a categorical random variable</title>
+    <updated>2025-09-19T09:14:03Z</updated>
+    <link href="https://arxiv.org/abs/2402.18105v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2402.18105v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The categorical Gini covariance is a dependence measure between a numerical variable and a categorical variable. The Gini covariance measures dependence by quantifying the difference between the conditional and unconditional distributional functions. The categorical Gini covariance equals zero if and only if the numerical variable and the categorical variable are independent. We propose a non-parametric test for testing the independence between a numerical and categorical variable using a modified categorical Gini covariance. We used the theory of U-statistics to find the test statistics and study the properties. The test has an asymptotic normal distribution. Since the implementation of a normal-based test is difficult, we develop a jackknife empirical likelihood (JEL) ratio test for testing independence. Extensive Monte Carlo simulation studies are carried out to validate the performance of the proposed JEL ratio test. We illustrate the test procedure using Iris flower data set.</summary>
+    <category term="stat.ME" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2024-02-28T06:51:18Z</published>
+    <arxiv:comment>This is the first test developed in this direction</arxiv:comment>
+    <arxiv:primary_category term="stat.ME"/>
+    <author>
+      <name>Saparya Suresh</name>
+    </author>
+    <author>
+      <name>Sudheesh K. Kattumannil</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1801.00973v1</id>
+    <title>A New Wald Test for Hypothesis Testing Based on MCMC outputs</title>
+    <updated>2018-01-03T12:25:25Z</updated>
+    <link href="https://arxiv.org/abs/1801.00973v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1801.00973v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In this paper, a new and convenient $χ^2$ wald test based on MCMC outputs is proposed for hypothesis testing. The new statistic can be explained as MCMC version of Wald test and has several important advantages that make it very convenient in practical applications. First, it is well-defined under improper prior distributions and avoids Jeffrey-Lindley's paradox. Second, it's asymptotic distribution can be proved to follow the $χ^2$ distribution so that the threshold values can be easily calibrated from this distribution. Third, it's statistical error can be derived using the Markov chain Monte Carlo (MCMC) approach. Fourth, most importantly, it is only based on the posterior MCMC random samples drawn from the posterior distribution. Hence, it is only the by-product of the posterior outputs and very easy to compute. In addition, when the prior information is available, the finite sample theory is derived for the proposed test statistic. At last, the usefulness of the test is illustrated with several applications to latent variable models widely used in economics and finance.</summary>
+    <category term="econ.EM" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ME" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2018-01-03T12:25:25Z</published>
+    <arxiv:comment>Bayesian $χ^2$ test; Decision theory; Wald test; Markov chain Monte Carlo; Latent variable models</arxiv:comment>
+    <arxiv:primary_category term="econ.EM"/>
+    <author>
+      <name>Yong Li</name>
+    </author>
+    <author>
+      <name>Xiaobin Liu</name>
+    </author>
+    <author>
+      <name>Jun Yu</name>
+    </author>
+    <author>
+      <name>Tao Zeng</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/0712.3825v1</id>
+    <title>Tests of Machine Intelligence</title>
+    <updated>2007-12-22T01:17:24Z</updated>
+    <link href="https://arxiv.org/abs/0712.3825v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/0712.3825v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>  Although the definition and measurement of intelligence is clearly of fundamental importance to the field of artificial intelligence, no general survey of definitions and tests of machine intelligence exists. Indeed few researchers are even aware of alternatives to the Turing test and its many derivatives. In this paper we fill this gap by providing a short survey of the many tests of machine intelligence that have been proposed.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2007-12-22T01:17:24Z</published>
+    <arxiv:comment>12 pages; 1 table. Turing test and derivatives; Compression tests; Linguistic complexity; Multiple cognitive abilities; Competitive games; Psychometric tests; Smith's test; C-test; Universal intelligence</arxiv:comment>
+    <arxiv:primary_category term="cs.AI"/>
+    <arxiv:journal_ref>50 Years of Artificial Intelligence (2007) pages 232-242</arxiv:journal_ref>
+    <author>
+      <name>Shane Legg</name>
+    </author>
+    <author>
+      <name>Marcus Hutter</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2506.02315v1</id>
+    <title>A Data-Based Architecture for Flight Test without Test Points</title>
+    <updated>2025-06-02T23:05:52Z</updated>
+    <link href="https://arxiv.org/abs/2506.02315v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2506.02315v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The justification for the "test point" derives from the test pilot's obligation to reproduce faithfully the pre-specified conditions of some model prediction. Pilot deviation from those conditions invalidates the model assumptions. Flight test aids have been proposed to increase accuracy on more challenging test points. However, the very existence of databands and tolerances is the problem more fundamental than inadequate pilot skill. We propose a novel approach, which eliminates test points. We start with a high-fidelity digital model of an air vehicle. Instead of using this model to generate a point prediction, we use a machine learning method to produce a reduced-order model (ROM). The ROM has two important properties. First, it can generate a prediction based on any set of conditions the pilot flies. Second, if the test result at those conditions differ from the prediction, the ROM can be updated using the new data. The outcome of flight test is thus a refined ROM at whatever conditions were flown. This ROM in turn updates and validates the high-fidelity model. We present a single example of this "point-less" architecture, using T-38C flight test data. We first use a generic aircraft model to build a ROM of longitudinal pitching motion as a hypersurface. We then ingest unconstrained flight test data and use Gaussian Process Regression to update and condition the hypersurface. By proposing a second-order equivalent system for the T-38C, this hypersurface then generates parameters necessary to assess MIL-STD-1797B compliance for longitudinal dynamics.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-06-02T23:05:52Z</published>
+    <arxiv:comment>The Society of Experimental Test Pilots Annual Symposium, vol. 68th, 2024</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>D. Isaiah Harp</name>
+    </author>
+    <author>
+      <name>Joshua Ott</name>
+    </author>
+    <author>
+      <name>John Alora</name>
+    </author>
+    <author>
+      <name>Dylan Asmar</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1008.0063v1</id>
+    <title>Evolutionary Approach to Test Generation for Functional BIST</title>
+    <updated>2010-07-31T07:31:41Z</updated>
+    <link href="https://arxiv.org/abs/1008.0063v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1008.0063v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In the paper, an evolutionary approach to test generation for functional BIST is considered. The aim of the proposed scheme is to minimize the test data volume by allowing the device's microprogram to test its logic, providing an observation structure to the system, and generating appropriate test data for the given architecture. Two methods of deriving a deterministic test set at functional level are suggested. The first method is based on the classical genetic algorithm with binary and arithmetic crossover and mutation operators. The second one uses genetic programming, where test is represented as a sequence of microoperations. In the latter case, we apply two-point crossover based on exchanging test subsequences and mutation implemented as random replacement of microoperations or operands. Experimental data of the program realization showing the efficiency of the proposed methods are presented.</summary>
+    <category term="cs.NE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2010-07-31T07:31:41Z</published>
+    <arxiv:comment>10 European Test Symposium. Informal Digest of Papers</arxiv:comment>
+    <arxiv:primary_category term="cs.NE"/>
+    <author>
+      <name>Y. A. Skobtsov</name>
+    </author>
+    <author>
+      <name>D. E. Ivanov</name>
+    </author>
+    <author>
+      <name>V. Y. Skobtsov</name>
+    </author>
+    <author>
+      <name>R. Ubar</name>
+    </author>
+    <author>
+      <name>J. Raik</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1108.1351v1</id>
+    <title>Fast k-means algorithm clustering</title>
+    <updated>2011-08-05T15:37:23Z</updated>
+    <link href="https://arxiv.org/abs/1108.1351v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1108.1351v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>k-means has recently been recognized as one of the best algorithms for clustering unsupervised data. Since k-means depends mainly on distance calculation between all data points and the centers, the time cost will be high when the size of the dataset is large (for example more than 500millions of points). We propose a two stage algorithm to reduce the time cost of distance calculation for huge datasets. The first stage is a fast distance calculation using only a small portion of the data to produce the best possible location of the centers. The second stage is a slow distance calculation in which the initial centers used are taken from the first stage. The fast and slow stages represent the speed of the movement of the centers. In the slow stage, the whole dataset can be used to get the exact location of the centers. The time cost of the distance calculation for the fast stage is very low due to the small size of the training data chosen. The time cost of the distance calculation for the slow stage is also minimized due to small number of iterations. Different initial locations of the clusters have been used during the test of the proposed algorithms. For large datasets, experiments show that the 2-stage clustering method achieves better speed-up (1-9 times).</summary>
+    <category term="cs.DS" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2011-08-05T15:37:23Z</published>
+    <arxiv:comment>16 pages, Wimo2011; International Journal of Computer Networks &amp; Communications (IJCNC) Vol.3, No.4, July 2011</arxiv:comment>
+    <arxiv:primary_category term="cs.DS"/>
+    <author>
+      <name>Raied Salman</name>
+    </author>
+    <author>
+      <name>Vojislav Kecman</name>
+    </author>
+    <author>
+      <name>Qi Li</name>
+    </author>
+    <author>
+      <name>Robert Strack</name>
+    </author>
+    <author>
+      <name>Erik Test</name>
+    </author>
+    <arxiv:doi>10.5121/ijcnc.2011.3402</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.5121/ijcnc.2011.3402" title="doi"/>
+  </entry>
+</feed>

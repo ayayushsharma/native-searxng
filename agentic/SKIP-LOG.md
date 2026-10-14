@@ -49,17 +49,24 @@ engines stay behind the strangler (`proxy_to` → Python `:8889`).
 dictzone, brave (HTML), 360search, bpb, mediawiki-generic (dup of wikipedia),
 pypi (HTML scrape), gmx/fireball/chatnoir/dogpile (if flows ever simplified).
 
-## Deferred to category wave (need `proxy_to` oracle or category allowlist)
+## Category waves (2026-10-14: it + science + news now native)
 
-- `it/packages`: npm (JSON), crates.io (JSON), docker_hub — keyless and
-  parse-simple, but hot path is general-only per PLAN §1 MVP.
-- `science`: arxiv (keyless API) — same reason.
-- `map`: openstreetmap/nominatim — same reason.
+- `it` PORTED: stackoverflow/superuser/askubuntu (one parser),
+  github, mdn, dockerhub, gentoo — oracle survey showed the whole
+  bench green (85 results, 0 unresponsive).
+- `science` PORTED: arxiv + europepmc. Semantic scholar skipped
+  (POST + `X-S2-UI-Version` token), pubmed skipped (two-step
+  esearch→efetch flow), google scholar skipped (scrape), openaire
+  dead upstream.
+- `news` PORTED: bingnews (infinitescrollajax HTML, first HTML-wave
+  engine) + wikinews (MediaWiki JSON). ddg-news challenged.
+- Still deferred: `packages` (npm, crates.io — keyless JSON, next
+  wave), `map` (needs geo result keys — struct change).
 
 ## Live-query spend 2026-10-14 (fixture-first: ≤5/engine honored)
 
 Step-0 walls 3 (DDG/Mojeek/Wikipedia) · fixtures 5 (ol 1, mwmbl 2 incl.
 1 wrong-host 404, grokipedia 1, startpagina 1) · swisscows 2 (400s) ·
 brave 1 (429) · fireball 1 (403) · gates via `check.py --limit 10`
-(general-only; news/science need the oracle). No ban observed; only
+(general/news/science/it via oracle + native). No ban observed; only
 transient 429s (Wikipedia once under burst, Brave on first touch).

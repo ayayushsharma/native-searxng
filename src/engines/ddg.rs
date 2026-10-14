@@ -15,6 +15,16 @@ impl Engine for Ddg {
         format!("https://html.duckduckgo.com/html/?q={}", encode(q))
     }
 
+    fn challenge(&self, body: &str) -> Option<String> {
+        // DDG serves `anomaly.js?cc=botnet` + a challenge-form to flagged
+        // egress IPs (see tests-fixture-ddg-anomaly.html). Never surface it
+        // as results — report unresponsive instead (iron rule 5).
+        if body.contains("anomaly.js") || body.contains("challenge-form") {
+            return Some("bot challenge (anomaly.js)".into());
+        }
+        None
+    }
+
     fn parse(&self, body: &str) -> Vec<SearchResult> {
         // encoding_rs first: DDG is UTF-8, but normalize anyway (pattern for
         // GBK/1251 engines later).

@@ -58,7 +58,15 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         };
         let fetch_url = engine.build_url(&q.q, q.pageno);
         match client.get(&fetch_url) {
-            Ok(body) => lists.push(engine.parse(&body)),
+            Ok(body) => {
+                // Challenge/captcha pages -> 0 results + unresponsive entry
+                // (iron rule 5), never silent empties or garbage.
+                if let Some(reason) = engine.challenge(&body) {
+                    unresponsive.push((name.clone(), reason));
+                } else {
+                    lists.push(engine.parse(&body));
+                }
+            }
             Err(e) => unresponsive.push((name.clone(), e)),
         }
     }

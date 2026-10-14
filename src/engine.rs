@@ -47,6 +47,12 @@ pub trait Engine {
     /// Parse a (possibly truncated) response body into results. Never panics
     /// on malformed input — skips what it can't parse.
     fn parse(&self, body: &str) -> Vec<SearchResult>;
+    /// Bot-wall / challenge detection (iron rule 5). `Some(reason)` means the
+    /// body is a captcha/challenge page: caller reports 0 results plus an
+    /// `unresponsive_engines` entry instead of silent empties. Default: none.
+    fn challenge(&self, _body: &str) -> Option<String> {
+        None
+    }
 }
 
 /// Normalize for dedup: lowercase, strip scheme noise, trailing slash.

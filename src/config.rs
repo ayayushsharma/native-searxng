@@ -6,6 +6,9 @@ pub struct Config {
     pub bind: String,
     pub engines: Vec<String>,
     pub timeout_ms: u64,
+    /// Strangler proxy deadline. Full oracle searches fan out to many
+    /// engines — they need headroom the 3 s per-engine cap can't give.
+    pub proxy_timeout_ms: u64,
     pub body_cap_kb: usize,
     pub max_results: usize,
     pub lang: String,
@@ -21,6 +24,7 @@ impl Default for Config {
             bind: "127.0.0.1".into(),
             engines: vec!["wikipedia".into(), "ddg".into()],
             timeout_ms: 3000,
+            proxy_timeout_ms: 30000,
             body_cap_kb: 96,
             max_results: 20,
             lang: "en".into(),
@@ -54,6 +58,9 @@ pub fn load(path: &str) -> Result<Config, String> {
                 cfg.engines = v.split(',').map(|s| s.trim().to_string()).collect();
             }
             "timeout_ms" => cfg.timeout_ms = v.trim().parse().map_err(|_| "bad timeout_ms")?,
+            "proxy_timeout_ms" => {
+                cfg.proxy_timeout_ms = v.trim().parse().map_err(|_| "bad proxy_timeout_ms")?
+            }
             "body_cap_kb" => cfg.body_cap_kb = v.trim().parse().map_err(|_| "bad body_cap_kb")?,
             "max_results" => cfg.max_results = v.trim().parse().map_err(|_| "bad max_results")?,
             "lang" => cfg.lang = v.trim().to_string(),

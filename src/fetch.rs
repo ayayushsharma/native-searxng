@@ -7,6 +7,7 @@ use std::time::Duration;
 
 pub struct Client {
     agent: ureq::Agent,
+    proxy_agent: ureq::Agent,
     cap: usize,
 }
 
@@ -17,8 +18,14 @@ impl Client {
             .user_agent(cfg.user_agent.clone())
             .build()
             .into();
+        let proxy_agent: ureq::Agent = ureq::Agent::config_builder()
+            .timeout_global(Some(Duration::from_millis(cfg.proxy_timeout_ms)))
+            .user_agent(cfg.user_agent.clone())
+            .build()
+            .into();
         Self {
             agent,
+            proxy_agent,
             cap: cfg.body_cap_bytes(),
         }
     }
@@ -37,9 +44,10 @@ impl Client {
     }
 
     /// Strangler proxy: forward raw path+query to the Python reference.
+    /// Uses the long-deadline agent (full oracle fan-out needs seconds).
     pub fn proxy(&self, base: &str, path_query: &str) -> Result<(u16, String), String> {
         let url = format!("{}{}", base.trim_end_matches('/'), path_query);
-        let mut res = self.agent.get(&url).call().map_err(|e| e.to_string())?;
+        let mut res = self.proxy_agent.get(&url).call().map_err(|e| e.to_string())?;
         let status = res.status().as_u16();
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
         Ok((status, body))

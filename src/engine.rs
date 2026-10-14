@@ -19,6 +19,8 @@ pub struct SearchResult {
     pub template: String,
     pub img_src: String,
     pub thumbnail: String,
+    pub iframe_src: String,
+    pub audio_src: String,
 }
 
 impl SearchResult {
@@ -36,6 +38,8 @@ impl SearchResult {
             template: "default.html".into(),
             img_src: String::new(),
             thumbnail: String::new(),
+            iframe_src: String::new(),
+            audio_src: String::new(),
         }
     }
 }

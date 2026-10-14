@@ -4,7 +4,7 @@
 use native_searxng::{config, server};
 
 fn main() {
-    let cfg = config::load("searxng.conf").unwrap_or_default();
+    let cfg = config::load_default();
     eprintln!("native-searxng on {}:{}", cfg.bind, cfg.port);
     server::run(&cfg);
 }

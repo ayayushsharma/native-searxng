@@ -40,6 +40,46 @@ impl Config {
     }
 }
 
+/// Config path resolution (XDG-first, no new deps):
+/// 1. `$SEARXNG_CONF` when set (explicit wins — supervisors/daemons).
+/// 2. `$XDG_CONFIG_HOME/native-searxng/searxng.conf`.
+/// 3. `$HOME/.config/native-searxng/searxng.conf`.
+/// 4. `./searxng.conf` (dev back-compat; daemon CWDs are unreliable).
+/// Missing files fall through to `Config::default()` via `load_default`.
+pub fn default_path() -> String {
+    if let Ok(p) = std::env::var("SEARXNG_CONF") {
+        if !p.is_empty() {
+            return p;
+        }
+    }
+    let rel = "native-searxng/searxng.conf";
+    if let Ok(xdg) = std::env::var("XDG_CONFIG_HOME") {
+        if !xdg.is_empty() {
+            return format!("{xdg}/{rel}");
+        }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        if !home.is_empty() {
+            return format!("{home}/.config/{rel}");
+        }
+    }
+    "searxng.conf".into()
+}
+
+/// Load from [`default_path`], falling back to `./searxng.conf`, then defaults.
+pub fn load_default() -> Config {
+    let p = default_path();
+    if let Ok(cfg) = load(&p) {
+        return cfg;
+    }
+    if p != "searxng.conf" {
+        if let Ok(cfg) = load("searxng.conf") {
+            return cfg;
+        }
+    }
+    Config::default()
+}
+
 pub fn load(path: &str) -> Result<Config, String> {
     let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
     let mut cfg = Config::default();

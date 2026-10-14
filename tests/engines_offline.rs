@@ -165,6 +165,38 @@ fn json_contract_keys_byte_exact() {
 }
 
 #[test]
+fn config_xdg_resolution_order() {
+    use native_searxng::config;
+    // Save/restore: this is the only test touching these vars.
+    let saved = ["SEARXNG_CONF", "XDG_CONFIG_HOME", "HOME"]
+        .iter()
+        .map(|k| (k, std::env::var(k).ok()))
+        .collect::<Vec<_>>();
+    let restore = || {
+        for (k, v) in &saved {
+            match v {
+                Some(val) => std::env::set_var(k, val),
+                None => std::env::remove_var(k),
+            }
+        }
+    };
+    std::env::set_var("SEARXNG_CONF", "/tmp/x.conf");
+    std::env::set_var("XDG_CONFIG_HOME", "/tmp/xdg");
+    std::env::set_var("HOME", "/tmp/home");
+    assert_eq!(config::default_path(), "/tmp/x.conf");
+    std::env::remove_var("SEARXNG_CONF");
+    assert_eq!(config::default_path(), "/tmp/xdg/native-searxng/searxng.conf");
+    std::env::remove_var("XDG_CONFIG_HOME");
+    assert_eq!(config::default_path(), "/tmp/home/.config/native-searxng/searxng.conf");
+    std::env::remove_var("HOME");
+    assert_eq!(config::default_path(), "searxng.conf");
+    // Missing everywhere -> defaults, never an error.
+    let cfg = config::load_default();
+    assert_eq!(cfg.port, config::Config::default().port);
+    restore();
+}
+
+#[test]
 fn merge_dedups_and_caps() {
     let a = SearchResult::basic("wikipedia", "https://example.com/x".into(), "A".into(), "".into());
     let b = SearchResult::basic("github", "https://example.com/x".into(), "B".into(), "".into());

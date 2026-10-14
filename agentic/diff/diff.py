@@ -41,7 +41,7 @@ def main():
     for i in range(min(len(rr), len(nr))):
         if set(rr[i]) != set(nr[i]):
             drift.append(f"result[{i}] keys: ref-only={sorted(set(rr[i]) - set(nr[i]))} "
-                         f"new-only={sorted(set(nr[i]) - set(rr[i])))}")
+                         f"new-only={sorted(set(nr[i]) - set(rr[i]))}")
             break
     r_urls = {norm(r.get("url")) for r in rr}
     n_urls = {norm(r.get("url")) for r in nr}

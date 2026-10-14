@@ -54,12 +54,15 @@ pypi (HTML scrape), gmx/fireball/chatnoir/dogpile (if flows ever simplified).
 - `it` PORTED: stackoverflow/superuser/askubuntu (one parser),
   github, mdn, dockerhub, gentoo — oracle survey showed the whole
   bench green (85 results, 0 unresponsive).
-- `science` PORTED: arxiv + europepmc. Semantic scholar skipped
-  (POST + `X-S2-UI-Version` token), pubmed skipped (two-step
-  esearch→efetch flow), google scholar skipped (scrape), openaire
-  dead upstream.
+- `science` PORTED: arxiv + europepmc + pubmed (new `follow_up`
+  hook: esearch IDs → esummary bodies). Semantic scholar skipped
+  twice over: website flow is POST + UI-version token AND the
+  official API 429s this egress IP (probed + retried). Google
+  scholar 429s on first touch. OpenAire dead upstream (oracle:
+  unresponsive).
 - `news` PORTED: bingnews (infinitescrollajax HTML, first HTML-wave
-  engine) + wikinews (MediaWiki JSON). ddg-news challenged.
+  engine) + wikinews (MediaWiki JSON) + ddgnews (same anomaly.js
+  wall as ddg — reports unresponsive, auto-recovers with the IP).
 - Still deferred: `packages` (npm, crates.io — keyless JSON, next
   wave), `map` (needs geo result keys — struct change).
 

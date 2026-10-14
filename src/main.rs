@@ -1,12 +1,7 @@
-mod cache;
-mod config;
-mod engine;
-mod engines;
-mod fetch;
-mod merge;
-mod query;
-mod render;
-mod server;
+//! Thin binary wrapper — all logic lives in the library (see lib.rs)
+//! so integration tests can exercise engines offline.
+
+use native_searxng::{config, server};
 
 fn main() {
     let cfg = config::load("searxng.conf").unwrap_or_default();

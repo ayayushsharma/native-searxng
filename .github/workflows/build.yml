@@ -54,6 +54,8 @@ jobs:
           CC_aarch64_linux_android: aarch64-linux-android34-clang
           AR_aarch64_linux_android: llvm-ar
         run: |
+          export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          command -v aarch64-linux-android34-clang
           cargo build --locked --release --target aarch64-linux-android \
             --config 'target.aarch64-linux-android.linker="aarch64-linux-android34-clang"'
 

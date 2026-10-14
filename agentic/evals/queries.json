@@ -15,6 +15,8 @@
     {"q": "bilateral trade agreement 2026", "categories": "news"},
     {"q": "transformer architecture paper", "categories": "science"},
     {"q": "python requests connection timeout", "categories": "it"},
-    {"q": "docker compose restart policy", "categories": "it"}
+    {"q": "docker compose restart policy", "categories": "it"},
+    {"q": "crispr off-target detection", "categories": "science"},
+    {"q": "central bank rate decision", "categories": "news"}
   ]
 }

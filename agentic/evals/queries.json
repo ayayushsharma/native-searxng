@@ -13,6 +13,8 @@
     {"q": "encoding_rs whatwg gbk", "categories": "general"},
     {"q": "jiff rust date parsing", "categories": "general"},
     {"q": "bilateral trade agreement 2026", "categories": "news"},
-    {"q": "transformer architecture paper", "categories": "science"}
+    {"q": "transformer architecture paper", "categories": "science"},
+    {"q": "python requests connection timeout", "categories": "it"},
+    {"q": "docker compose restart policy", "categories": "it"}
   ]
 }

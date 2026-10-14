@@ -1,9 +1,14 @@
 //! Table of compiled-in engines. Adding one = one small file + one line here.
 
 pub mod ddg;
+pub mod dockerhub;
+pub mod gentoo;
+pub mod github;
 pub mod grokipedia;
+pub mod mdn;
 pub mod mwmbl;
 pub mod openlibrary;
+pub mod stackexchange;
 pub mod startpagina;
 pub mod wikipedia;
 
@@ -19,6 +24,13 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "mwmbl" => Some(Box::new(mwmbl::Mwmbl)),
         "grokipedia" => Some(Box::new(grokipedia::Grokipedia)),
         "startpagina" => Some(Box::new(startpagina::Startpagina)),
+        "stackoverflow" => Some(Box::new(stackexchange::StackExchange::new("stackoverflow"))),
+        "superuser" => Some(Box::new(stackexchange::StackExchange::new("superuser"))),
+        "askubuntu" => Some(Box::new(stackexchange::StackExchange::new("askubuntu"))),
+        "github" => Some(Box::new(github::Github)),
+        "mdn" => Some(Box::new(mdn::Mdn)),
+        "dockerhub" => Some(Box::new(dockerhub::DockerHub)),
+        "gentoo" => Some(Box::new(gentoo::Gentoo)),
         _ => None,
     }
 }

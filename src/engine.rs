@@ -57,6 +57,23 @@ pub trait Engine {
     fn challenge(&self, _body: &str) -> Option<String> {
         None
     }
+    /// Native category this engine serves (`general` default). The server
+    /// only runs engines matching the requested category; anything else
+    /// stays behind the strangler.
+    fn category(&self) -> &'static str {
+        "general"
+    }
+}
+
+/// Minimal HTML-entity unescape for engine titles/snippets
+/// (`&quot;`, `&amp;`, …). Never panics; unknown entities pass through.
+pub fn unescape(s: &str) -> String {
+    s.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&apos;", "'")
 }
 
 /// Normalize for dedup: lowercase, strip scheme noise, trailing slash.

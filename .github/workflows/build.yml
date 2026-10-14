@@ -1,5 +1,11 @@
 name: build
 
+# CREDIT POLICY (see AGENTS.md): CI runs only when needed and never blocks.
+# - Every push / PR: `check` only (one runner, minutes, cached).
+# - Binaries (x86_64 + Android, ONE job, sequential): tags `v*` or manual
+#   dispatch only. No musl/router target until a router ships (deferred).
+# - Concurrency cancels superseded runs so queues never pile up.
+
 on:
   push:
     branches: [main]
@@ -7,8 +13,13 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  CARGO_TERM_COLOR: always
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -19,49 +30,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --locked --all-targets
 
-  release-x86_64:
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    needs: check
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo build --locked --release
-      - run: ls -la target/release/native-searxng && du -h target/release/native-searxng
-      - name: smoke test (contract keys + live wikipedia)
-        run: |
-          ./target/release/native-searxng & SRV=$!
-          sleep 1
-          curl -sf 127.0.0.1:8888/healthz
-          curl -sf '127.0.0.1:8888/search?q=test&format=json&engines=wikipedia' -o /tmp/nq.json
-          python3 -c 'import json; d=json.load(open("/tmp/nq.json")); assert set(d) == {"query","results","answers","corrections","infoboxes","suggestions","unresponsive_engines"}, sorted(d); assert d["results"], "empty results"; print("smoke OK:", len(d["results"]), "results")'
-          kill $SRV
-      - uses: actions/upload-artifact@v4
-        with:
-          name: native-searxng-x86_64
-          path: target/release/native-searxng
-
-  release-aarch64-musl:
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    needs: check
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-unknown-linux-musl
-      - uses: Swatinem/rust-cache@v2
-      - run: sudo apt-get update -q && sudo apt-get install -qy musl-tools
-      - run: cargo build --locked --release --target aarch64-unknown-linux-musl
-      - run: ls -la target/aarch64-unknown-linux-musl/release/native-searxng && du -h target/aarch64-unknown-linux-musl/release/native-searxng
-      - uses: actions/upload-artifact@v4
-        with:
-          name: native-searxng-aarch64-musl
-          path: target/aarch64-unknown-linux-musl/release/native-searxng
-
-  release-aarch64-android:
-    if: startsWith(github.ref, 'refs/tags/v')
+  # Single release job: x86_64 + Android back-to-back on ONE runner.
+  # Runs only on version tags or manual dispatch — never per push.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     needs: check
     steps:
@@ -73,11 +45,32 @@ jobs:
       - uses: nttld/setup-ndk@v1
         with:
           ndk-version: r27
-      - run: |
+
+      - name: build x86_64 release
+        run: cargo build --locked --release
+
+      - name: build Android release
+        run: |
           cargo build --locked --release --target aarch64-linux-android \
             --config 'target.aarch64-linux-android.linker="aarch64-linux-android34-clang"'
-      - run: ls -la target/aarch64-linux-android/release/native-searxng && du -h target/aarch64-linux-android/release/native-searxng
+
+      - name: sizes
+        run: |
+          ls -la target/release/native-searxng target/aarch64-linux-android/release/native-searxng
+          du -h target/release/native-searxng target/aarch64-linux-android/release/native-searxng
+
+      - name: smoke test (contract keys + live wikipedia, x86_64 binary)
+        run: |
+          ./target/release/native-searxng & SRV=$!
+          sleep 1
+          curl -sf 127.0.0.1:8888/healthz
+          curl -sf '127.0.0.1:8888/search?q=test&format=json&engines=wikipedia' -o /tmp/nq.json
+          python3 -c 'import json; d=json.load(open("/tmp/nq.json")); assert set(d) == {"query","results","answers","corrections","infoboxes","suggestions","unresponsive_engines"}, sorted(d); assert d["results"], "empty results"; print("smoke OK:", len(d["results"]), "results")'
+          kill $SRV
+
       - uses: actions/upload-artifact@v4
         with:
-          name: native-searxng-aarch64-android
-          path: target/aarch64-linux-android/release/native-searxng
+          name: native-searxng-x86_64-android
+          path: |
+            target/release/native-searxng
+            target/aarch64-linux-android/release/native-searxng

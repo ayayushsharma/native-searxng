@@ -1,6 +1,7 @@
 //! Table of compiled-in engines. Adding one = one small file + one line here.
 
 pub mod ddg;
+pub mod openlibrary;
 pub mod wikipedia;
 
 use crate::engine::Engine;
@@ -11,6 +12,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
     match name {
         "wikipedia" => Some(Box::new(wikipedia::Wikipedia)),
         "ddg" => Some(Box::new(ddg::Ddg)),
+        "openlibrary" => Some(Box::new(openlibrary::Openlibrary)),
         _ => None,
     }
 }

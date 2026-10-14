@@ -37,13 +37,13 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         return (400, b"application/json", render::error_json("No query"));
     }
     // Strangler: engine override for unknown names -> Python reference.
-    // Native categories: general, it, science, news. Rest proxies.
+    // Native categories: general, it, science, news, packages.
     let want = if q.categories.is_empty() {
         "general"
     } else {
         q.categories.as_str()
     };
-    let native = matches!(want, "general" | "it" | "science" | "news");
+    let native = matches!(want, "general" | "it" | "science" | "news" | "packages");
     if (!q.engines.is_empty() && engines::find(&q.engines).is_none()) || !native {
         if !cfg.proxy_to.is_empty() {
             return match client.proxy(&cfg.proxy_to, url) {

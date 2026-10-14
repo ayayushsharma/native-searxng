@@ -9,7 +9,9 @@ pub mod europepmc;
 pub mod gentoo;
 pub mod github;
 pub mod grokipedia;
+pub mod crates;
 pub mod mdn;
+pub mod npm;
 pub mod mwmbl;
 pub mod openlibrary;
 pub mod pubmed;
@@ -36,6 +38,8 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "wikinews" => Some(Box::new(wikinews::Wikinews)),
         "ddgnews" => Some(Box::new(ddgnews::DdgNews)),
         "pubmed" => Some(Box::new(pubmed::Pubmed)),
+        "npm" => Some(Box::new(npm::Npm)),
+        "crates" => Some(Box::new(crates::Crates)),
         "stackoverflow" => Some(Box::new(stackexchange::StackExchange::new("stackoverflow"))),
         "superuser" => Some(Box::new(stackexchange::StackExchange::new("superuser"))),
         "askubuntu" => Some(Box::new(stackexchange::StackExchange::new("askubuntu"))),

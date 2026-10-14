@@ -63,6 +63,13 @@ pub trait Engine {
     fn category(&self) -> &'static str {
         "general"
     }
+    /// Two-step engines (e.g. PubMed esearch → esummary): given the FIRST
+    /// response body, return the follow-up URL, or None when the first
+    /// body is already parseable. The server performs at most ONE extra
+    /// fetch and hands the second body to `parse`. Default: single-step.
+    fn follow_up(&self, _first_body: &str) -> Option<String> {
+        None
+    }
 }
 
 /// Minimal HTML-entity unescape for engine titles/snippets

@@ -73,9 +73,25 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                 if let Some(reason) = engine.challenge(&body) {
                     unresponsive.push((name.clone(), reason));
                 } else {
+                    // Two-step engines: at most one follow-up fetch, then
+                    // parse the final body (PubMed esearch -> esummary).
+                    let final_body;
+                    let body = match engine.follow_up(&body) {
+                        Some(url2) => match client.get(&url2) {
+                            Ok(b2) => {
+                                final_body = b2;
+                                &final_body
+                            }
+                            Err(e) => {
+                                unresponsive.push((name.clone(), e));
+                                continue;
+                            }
+                        },
+                        None => &body,
+                    };
                     // Stamp the served category (SearXNG tags each result
                     // with its search category; parsers default general).
-                    let mut v = engine.parse(&body);
+                    let mut v = engine.parse(body);
                     for r in &mut v {
                         r.category = want.into();
                     }

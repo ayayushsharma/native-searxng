@@ -2,6 +2,7 @@
 
 pub mod arxiv;
 pub mod bingnews;
+pub mod ddgnews;
 pub mod ddg;
 pub mod dockerhub;
 pub mod europepmc;
@@ -11,6 +12,7 @@ pub mod grokipedia;
 pub mod mdn;
 pub mod mwmbl;
 pub mod openlibrary;
+pub mod pubmed;
 pub mod stackexchange;
 pub mod startpagina;
 pub mod wikinews;
@@ -32,6 +34,8 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "europepmc" => Some(Box::new(europepmc::EuropePmc)),
         "bingnews" => Some(Box::new(bingnews::BingNews)),
         "wikinews" => Some(Box::new(wikinews::Wikinews)),
+        "ddgnews" => Some(Box::new(ddgnews::DdgNews)),
+        "pubmed" => Some(Box::new(pubmed::Pubmed)),
         "stackoverflow" => Some(Box::new(stackexchange::StackExchange::new("stackoverflow"))),
         "superuser" => Some(Box::new(stackexchange::StackExchange::new("superuser"))),
         "askubuntu" => Some(Box::new(stackexchange::StackExchange::new("askubuntu"))),

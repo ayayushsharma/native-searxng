@@ -29,6 +29,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --locked --all-targets
+      - run: cargo test --locked
 
   # Single release job: x86_64 + Android back-to-back on ONE runner.
   # Runs only on version tags or manual dispatch — never per push.
@@ -71,6 +72,13 @@ jobs:
           curl -sf 127.0.0.1:8888/healthz
           curl -sf '127.0.0.1:8888/search?q=test&format=json&engines=wikipedia' -o /tmp/nq.json
           python3 -c 'import json; d=json.load(open("/tmp/nq.json")); assert set(d) == {"query","results","answers","corrections","infoboxes","suggestions","unresponsive_engines"}, sorted(d); assert d["results"], "empty results"; print("smoke OK:", len(d["results"]), "results")'
+          kill $SRV
+
+      - name: footprint (server RSS over 50 queries, x86_64 binary)
+        run: |
+          ./target/release/native-searxng & SRV=$!
+          sleep 1
+          N=50 sh tools/measure.sh target/release/native-searxng
           kill $SRV
 
       - uses: actions/upload-artifact@v4

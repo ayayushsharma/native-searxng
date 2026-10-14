@@ -26,7 +26,23 @@ engines stay behind the strangler (`proxy_to` → Python `:8889`).
 
 | Engine | Verdict |
 |---|---|
-| marginalia, kagi, braveapi | Skip — API keys. None exist on this box. |
+| marginalia, kagi, braveapi, exaapi | Skip — API keys. None exist on this box. |
+| jina | API key (`jina_...`) — skip. |
+
+## Challenge / token / POST gates (code-audited 2026-10-14, ≤1 live probe each)
+
+| Engine | Signal | Verdict |
+|---|---|---|
+| startpage | Anubis PoW challenge (`_solve_anubis`) + `sc-code` token flow | Skip — challenge-solving class. |
+| qwant | DataDome cookie (`datadome` in `CACHE`), API 404s without it | Skip — bot-protection class. |
+| iseek | Per-query token (`_get_new_token`); probed 403 without it | Skip — token class, confirmed gated. |
+| boardreader | Homepage-scraped `currentSessionId` pre-fetch | Skip — session flow. |
+| neosearch | `X-XSRF-TOKEN` pre-fetch + POST | Skip — token flow + POST. |
+| keenable | POST JSON (`/v1/search/public` keyless exists) | Deferred — native client is GET-only; POST wave later. |
+| s1search | `base_url = ""` (dead) | Skip — dead. |
+| bpb | Keyless JSON (`bpb.de/bpbapi`) but niche DE civic content | Skip — low general-web value. |
+| 360search | `so.com`, CN-regional | Skip — region + likely gate. |
+| currency_convert | Built on DDG api | Skip — challenged family. |
 
 ## Deferred to HTML wave (selectors + fixtures, after oracle exists)
 

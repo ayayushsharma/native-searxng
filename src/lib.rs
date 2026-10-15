@@ -10,6 +10,7 @@ pub mod engine;
 pub mod engines;
 pub mod fetch;
 pub mod jina;
+pub mod mcp;
 pub mod merge;
 pub mod query;
 pub mod render;

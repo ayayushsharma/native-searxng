@@ -31,6 +31,18 @@ fn route(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8]
     }
 }
 
+/// MCP reuse seam: same pipeline, no HTTP. The MCP server synthesizes
+/// these URLs internally so both transports can never drift.
+pub fn search_pub(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, String) {
+    let (s, _, b) = search(cfg, client, url);
+    (s, b)
+}
+
+pub fn fetch_pub(client: &fetch::Client, url: &str) -> (u16, String) {
+    let (s, _, b) = fetch_page(client, url);
+    (s, b)
+}
+
 const OPENSEARCH: &str = r#"<?xml version="1.0"?><OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"><ShortName>SearXNG</ShortName><Url type="text/html" template="/?q={searchTerms}"/></OpenSearchDescription>"#;
 
 /// `/fetch?url=<http(s)://…>` — native scrape first (no third party),

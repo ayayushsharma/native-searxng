@@ -15,6 +15,7 @@ pub mod github;
 pub mod gmx;
 pub mod keenable;
 pub mod grokipedia;
+pub mod hackernews;
 pub mod crates;
 pub mod crossref;
 pub mod mdn;
@@ -64,6 +65,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "superuser" => Some(Box::new(stackexchange::StackExchange::new("superuser"))),
         "askubuntu" => Some(Box::new(stackexchange::StackExchange::new("askubuntu"))),
         "github" => Some(Box::new(github::Github)),
+        "hackernews" => Some(Box::new(hackernews::HackerNews)),
         "mdn" => Some(Box::new(mdn::Mdn)),
         "dockerhub" => Some(Box::new(dockerhub::DockerHub)),
         "gentoo" => Some(Box::new(gentoo::Gentoo)),

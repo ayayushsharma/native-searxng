@@ -32,6 +32,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("superuser", Some("tests-fixture-stackexchange-test.json"), None, 1),
     ("askubuntu", Some("tests-fixture-stackexchange-test.json"), None, 1),
     ("github", Some("tests-fixture-github-test.json"), None, 5),
+    ("hackernews", Some("tests-fixture-hackernews-test.json"), None, 5),
     ("mdn", Some("tests-fixture-mdn-test.json"), None, 5),
     ("dockerhub", Some("tests-fixture-dockerhub-test.json"), None, 5),
     ("gentoo", Some("tests-fixture-gentoo-test.json"), None, 1),

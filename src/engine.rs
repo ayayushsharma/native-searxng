@@ -45,7 +45,7 @@ impl SearchResult {
 }
 
 #[allow(dead_code)]
-pub trait Engine {
+pub trait Engine: Send + Sync {
     fn name(&self) -> &'static str;
     fn build_url(&self, q: &str, pageno: u32) -> String;
     /// Parse a (possibly truncated) response body into results. Never panics

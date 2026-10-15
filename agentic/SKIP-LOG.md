@@ -47,7 +47,7 @@ Each: oracle survey (≤1 live probe) → fixture → port → `check.py` →
 | 13 | keenable | POST | **DONE 2026-10-15** — single POST to `/v1/search/public` (chain protocol already had POST from chatnoir/dogpile); env key upgrades to keyed `/v1/search`. Live 2 hits. |
 | 14 | neosearch | session + POST | **DONE 2026-10-15** — 2-leg (GET home xsrf-meta → POST /search, last-line lenses JSON, 19 links live). QUEUE COMPLETE: 10 ported (boardreader, gmx*, chatnoir, dogpile, openalex, rubygems, bpb, swisscows, keenable, neosearch), 4 walled with evidence (fireball, dictzone, pypi, iseek). *gmx port-complete but live-walled (honest `empty response`). |
 
-**Latency flag 2026-10-15**: 12-engine sequential fan-out now brushes check.py's 30s client budget on slow queries (`rust async runtime comparison` failed once at >30s, passed on re-run at ~20s). Correctness green; concurrency lanes (GAP-PLAN P2) + diet queue are next, before any new engine.
+**Latency flag 2026-10-15 — RESOLVED same day**: 4 scoped lanes (GAP-PLAN P2) over contiguous engine slices, joined in cfg order. Worst general query 20.6s → 6.2s (per-engine threads hit 3.0s but cost +3MB RSS; 4 lanes cost +1.4MB: peak 16.3/avg 15.0 dev). Lessons: `?` never inside search-alternative loops; `move` closures need Copy captures (`qq`/`pageno` locals); `push(spawn(closure` closes `}))`. Next diet lever: drop `scraper` (only ddg/bingnews/ddgnews use it; 2 of 3 are challenge-walled).
 
 Top of the old list (npm/crates/pubmed/ddgnews) is DONE — 21 native.
 This queue takes us to ~30+ (minus drops), near the portable ceiling

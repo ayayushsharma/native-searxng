@@ -70,17 +70,46 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         return (503, b"application/json", render::error_json("category not ported yet"));
     }
 
-    let mut lists: Vec<Vec<SearchResult>> = Vec::new();
+    // Resolve + gate first (order = cfg order = merge weight order).
+    let mut work: Vec<Box<dyn crate::engine::Engine>> = Vec::new();
     let mut unresponsive: Vec<(String, String)> = Vec::new();
     for name in &cfg.engines {
         let Some(engine) = engines::find(name) else {
             unresponsive.push((name.clone(), "unknown engine".into()));
             continue;
         };
-        // Category gate: only run engines serving the requested category.
         if engine.category() != want {
             continue;
         }
+        work.push(engine);
+    }
+    // Lanes: 4 scoped threads (GAP-PLAN P2), each running a contiguous
+    // slice of engines sequentially. Joined in cfg order so merge
+    // weights never shift. Each lane owns its chain state (prev bodies,
+    // cookie jar); only the thread-safe client (shared ureq pool) and
+    // the read-only query are shared. Latency drops from SUM(legs) to
+    // ~SUM(slowest lane): ~20s worst-case general queries become ~4s.
+    // Peak transient: one body cap per lane (4 x 96KB); 4 malloc arenas
+    // instead of 12 (per-engine threads cost +3MB dev RSS — measured).
+    let mut lists: Vec<Vec<SearchResult>> = Vec::new();
+    // Copy-friendly lane captures (move closures would otherwise try to
+    // move the String field `q.q` into the first lane).
+    let qq: &str = q.q.as_str();
+    let pageno: u32 = q.pageno;
+    std::thread::scope(|s| {
+        let lanes = 4usize;
+        let chunk = work.len().div_ceil(lanes);
+        let mut handles = Vec::with_capacity(lanes);
+        for slice in work.chunks(chunk) {
+            handles.push(s.spawn(move || {
+                let mut out: Vec<(Vec<SearchResult>, Option<(String, String)>)> = vec![];
+                // One engine at a time per lane; the chain below returns
+                // per engine via this closure (a bare `return` would
+                // abort the whole lane, skipping the slice remainder).
+                let run = |engine: &dyn crate::engine::Engine| -> (
+                    Vec<SearchResult>,
+                    Option<(String, String)>,
+                ) {
         // Request chain: the engine describes each fetch (GET or POST)
         // from all previous responses; max 3 rounds (chatnoir needs 3).
         // Every leg is gated the same way: non-200, challenge page, or
@@ -91,22 +120,19 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         // `response.cookies` forward, so do we (per query, never shared).
         let mut jar: Vec<(String, String)> = vec![];
         let last_body: Option<String> = loop {
-            let Some(req) = engine.request(&q.q, q.pageno, &prev) else {
+            let Some(req) = engine.request(qq, pageno, &prev) else {
                 break if prev.is_empty() {
-                    unresponsive.push((name.clone(), "no request".into()));
-                    None
+                    return (vec![], Some((engine.name().to_string(), "no request".into())));
                 } else if prev.len() < engine.rounds() {
                     // Chain stopped early on scaffolding — flow broke.
                     // (Single-step engines stop after leg 1 by design.)
-                    unresponsive.push((name.clone(), "session flow failed".into()));
-                    None
+                    return (vec![], Some((engine.name().to_string(), "session flow failed".into())));
                 } else {
                     prev.pop().map(|r| r.body)
                 };
             };
             if prev.len() >= 3 {
-                unresponsive.push((name.clone(), "chain too long".into()));
-                break None;
+                return (vec![], Some((engine.name().to_string(), "chain too long".into())));
             }
             let mut req = req;
             if !jar.is_empty() {
@@ -119,17 +145,14 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             }
             match client.execute_capped(&req, engine.body_cap_kb()) {
                 Ok(r) if r.status != 200 => {
-                    unresponsive.push((name.clone(), format!("http {}", r.status)));
-                    break None;
+                    return (vec![], Some((engine.name().to_string(), format!("http {}", r.status))));
                 }
                 Ok(r) if r.body.trim().is_empty() => {
-                    unresponsive.push((name.clone(), "empty response".into()));
-                    break None;
+                    return (vec![], Some((engine.name().to_string(), "empty response".into())));
                 }
                 Ok(r) => {
                     if let Some(reason) = engine.challenge(&r.body) {
-                        unresponsive.push((name.clone(), reason));
-                        break None;
+                        return (vec![], Some((engine.name().to_string(), reason)));
                     }
                     for c in &r.cookies {
                         let pair = c.split(';').next().unwrap_or("");
@@ -148,8 +171,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                     prev.push(r);
                 }
                 Err(e) => {
-                    unresponsive.push((name.clone(), e));
-                    break None;
+                    return (vec![], Some((engine.name().to_string(), e)));
                 }
             }
         };
@@ -160,9 +182,30 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             for r in &mut v {
                 r.category = want.into();
             }
-            lists.push(v);
+                    (v, None)
+                } else {
+                    (vec![], None)
+                }
+                }; // end run
+                for engine in slice {
+                    out.push(run(engine.as_ref()));
+                }
+                out
+            })) // end lane (close closure, spawn, push)
         }
-    }
+        // Join in cfg order: merge weights never shift across runs.
+        for h in handles {
+            let lane = h.join().unwrap_or_else(|_| {
+                vec![(vec![], Some(("lane".to_string(), "panicked".to_string())))]
+            });
+            for (v, u) in lane {
+                if let Some(u) = u {
+                    unresponsive.push(u);
+                }
+                lists.push(v);
+            }
+        }
+    });
     let results = merge::merge(lists, cfg.max_results);
     if q.format == "json" {
         (200, b"application/json", render::json(&q.q, &results, &unresponsive))

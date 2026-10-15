@@ -21,6 +21,7 @@ pub mod crates;
 pub mod crossref;
 pub mod mdn;
 pub mod npm;
+pub mod nvd;
 pub mod mwmbl;
 pub mod neosearch;
 pub mod openalex;
@@ -58,6 +59,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "ddgnews" => Some(Box::new(ddgnews::DdgNews)),
         "pubmed" => Some(Box::new(pubmed::Pubmed)),
         "npm" => Some(Box::new(npm::Npm)),
+        "nvd" => Some(Box::new(nvd::Nvd)),
         "openalex" => Some(Box::new(openalex::OpenAlex)),
         "rubygems" => Some(Box::new(rubygems::Rubygems)),
         "crates" => Some(Box::new(crates::Crates)),

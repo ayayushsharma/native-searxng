@@ -37,6 +37,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("dockerhub", Some("tests-fixture-dockerhub-test.json"), None, 5),
     ("gentoo", Some("tests-fixture-gentoo-test.json"), None, 1),
     ("archlinux", Some("tests-fixture-archlinux-test.json"), None, 5),
+    ("nvd", Some("tests-fixture-nvd-test.json"), None, 3),
     ("arxiv", Some("tests-fixture-arxiv-test.json"), None, 5),
     ("europepmc", Some("tests-fixture-europepmc-test.json"), None, 5),
     ("pubmed", Some("tests-fixture-pubmed-test.json"), None, 5),

@@ -3,15 +3,50 @@
 //! Routes: / -> form, /search -> pipeline, /fetch -> page extract,
 //! /healthz, /opensearch.xml.
 
-use crate::{config::Config, engine::SearchResult, engines, fetch, jina, merge, query, render, scrape};
-use tiny_http::{Header, Response, Server};
+use crate::{config::Config, engine::SearchResult, engines, fetch, jina, mcp, merge, query, render, scrape};
+use tiny_http::{Header, Method, Response, Server};
+use std::io::Read;
 
 pub fn run(cfg: &Config) {
     let addr = format!("{}:{}", cfg.bind, cfg.port);
     let server = Server::http(&addr).expect("bind server");
     let client = fetch::Client::new(cfg);
-    for req in server.incoming_requests() {
+    for mut req in server.incoming_requests() {
         let url = req.url().to_string();
+        // Stateless Streamable HTTP: POST /mcp with a JSON-RPC body.
+        // No SSE, no sessions — one body in, one JSON body out.
+        // POST bodies capped at 64KB (tool args are small).
+        if req.method() == &Method::Post && url == "/mcp" {
+            // Chunked read with a 64KB ceiling (tool args are small).
+            let mut body = Vec::new();
+            let mut buf = [0u8; 8192];
+            let mut ok = true;
+            let mut reader = req.as_reader();
+            loop {
+                match reader.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(n) => {
+                        body.extend_from_slice(&buf[..n]);
+                        if body.len() > 65536 {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    Err(_) => {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            let out = match (ok, String::from_utf8(body)) {
+                (true, Ok(b)) => mcp::handle_http(cfg, &client, &b),
+                _ => "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"parse error\"}}".into(),
+            };
+            let header = Header::from_bytes("Content-Type", b"application/json".as_slice()).unwrap();
+            let resp = Response::from_string(out).with_status_code(200).with_header(header);
+            let _ = req.respond(resp);
+            continue;
+        }
         let (status, ctype, body) = route(cfg, &client, &url);
         let header = Header::from_bytes("Content-Type", ctype).unwrap();
         let resp = Response::from_string(body).with_status_code(status).with_header(header);

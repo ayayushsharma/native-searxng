@@ -46,8 +46,8 @@ pub fn run_stdio(cfg: &Config) {
     }
 }
 
-/// One JSON-RPC request → optional response (None = notification).
-fn dispatch(cfg: &Config, client: &fetch::Client, req: &Value) -> Option<Value> {
+/// JSON-RPC dispatcher shared by stdio and Streamable HTTP.
+pub fn dispatch(cfg: &Config, client: &fetch::Client, req: &Value) -> Option<Value> {
     let method = req.get("method")?.as_str()?;
     let id = req.get("id").cloned().unwrap_or(Value::Null);
     let params = req.get("params").cloned().unwrap_or(Value::Null);
@@ -70,6 +70,22 @@ fn dispatch(cfg: &Config, client: &fetch::Client, req: &Value) -> Option<Value> 
         }
     };
     result.map(|r| json!({"jsonrpc": "2.0", "id": id, "result": r}))
+}
+
+/// Streamable HTTP entry: one POST body → one JSON response (no SSE;
+/// our latencies don't need streaming). Stateless: no session IDs.
+/// Notifications return `null` result (nothing to resume). Errors that
+/// aren't JSON-RPC-shaped get -32600.
+pub fn handle_http(cfg: &Config, client: &fetch::Client, body: &str) -> String {
+    let req: Value = match serde_json::from_str(body) {
+        Ok(v) => v,
+        Err(_) => return serde_json::to_string(&json!({"jsonrpc": "2.0", "id": null,
+            "error": {"code": -32700, "message": "parse error"}})).unwrap_or_default(),
+    };
+    match dispatch(cfg, client, &req) {
+        Some(resp) => serde_json::to_string(&resp).unwrap_or_default(),
+        None => serde_json::to_string(&json!({"jsonrpc": "2.0", "id": null, "result": null})).unwrap_or_default(),
+    }
 }
 
 fn search_tool() -> Value {

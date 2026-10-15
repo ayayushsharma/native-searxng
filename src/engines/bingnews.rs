@@ -3,11 +3,9 @@
 //! Response: HTML with `<div class="newsitem">` cards each carrying
 //! `<a class="title">`, `<div class="snippet">`, optional source/author
 //! metadata and `<a class="imagelink"><img>` thumbnails.
-//! First HTML-wave engine: parsed with `scraper` (already a dependency);
-//! truncated bodies (96KB cap) parse as far as they go, never panic.
+//! Hand scanner over card substrings (no scraper); truncated bodies
+//! (96KB cap) parse as far as they go, never panic.
 //! Fixture: `tests-fixture-bingnews-test.json` (HTTP 200, 6 cards, clean).
-
-use scraper::{Html, Selector};
 
 use crate::engine::{Engine, SearchResult};
 
@@ -34,47 +32,63 @@ impl Engine for BingNews {
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {
-        let doc = Html::parse_document(body);
-        let Ok(card_sel) = Selector::parse("div.newsitem") else {
-            return vec![];
-        };
-        let title_sel = Selector::parse("a.title").ok();
-        let snippet_sel = Selector::parse("div.snippet").ok();
-        let source_sel = Selector::parse("div.source span[aria-label]").ok();
-        let img_sel = Selector::parse("a.imagelink img").ok();
+        // Card split on the `newsitem` marker (fixture-verified shape).
         let mut out = Vec::new();
-        for card in doc.select(&card_sel).take(10) {
-            let link = title_sel
-                .as_ref()
-                .and_then(|s| card.select(s).next());
-            let Some(link) = link else { continue };
-            let url = link.value().attr("href").unwrap_or_default();
-            let title: String = link.text().collect::<Vec<_>>().join(" ");
-            let title = norm(&title);
+        for card in body.split("newsitem").skip(1).take(10) {
+            // Title anchor: the `<a>` tag carrying `class="title"`.
+            let Some(ti) = card.find("class=\"title\"") else { continue };
+            let Some(a_start) = card[..ti].rfind("<a") else { continue };
+            let a_end = card[ti..].find('>').map(|g| ti + g).unwrap_or(card.len());
+            let tag = &card[a_start..a_end];
+            let url = crate::engine::attr(tag, "href").unwrap_or_default();
+            // Title text: `<h2>` inside the anchor, else anchor inner text.
+            let rest_a = &card[a_end.min(card.len())..];
+            let title = match rest_a.find("<h2") {
+                Some(h) => match rest_a[h..].find('>') {
+                    Some(g) => {
+                        let ts = h + g + 1;
+                        let te = rest_a[ts..].find("</h2>").map(|e| ts + e).unwrap_or(rest_a.len());
+                        norm(&crate::engine::strip_tags(&rest_a[ts..te]))
+                    }
+                    None => String::new(),
+                },
+                None => match rest_a.find("</a>") {
+                    Some(e) => norm(&crate::engine::strip_tags(&rest_a[..e])),
+                    None => String::new(),
+                },
+            };
+            let url = url.trim();
             if url.is_empty() || title.is_empty() {
                 continue;
             }
-            let mut content = snippet_sel
-                .as_ref()
-                .and_then(|s| card.select(s).next())
-                .map(|n| norm(&n.text().collect::<Vec<_>>().join(" ")))
-                .unwrap_or_default();
+            let mut content = match card.find("<div class=\"snippet\"") {
+                Some(si) => match card[si..].find('>') {
+                    Some(g) => {
+                        let cs = si + g + 1;
+                        let ce = card[cs..].find("</div>").map(|e| cs + e).unwrap_or(card.len());
+                        norm(&crate::engine::strip_tags(&card[cs..ce]))
+                    }
+                    None => String::new(),
+                },
+                None => String::new(),
+            };
             // Metadata mirrors SearXNG: source aria-label + data-author.
             let mut meta = Vec::new();
-            if let Some(span) = source_sel
-                .as_ref()
-                .and_then(|s| card.select(s).next())
+            // Source logo link: `aria-label="Search news from X"`.
+            if let Some(label) = card
+                .find("aria-label=\"Search news from ")
+                .and_then(|i| {
+                    let s = &card[i + "aria-label=\"Search news from ".len()..];
+                    s.find('"').map(|e| s[..e].trim().to_string())
+                })
+                .filter(|s| !s.is_empty())
             {
-                if let Some(label) = span.value().attr("aria-label") {
-                    if !label.trim().is_empty() {
-                        meta.push(label.trim().to_string());
-                    }
-                }
+                meta.push(label);
             }
-            if let Some(author) = link.value().attr("data-author") {
-                if !author.trim().is_empty() {
-                    meta.push(author.trim().to_string());
-                }
+            if let Some(author) =
+                crate::engine::attr(tag, "data-author").filter(|s| !s.trim().is_empty())
+            {
+                meta.push(author.trim().to_string());
             }
             if !meta.is_empty() {
                 if !content.is_empty() {
@@ -82,11 +96,13 @@ impl Engine for BingNews {
                 }
                 content.push_str(&meta.join(" | "));
             }
-            let mut res = SearchResult::basic("bingnews", url.into(), title, content);
-            if let Some(src) = img_sel
-                .as_ref()
-                .and_then(|s| card.select(s).next())
-                .and_then(|img| img.value().attr("src"))
+            let mut res = SearchResult::basic("bingnews", url.to_string(), title, content);
+            if let Some(src) = card
+                .find("class=\"imagelink\"")
+                .and_then(|i| card[i..].find("<img").map(|m| i + m))
+                .and_then(|m| card[m..].find('>').map(|g| card[m..m + g].to_string()))
+                .as_deref()
+                .and_then(|img| crate::engine::attr(img, "src"))
             {
                 res.thumbnail = if src.starts_with("https://www.bing.com") {
                     src.into()

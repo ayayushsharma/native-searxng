@@ -9,7 +9,7 @@
 //! follow-up, query parsing, JSON contract keys, merge dedup.
 
 use native_searxng::{
-    engine::{Engine, InResponse, Method, OutRequest, SearchResult, cookie},
+    engine::{Engine, InResponse, Method, SearchResult, cookie},
     engines, merge, query, render,
 };
 
@@ -40,7 +40,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("pubmed", Some("tests-fixture-pubmed-test.json"), None, 5),
     ("openalex", Some("tests-fixture-openalex-test.json"), None, 2),
     ("rubygems", Some("tests-fixture-rubygems-test.json"), None, 5),
-    ("bingnews", Some("tests-fixture-bingnews-test.json"), None, 1),
+    ("bingnews", Some("tests-fixture-bingnews-test.json"), None, 6),
     ("wikinews", Some("tests-fixture-wikinews-test.json"), None, 5),
     ("ddgnews", None, Some(INLINE_DDG), 1),
     ("npm", Some("tests-fixture-npm-test.json"), None, 5),

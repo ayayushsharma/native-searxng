@@ -1,8 +1,7 @@
 //! DuckDuckGo HTML endpoint (lenient, no-JS form service).
 //! Parser is fixture-driven (see tests/): substring spans only, skip on mismatch.
 
-use crate::engine::{Engine, SearchResult};
-use scraper::{Html, Selector};
+use crate::engine::{Engine, SearchResult, ddg_parse};
 
 pub struct Ddg;
 
@@ -26,37 +25,8 @@ impl Engine for Ddg {
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {
-        // encoding_rs first: DDG is UTF-8, but normalize anyway (pattern for
-        // GBK/1251 engines later).
-        let (text, _, _) = encoding_rs::UTF_8.decode(body.as_bytes());
-        let doc = Html::parse_document(&text);
-        let Ok(block) = Selector::parse(".result") else {
-            return vec![];
-        };
-        let Ok(link) = Selector::parse(".result__a") else {
-            return vec![];
-        };
-        let Ok(snippet) = Selector::parse(".result__snippet") else {
-            return vec![];
-        };
-        let mut out = Vec::new();
-        for el in doc.select(&block).take(10) {
-            let Some(a) = el.select(&link).next() else {
-                continue;
-            };
-            let url = a.value().attr("href").unwrap_or("").to_string();
-            if url.is_empty() {
-                continue;
-            }
-            let title: String = a.text().collect::<Vec<_>>().join(" ").split_whitespace().collect::<Vec<_>>().join(" ");
-            let content: String = el
-                .select(&snippet)
-                .next()
-                .map(|s| s.text().collect::<Vec<_>>().join(" ").split_whitespace().collect::<Vec<_>>().join(" "))
-                .unwrap_or_default();
-            out.push(SearchResult::basic("ddg", url, title, content));
-        }
-        out
+        // Shared hand scanner (no scraper/encoding_rs): DDG is UTF-8.
+        ddg_parse(body, "ddg")
     }
 }
 

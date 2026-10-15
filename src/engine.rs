@@ -207,6 +207,72 @@ pub fn strip_tags(s: &str) -> String {
     out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Attribute value from a raw tag slice (`href="..."`, either quote).
+/// Returns None when the attribute is absent; never panics.
+pub fn attr(tag: &str, name: &str) -> Option<String> {
+    for q in ['"', '\''] {
+        let pat = format!("{name}={q}");
+        if let Some(i) = tag.find(&pat) {
+            let rest = &tag[i + pat.len()..];
+            let end = rest.find(q).unwrap_or(rest.len());
+            return Some(unescape(&rest[..end]));
+        }
+    }
+    None
+}
+
+/// Minimal DuckDuckGo `/html` result scanner (shared by `ddg` +
+/// `ddgnews`; replaces `scraper` + `encoding_rs` for these two).
+/// DDG serves UTF-8, so no transcoding is needed. Shape (either tag):
+/// `<a class="result__a" href="URL">TITLE</a>` then
+/// `<a|div class="result__snippet...">SNIPPET</a|div>`.
+/// Malformed cards are skipped; never panics.
+pub fn ddg_parse(body: &str, engine: &'static str) -> Vec<SearchResult> {
+    let mut out = Vec::new();
+    let mut rest = body;
+    while out.len() < 10 {
+        let Some(ai) = rest.find("result__a\"") else { break };
+        let Some(tag_start) = rest[..ai].rfind("<a") else { break };
+        // Whole anchor tag (href sits after the class in DDG's HTML).
+        let tag_end = rest[ai..].find('>').map(|g| ai + g).unwrap_or(rest.len());
+        let tag = &rest[tag_start..tag_end];
+        let url = attr(tag, "href").unwrap_or_default();
+        let text_start = tag_end + 1;
+        let text_end = rest[text_start..].find("</a>").map(|e| text_start + e).unwrap_or(rest.len());
+        let title = strip_tags(&rest[text_start..text_end]);
+        rest = &rest[text_end..];
+        if url.trim().is_empty() || title.is_empty() {
+            continue;
+        }
+        // Snippet: nearest `result__snippet` element before the next link.
+        let next_link = rest.find("result__a\"").unwrap_or(rest.len());
+        let window = &rest[..next_link];
+        let content = match window.find("result__snippet") {
+            Some(si) => {
+                // Nearest opener before the marker decides the closer.
+                let back = &window[..si];
+                let (a_pos, d_pos) = (back.rfind("<a"), back.rfind("<div"));
+                let close_tag = match (a_pos, d_pos) {
+                    (Some(a), Some(d)) => if d > a { "</div>" } else { "</a>" },
+                    (Some(_), None) => "</a>",
+                    _ => "</div>",
+                };
+                match window[si..].find('>') {
+                    Some(g) => {
+                        let cs = si + g + 1;
+                        let ce = window[cs..].find(close_tag).map(|e| cs + e).unwrap_or(window.len());
+                        strip_tags(&window[cs..ce])
+                    }
+                    None => String::new(),
+                }
+            }
+            None => String::new(),
+        };
+        out.push(SearchResult::basic(engine, url.trim().to_string(), title, content));
+    }
+    out
+}
+
 /// Normalize for dedup: lowercase, strip scheme noise, trailing slash.
 pub fn normalize_url(u: &str) -> String {
     let mut s = u.trim().to_lowercase();

@@ -6,9 +6,7 @@
 //! day this egress IP's reputation clears, with zero code changes.
 //! No live fixture possible while challenged (see ddg anomaly fixture).
 
-use scraper::{Html, Selector};
-
-use crate::engine::{Engine, SearchResult};
+use crate::engine::{Engine, SearchResult, ddg_parse};
 
 pub struct DdgNews;
 
@@ -35,35 +33,8 @@ impl Engine for DdgNews {
     fn parse(&self, body: &str) -> Vec<SearchResult> {
         // Same card markup as the web vertical (verified against the
         // reference `duckduckgo_extra` news selectors when unblocked).
-        let (text, _, _) = encoding_rs::UTF_8.decode(body.as_bytes());
-        let doc = Html::parse_document(&text);
-        let Ok(block) = Selector::parse(".result") else {
-            return vec![];
-        };
-        let Ok(link) = Selector::parse(".result__a") else {
-            return vec![];
-        };
-        let Ok(snippet) = Selector::parse(".result__snippet") else {
-            return vec![];
-        };
-        let mut out = Vec::new();
-        for el in doc.select(&block).take(10) {
-            let Some(a) = el.select(&link).next() else {
-                continue;
-            };
-            let url = a.value().attr("href").unwrap_or("").to_string();
-            if url.is_empty() {
-                continue;
-            }
-            let title: String = a.text().collect::<Vec<_>>().join(" ").split_whitespace().collect::<Vec<_>>().join(" ");
-            let content: String = el
-                .select(&snippet)
-                .next()
-                .map(|s| s.text().collect::<Vec<_>>().join(" ").split_whitespace().collect::<Vec<_>>().join(" "))
-                .unwrap_or_default();
-            out.push(SearchResult::basic("ddgnews", url, title, content));
-        }
-        out
+        // Shared hand scanner: no scraper/encoding_rs.
+        ddg_parse(body, "ddgnews")
     }
 }
 

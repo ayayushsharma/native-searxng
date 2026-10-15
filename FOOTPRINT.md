@@ -8,7 +8,7 @@ Method: `tools/measure.sh <bin>` — `ls/size` for disk, then 50 sequential
 
 | Binary | Size | Notes |
 |---|---|---|
-| `target/debug/native-searxng` | 44.7 MB (44,662,792 B) | debuginfo + unopt; dev-only, never shipped |
+| `target/debug/native-searxng` | 36.1 MB (36,093,824 B) | debuginfo + unopt; dev-only, never shipped (−10MB after scraper+encoding_rs removal) |
 | release x86_64 (CI artifact) | 3.32 MB (3,321,528 B) | `opt-z + strip + panic=abort + codegen-units=1`, no LTO yet |
 | release Android aarch64 (CI artifact) | 3.01 MB (3,007,216 B) | same profile |
 
@@ -16,7 +16,7 @@ Method: `tools/measure.sh <bin>` — `ls/size` for disk, then 50 sequential
 
 | Binary | Peak | Avg | Ceiling | Status |
 |---|---|---|---|---|
-| dev (unoptimized) | 12.6 MB | 12.4 MB | 10 MB soft | ABOVE — expected for dev (upper bound) |
+| dev (unoptimized), 4 lanes, no scraper | 15.8 MB | 14.2 MB | 10 MB soft | ABOVE — expected for dev (upper bound); lanes +1.4, scraper-drop −0.8 |
 | release x86_64 (CI, run 38613483575) | 9.7 MB | 9.5 MB | 10 MB soft / 5 MB core-only | PASSES with 0.3 MB margin — margin too thin; diet queue (GAP-PLAN P2 / LTO / TLS-pool / scraper) is justified |
 | release Android on-device (run 38682374578, N=200) | 11.4 MB | 9.0 MB | 10 MB soft | BREACH on extended run — peak over ceiling while avg holds. Trend unknown (pool fill vs slow growth); needs per-sample series + diet before next wave. |
 

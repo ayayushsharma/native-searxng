@@ -40,18 +40,37 @@ impl Client {
     /// Key material never appears in errors — ureq errors carry status
     /// text only, and we never log request headers.
     pub fn get_with(&self, url: &str, headers: &[(&str, &str)]) -> Result<String, String> {
+        self.get_full(url, headers).map(|(_, _, body)| body)
+    }
+
+    /// Full fetch: (HTTP status, set-cookie values, body truncated to cap).
+    /// Status is surfaced so the server can report non-200 legs honestly
+    /// (303 → spamprotection, 403, 429) instead of parsing block pages
+    /// as results. Cookies are returned raw; engines pick what they need.
+    pub fn get_full(
+        &self,
+        url: &str,
+        headers: &[(&str, &str)],
+    ) -> Result<(u16, Vec<String>, String), String> {
         let mut call = self.agent.get(url);
         for (k, v) in headers {
             call = call.header(*k, *v);
         }
         let mut res = call.call().map_err(|e| e.to_string())?;
+        let status = res.status().as_u16();
+        let mut cookies = vec![];
+        for v in res.headers().get_all("set-cookie") {
+            if let Ok(s) = v.to_str() {
+                cookies.push(s.to_string());
+            }
+        }
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
         if body.len() <= self.cap {
-            return Ok(body);
+            return Ok((status, cookies, body));
         }
         let mut s = body;
         s.truncate(s.floor_char_boundary(self.cap).min(s.len()));
-        Ok(s)
+        Ok((status, cookies, s))
     }
 
     /// Strangler proxy: forward raw path+query to the Python reference.

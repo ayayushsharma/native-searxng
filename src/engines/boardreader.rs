@@ -19,6 +19,10 @@ impl Engine for Boardreader {
         "boardreader"
     }
 
+    fn two_step(&self) -> bool {
+        true
+    }
+
     fn build_url(&self, _q: &str, _pageno: u32) -> String {
         BASE.into()
     }

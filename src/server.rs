@@ -82,8 +82,13 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             continue;
         }
         let fetch_url = engine.build_url(&q.q, q.pageno);
-        match client.get(&fetch_url) {
-            Ok(body) => {
+        // Full fetch: non-200 legs are reported, never parsed as results
+        // (303 → spamprotection, 403, 429 — iron rule 5 for statuses).
+        match client.get_full(&fetch_url, &[]) {
+            Ok((200, _cookies, body)) if body.trim().is_empty() => {
+                unresponsive.push((name.clone(), "empty response".into()));
+            }
+            Ok((200, _cookies, body)) => {
                 // Challenge/captcha pages -> 0 results + unresponsive entry
                 // (iron rule 5), never silent empties or garbage.
                 if let Some(reason) = engine.challenge(&body) {
@@ -91,18 +96,32 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                 } else {
                     // Two-step engines: at most one follow-up fetch, then
                     // parse the final body (PubMed esearch -> esummary).
+                    // A broken scaffolding flow reports; it never falls back
+                    // to parsing scaffolding as results.
                     let final_body;
                     let body = match engine.follow_up(&q.q, q.pageno, &body) {
-                        Some(url2) => match client.get(&url2) {
-                            Ok(b2) => {
+                        Some(url2) => match client.get_full(&url2, &[]) {
+                            Ok((200, _, b2)) if b2.trim().is_empty() => {
+                                unresponsive.push((name.clone(), "empty response".into()));
+                                continue;
+                            }
+                            Ok((200, _, b2)) => {
                                 final_body = b2;
                                 &final_body
+                            }
+                            Ok((s, _, _)) => {
+                                unresponsive.push((name.clone(), format!("http {s}")));
+                                continue;
                             }
                             Err(e) => {
                                 unresponsive.push((name.clone(), e));
                                 continue;
                             }
                         },
+                        None if engine.two_step() => {
+                            unresponsive.push((name.clone(), "session flow failed".into()));
+                            continue;
+                        }
                         None => &body,
                     };
                     // Stamp the served category (SearXNG tags each result
@@ -114,6 +133,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                     lists.push(v);
                 }
             }
+            Ok((s, _, _)) => unresponsive.push((name.clone(), format!("http {s}"))),
             Err(e) => unresponsive.push((name.clone(), e)),
         }
     }

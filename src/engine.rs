@@ -67,6 +67,15 @@ pub trait Engine {
     /// response body, return the follow-up URL, or None when the first
     /// body is already parseable. The server performs at most ONE extra
     /// fetch and hands the second body to `parse`. Default: single-step.
+    /// True for engines whose first fetch is scaffolding (homepage,
+    /// esearch, hash page) rather than results. If their `follow_up`
+    /// yields no second URL, the flow broke — report unresponsive instead
+    /// of parsing scaffolding as results. Single-step engines parse
+    /// their (only) body directly, so this stays false for them.
+    fn two_step(&self) -> bool {
+        false
+    }
+
     /// Two-step engines: build the second URL from the first body.
     /// `query`/`pageno` are passed through because step two usually
     /// re-states them (boardreader's return.php needs both + session).

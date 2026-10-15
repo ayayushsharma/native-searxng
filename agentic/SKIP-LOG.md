@@ -32,9 +32,9 @@ Each: oracle survey (≤1 live probe) → fixture → port → `check.py` →
 
 | # | Engine | Kind | Note |
 |---|---|---|---|
-| 1 | boardreader | session | Likely misclassified — plain GET + substring. Audit first. |
-| 2 | fireball | session | Settings cookie, likely one homepage GET. |
-| 3 | gmx | session | Token pre-fetch; confirm GET. |
+| 1 | boardreader | session | **DONE 2026-10-15** (`cf004d7`) — homepage session id + return.php, 10 JSON results. |
+| 2 | fireball | session (cookie) | **RE-SKIPPED 2026-10-15**: Cloudflare 403 host-wide from home egress (POST /settings AND GET / both `Attention Required!`); oracle concurs (`firewall: access denied`). IP-bound, not code. Watch only. |
+| 3 | gmx | session | **DONE 2026-10-15** — hash page + desk JSON; rate-sensitive (oracle concurs). Shipped with status-gating + empty-body rules (below). |
 | 4 | chatnoir | session | Same shape as gmx. |
 | 5 | dogpile | session | Same shape as gmx. |
 | 6 | dictzone | plain HTML | Survey. |

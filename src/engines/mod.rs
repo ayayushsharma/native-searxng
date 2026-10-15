@@ -9,6 +9,7 @@ pub mod dockerhub;
 pub mod europepmc;
 pub mod gentoo;
 pub mod github;
+pub mod gmx;
 pub mod grokipedia;
 pub mod crates;
 pub mod mdn;
@@ -49,6 +50,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "mdn" => Some(Box::new(mdn::Mdn)),
         "dockerhub" => Some(Box::new(dockerhub::DockerHub)),
         "gentoo" => Some(Box::new(gentoo::Gentoo)),
+        "gmx" => Some(Box::new(gmx::Gmx)),
         _ => None,
     }
 }

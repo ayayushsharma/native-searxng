@@ -44,6 +44,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("npm", Some("tests-fixture-npm-test.json"), None, 5),
     ("crates", Some("tests-fixture-crates-test.json"), None, 5),
     ("boardreader", Some("tests-fixture-boardreader-test.json"), None, 5),
+    ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
 ];
 
 fn body(file: Option<&str>, inline: Option<&str>) -> String {
@@ -128,6 +129,21 @@ fn boardreader_two_step_session_flow() {
     assert!(url2.contains("/return.php?query=test+query&page=1&language=All&session_id="), "{url2}");
     // Malformed homepages -> None (parse first body, no crash).
     for bad in ["", "<html>no marker</html>", "'currentSessionId', ''"] {
+        assert!(e.follow_up("q", 1, bad).is_none());
+    }
+}
+
+#[test]
+fn gmx_two_step_page_hash() {
+    let e = engine("gmx");
+    assert!(e.build_url("test", 1).contains("/web/result?q=test&page=1"));
+    let step1 = body(Some("tests-fixture-gmx-home.html"), None);
+    let url2 = e.follow_up("test query", 2, &step1).expect("page hash");
+    assert!(url2.contains("/desk?lang=en&q=test+query&page=2&h="), "{url2}");
+    // Captcha element -> challenge, not results.
+    assert!(e.challenge("<div id='spam-messages'>x</div>").is_some());
+    assert!(e.challenge(&step1).is_none(), "JS string mentions are not the element");
+    for bad in ["", "<html>no hash</html>", "&h=&t="] {
         assert!(e.follow_up("q", 1, bad).is_none());
     }
 }

@@ -36,6 +36,7 @@ pub mod neosearch;
 pub mod openalex;
 pub mod openlibrary;
 pub mod pipdocs;
+pub mod pkggodev;
 pub mod pubmed;
 pub mod pubdev;
 pub mod rubygems;
@@ -80,6 +81,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "pipdocs" => Some(Box::new(pipdocs::Pip)),
         "cheatsh" => Some(Box::new(cheatsh::Cheatsh)),
         "tagesschau" => Some(Box::new(tagesschau::Tagesschau)),
+        "pkggodev" => Some(Box::new(pkggodev::PkgGoDev)),
         "pubdev" => Some(Box::new(pubdev::Pubdev)),
         "terraform" => Some(Box::new(terraform::Terraform)),
         "openalex" => Some(Box::new(openalex::OpenAlex)),

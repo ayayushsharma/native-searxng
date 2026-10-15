@@ -195,6 +195,18 @@ pub fn unescape(s: &str) -> String {
     out
 }
 
+/// Strip `<tags>` and collapse whitespace (shared html_to_text twin).
+/// Unknown/malformed markup passes through as text; never panics.
+pub fn strip_tags(s: &str) -> String {
+    let mut out = unescape(s);
+    loop {
+        let Some(a) = out.find('<') else { break };
+        let Some(b) = out[a..].find('>') else { break };
+        out.replace_range(a..a + b + 1, " ");
+    }
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 /// Normalize for dedup: lowercase, strip scheme noise, trailing slash.
 pub fn normalize_url(u: &str) -> String {
     let mut s = u.trim().to_lowercase();

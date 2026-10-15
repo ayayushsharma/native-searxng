@@ -47,6 +47,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("crates", Some("tests-fixture-crates-test.json"), None, 5),
     ("boardreader", Some("tests-fixture-boardreader-test.json"), None, 5),
     ("bpb", Some("tests-fixture-bpb-test.json"), None, 5),
+    ("swisscows", Some("tests-fixture-swisscows-test.json"), None, 5),
     ("chatnoir", Some("tests-fixture-chatnoir-test.json"), None, 5),
     ("dogpile", Some("tests-fixture-dogpile-test.json"), None, 5),
     ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
@@ -237,6 +238,36 @@ fn chatnoir_three_leg_chain() {
     let cs = vec!["other=1; Path=/".to_string(), "csrftoken=zz9; Path=/; HttpOnly".to_string()];
     assert_eq!(cookie(&cs, "csrftoken").as_deref(), Some("zz9"));
     assert!(cookie(&cs, "missing").is_none());
+}
+
+#[test]
+fn crypto_vectors() {
+    use native_searxng::crypto::{b64url_decode, b64url_encode, sha256};
+    // hashlib.sha256 vectors.
+    assert_eq!(
+        hex(&sha256(b"")),
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    );
+    assert_eq!(
+        hex(&sha256(b"abc")),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+    // base64.urlsafe_b64encode without padding.
+    assert_eq!(b64url_encode(b"foobar"), "Zm9vYmFy");
+    assert_eq!(b64url_encode(b"f"), "Zg");
+    assert_eq!(b64url_encode(b"fo"), "Zm8");
+    // Round-trips, padded input tolerated, garbage rejected.
+    for raw in [b"".as_slice(), b"a", b"ab", b"abc", b"hello world!"] {
+        assert_eq!(b64url_decode(&b64url_encode(raw)).unwrap(), raw);
+    }
+    assert_eq!(b64url_decode("Zm9vYmFy").unwrap(), b"foobar");
+    assert_eq!(b64url_decode("Zm9vYmFy==").unwrap(), b"foobar");
+    assert!(b64url_decode("!!!").is_none());
+    assert!(b64url_decode("a").is_none());
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 #[test]

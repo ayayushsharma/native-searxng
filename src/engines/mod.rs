@@ -24,6 +24,7 @@ pub mod pubmed;
 pub mod rubygems;
 pub mod stackexchange;
 pub mod startpagina;
+pub mod swisscows;
 pub mod wikinews;
 pub mod wikipedia;
 
@@ -39,6 +40,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "mwmbl" => Some(Box::new(mwmbl::Mwmbl)),
         "grokipedia" => Some(Box::new(grokipedia::Grokipedia)),
         "startpagina" => Some(Box::new(startpagina::Startpagina)),
+        "swisscows" => Some(Box::new(swisscows::Swisscows)),
         "arxiv" => Some(Box::new(arxiv::Arxiv)),
         "europepmc" => Some(Box::new(europepmc::EuropePmc)),
         "bingnews" => Some(Box::new(bingnews::BingNews)),

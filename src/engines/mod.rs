@@ -42,6 +42,7 @@ pub mod rubygems;
 pub mod stackexchange;
 pub mod startpagina;
 pub mod swisscows;
+pub mod tagesschau;
 pub mod terraform;
 pub mod wikinews;
 pub mod wikipedia;
@@ -78,6 +79,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "flask" => Some(Box::new(flask::Flask)),
         "pipdocs" => Some(Box::new(pipdocs::Pip)),
         "cheatsh" => Some(Box::new(cheatsh::Cheatsh)),
+        "tagesschau" => Some(Box::new(tagesschau::Tagesschau)),
         "pubdev" => Some(Box::new(pubdev::Pubdev)),
         "terraform" => Some(Box::new(terraform::Terraform)),
         "openalex" => Some(Box::new(openalex::OpenAlex)),

@@ -66,6 +66,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("artifacthub", Some("tests-fixture-artifacthub-test.json"), None, 3),
     ("terraform", Some("tests-fixture-terraform-test.json"), None, 3),
     ("datatracker", Some("tests-fixture-datatracker-test.json"), None, 3),
+    ("tagesschau", Some("tests-fixture-tagesschau-test.json"), None, 2),
 ];
 
 /// Engines whose response is an index, not answers: scored offline with a query.

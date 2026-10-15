@@ -92,7 +92,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                     // Two-step engines: at most one follow-up fetch, then
                     // parse the final body (PubMed esearch -> esummary).
                     let final_body;
-                    let body = match engine.follow_up(&body) {
+                    let body = match engine.follow_up(&q.q, q.pageno, &body) {
                         Some(url2) => match client.get(&url2) {
                             Ok(b2) => {
                                 final_body = b2;

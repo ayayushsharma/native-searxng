@@ -43,6 +43,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("ddgnews", None, Some(INLINE_DDG), 1),
     ("npm", Some("tests-fixture-npm-test.json"), None, 5),
     ("crates", Some("tests-fixture-crates-test.json"), None, 5),
+    ("boardreader", Some("tests-fixture-boardreader-test.json"), None, 5),
 ];
 
 fn body(file: Option<&str>, inline: Option<&str>) -> String {
@@ -117,18 +118,33 @@ fn challenge_pages_report_unresponsive() {
 }
 
 #[test]
+fn boardreader_two_step_session_flow() {
+    let e = engine("boardreader");
+    // Step 1 targets the homepage (session mint).
+    assert_eq!(e.build_url("test", 1), "https://boardreader.com");
+    // Step 2: session id out of real homepage bytes -> return.php URL.
+    let home = body(Some("tests-fixture-boardreader-home.html"), None);
+    let url2 = e.follow_up("test query", 1, &home).expect("session flow");
+    assert!(url2.contains("/return.php?query=test+query&page=1&language=All&session_id="), "{url2}");
+    // Malformed homepages -> None (parse first body, no crash).
+    for bad in ["", "<html>no marker</html>", "'currentSessionId', ''"] {
+        assert!(e.follow_up("q", 1, bad).is_none());
+    }
+}
+
+#[test]
 fn pubmed_two_step_follow_up() {
     let e = engine("pubmed");
     // Leg 1 shape (inline, no network): IDs -> esummary URL.
     let leg1 = r#"{"esearchresult": {"idlist": ["1", "2"], "count": "2"}}"#;
-    let url = e.follow_up(leg1).expect("pubmed follow_up");
+    let url = e.follow_up("test", 1, leg1).expect("pubmed follow_up");
     assert!(url.contains("esummary.fcgi"), "wrong leg-2 url: {url}");
     assert!(url.contains("id=1,2"), "IDs missing: {url}");
     // Empty ID list -> no follow-up (parse leg 1 directly = no results).
-    assert!(e.follow_up(r#"{"esearchresult": {"idlist": []}}"#).is_none());
+    assert!(e.follow_up("test", 1, r#"{"esearchresult": {"idlist": []}}"#).is_none());
     assert!(e.parse(leg1).is_empty());
     // Single-step engines never follow up.
-    assert!(engine("arxiv").follow_up(leg1).is_none());
+    assert!(engine("arxiv").follow_up("test", 1, leg1).is_none());
 }
 
 #[test]

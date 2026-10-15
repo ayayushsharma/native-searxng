@@ -67,7 +67,11 @@ pub trait Engine {
     /// response body, return the follow-up URL, or None when the first
     /// body is already parseable. The server performs at most ONE extra
     /// fetch and hands the second body to `parse`. Default: single-step.
-    fn follow_up(&self, _first_body: &str) -> Option<String> {
+    /// Two-step engines: build the second URL from the first body.
+    /// `query`/`pageno` are passed through because step two usually
+    /// re-states them (boardreader's return.php needs both + session).
+    /// At most one follow-up fetch; None = parse the first body.
+    fn follow_up(&self, _query: &str, _pageno: u32, _first_body: &str) -> Option<String> {
         None
     }
 }

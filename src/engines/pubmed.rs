@@ -30,7 +30,7 @@ impl Engine for Pubmed {
         )
     }
 
-    fn follow_up(&self, first_body: &str) -> Option<String> {
+    fn follow_up(&self, _query: &str, _pageno: u32, first_body: &str) -> Option<String> {
         let v: serde_json::Value = serde_json::from_str(first_body).ok()?;
         let ids = v
             .get("esearchresult")?

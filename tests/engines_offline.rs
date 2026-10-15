@@ -428,13 +428,13 @@ fn config_xdg_resolution_order() {
 }
 
 #[test]
-fn merge_dedups_and_caps() {
+fn merge_dedups_without_cap() {
     let a = SearchResult::basic("wikipedia", "https://example.com/x".into(), "A".into(), "".into());
     let b = SearchResult::basic("github", "https://example.com/x".into(), "B".into(), "".into());
-    let merged = merge::merge(vec![vec![a], vec![b]], 20);
+    let merged = merge::merge(vec![vec![a], vec![b]]);
     assert_eq!(merged.len(), 1, "same URL must dedup");
     let many: Vec<SearchResult> = (0..30)
         .map(|i| SearchResult::basic("mdn", format!("https://example.com/{i}"), "T".into(), "".into()))
         .collect();
-    assert_eq!(merge::merge(vec![many], 20).len(), 20, "max_results cap");
+    assert_eq!(merge::merge(vec![many]).len(), 30, "no merge cap: full fan-out");
 }

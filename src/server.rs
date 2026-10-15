@@ -206,7 +206,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             }
         }
     });
-    let results = merge::merge(lists, cfg.max_results);
+    let results = merge::merge(lists);
     if q.format == "json" {
         (200, b"application/json", render::json(&q.q, &results, &unresponsive))
     } else {

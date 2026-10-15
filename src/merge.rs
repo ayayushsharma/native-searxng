@@ -1,11 +1,12 @@
 //! Merge: dedup by normalized URL, round-robin across engines (preserves
-//! configured engine order/weight), cap at max_results. Positions assigned
+//! configured engine order/weight). No result cap: the full fan-out is
+//! returned like the reference (40-115/q typical). Positions assigned
 //! in merged order (SearXNG-compatible `positions` field).
 
 use crate::engine::{normalize_url, SearchResult};
 use std::collections::HashSet;
 
-pub fn merge(lists: Vec<Vec<SearchResult>>, max_results: usize) -> Vec<SearchResult> {
+pub fn merge(lists: Vec<Vec<SearchResult>>) -> Vec<SearchResult> {
     let mut seen = HashSet::new();
     let mut out = Vec::new();
     let mut idx = vec![0usize; lists.len()];
@@ -24,9 +25,6 @@ pub fn merge(lists: Vec<Vec<SearchResult>>, max_results: usize) -> Vec<SearchRes
                 out.push(r);
                 progressed = true;
                 break;
-            }
-            if out.len() >= max_results {
-                return out;
             }
         }
         if !progressed {

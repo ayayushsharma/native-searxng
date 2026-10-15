@@ -10,7 +10,6 @@ pub struct Config {
     /// engines — they need headroom the 3 s per-engine cap can't give.
     pub proxy_timeout_ms: u64,
     pub body_cap_kb: usize,
-    pub max_results: usize,
     pub lang: String,
     pub user_agent: String,
     /// Strangler fallback base URL (Python reference). Empty = disabled.
@@ -26,7 +25,6 @@ impl Default for Config {
             timeout_ms: 3000,
             proxy_timeout_ms: 30000,
             body_cap_kb: 96,
-            max_results: 20,
             lang: "en".into(),
             user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36".into(),
             proxy_to: String::new(),
@@ -113,7 +111,6 @@ pub fn load(path: &str) -> Result<Config, String> {
                 cfg.proxy_timeout_ms = v.trim().parse().map_err(|_| "bad proxy_timeout_ms")?
             }
             "body_cap_kb" => cfg.body_cap_kb = v.trim().parse().map_err(|_| "bad body_cap_kb")?,
-            "max_results" => cfg.max_results = v.trim().parse().map_err(|_| "bad max_results")?,
             "lang" => cfg.lang = v.trim().to_string(),
             "user_agent" => cfg.user_agent = v.trim().to_string(),
             "proxy_to" => cfg.proxy_to = v.trim().to_string(),

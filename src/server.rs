@@ -3,7 +3,7 @@
 //! Routes: / -> form, /search -> pipeline, /fetch -> page extract,
 //! /healthz, /opensearch.xml.
 
-use crate::{config::Config, engine::SearchResult, engines, fetch, jina, merge, query, render};
+use crate::{config::Config, engine::SearchResult, engines, fetch, jina, merge, query, render, scrape};
 use tiny_http::{Header, Response, Server};
 
 pub fn run(cfg: &Config) {
@@ -33,7 +33,8 @@ fn route(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8]
 
 const OPENSEARCH: &str = r#"<?xml version="1.0"?><OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"><ShortName>SearXNG</ShortName><Url type="text/html" template="/?q={searchTerms}"/></OpenSearchDescription>"#;
 
-/// `/fetch?url=<http(s)://…>` — page extraction via Jina Reader.
+/// `/fetch?url=<http(s)://…>` — native scrape first (no third party),
+/// Jina Reader fallback for bot-walled/JS-shell pages.
 /// Keyless works (free tier); SEARXNG_API_KEY_JINA raises limits.
 /// Failures are `{"error":…}`, never key material, never bodies.
 fn fetch_page(client: &fetch::Client, url: &str) -> (u16, &'static [u8], String) {
@@ -41,7 +42,15 @@ fn fetch_page(client: &fetch::Client, url: &str) -> (u16, &'static [u8], String)
     if target.is_empty() {
         return (400, b"application/json", render::error_json("No url"));
     }
+    if let Ok(r) = scrape::scrape(client, &target) {
+        return (200, b"application/json", render::fetch_json(&target, &r.title, &r.content, &r.links));
+    }
     match jina::fetch(client, &target) {
+        Ok(r) if scrape::is_walled(&r.title, &r.content) => (
+            502,
+            b"application/json",
+            render::error_json("page is bot-walled (reader returned a challenge)"),
+        ),
         Ok(r) => (200, b"application/json", render::fetch_json(&target, &r.title, &r.content, &r.links)),
         Err(e) => (502, b"application/json", render::error_json(&e)),
     }

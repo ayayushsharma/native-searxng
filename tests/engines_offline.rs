@@ -400,6 +400,50 @@ fn api_key_env_convention() {
 }
 
 #[test]
+fn scrape_native_shapes() {
+    use native_searxng::scrape;
+    let html = r##"<!doctype html><html><head><title>Test &amp; Page</title>
+<meta property="og:title" content="OG Title">
+<style>body{color:red}</style><script>var x=1;</script></head>
+<body><nav><a href="/nav">Nav</a></nav><h1>Hello</h1>
+<!-- a comment -->
+<p>This is a reasonably long body paragraph with enough characters to pass the readability floor comfortably.</p>
+<a href="/rel">Rel</a><a href="//cdn.example.com/x">CDN</a>
+<a href="sub/page">Sub</a><a href="../up">Up</a>
+<a href="https://other.example/abs?a=1#frag">Abs</a>
+<a href="mailto:a@b.c">Mail</a><a href="javascript:void(0)">JS</a><a href="#frag">Frag</a>
+<noscript>no-js note</noscript></body></html>"##;
+    let r = scrape::parse(html, "https://example.com/dir/index.html").expect("doc");
+    assert_eq!(r.title, "Test & Page");
+    assert!(r.content.contains("reasonably long body"));
+    assert!(!r.content.contains("var x=1") && !r.content.contains("color:red") && !r.content.contains("comment"));
+    assert!(r.links.contains(&"https://example.com/rel".to_string()));
+    assert!(r.links.contains(&"https://cdn.example.com/x".to_string()));
+    assert!(r.links.contains(&"https://example.com/dir/sub/page".to_string()));
+    assert!(r.links.contains(&"https://example.com/up".to_string()));
+    assert!(r.links.contains(&"https://other.example/abs?a=1".to_string()));
+    assert!(r.links.contains(&"https://example.com/nav".to_string()));
+    assert_eq!(r.links.len(), 6, "mailto/js/frag dropped, got {:?}", r.links);
+    // og:title fallback when <title> is absent.
+    let r2 = scrape::parse(&format!("<html><head><meta property=\"og:title\" content=\"OG Only\"></head><body><p>{}</p></body></html>", "x".repeat(150)), "https://example.com/").expect("og");
+    assert_eq!(r2.title, "OG Only");
+    // Bot-wall titles -> None (fallback signal), never junk.
+    for wall in ["Just a moment...", "Attention Required! | Cloudflare", "Access Denied", "Client Challenge"] {
+        let h = format!("<html><head><title>{wall}</title></head><body><p>{}</p></body></html>", "x".repeat(200));
+        assert!(scrape::parse(&h, "https://example.com/").is_none(), "wall: {wall}");
+    }
+    // Thin shells, empty, garbage -> None, never panics.
+    assert!(scrape::parse("<html><head><title>T</title></head><body><p>short</p></body></html>", "https://example.com/").is_none());
+    for bad in ["", "{}", "not html at all", "<html>"] {
+        assert!(scrape::parse(bad, "https://example.com/").is_none());
+    }
+    // Wall verdict over finished extracts (Reader-fallback filter).
+    assert!(scrape::is_walled("Just a moment...", "Verifying you are human."));
+    assert!(scrape::is_walled("Attention Required! | Cloudflare", &"x".repeat(300)));
+    assert!(!scrape::is_walled("How captchas work", &"Just a moment is a phrase. ".repeat(100)));
+}
+
+#[test]
 fn config_xdg_resolution_order() {
     use native_searxng::config;
     // Save/restore: this is the only test touching these vars.

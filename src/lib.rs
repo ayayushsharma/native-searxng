@@ -13,4 +13,5 @@ pub mod jina;
 pub mod merge;
 pub mod query;
 pub mod render;
+pub mod scrape;
 pub mod server;

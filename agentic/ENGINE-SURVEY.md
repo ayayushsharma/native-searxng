@@ -1,5 +1,9 @@
 # Engine survey 2026-10-15 — keyless candidates beyond the 14-queue
 
+> Mission split (2026-10-15): this file is the **upstream-parity backlog**.
+> `DEV-SEARCH.md` is the **coding-agent mission backlog** (diverged
+> prioritization). `SKIP-LOG.md` holds all verdicts.
+
 Method: diffed upstream (252 engines) vs native roster (~33); pulled
 `.py` sources for 30 keyless-declared candidates; live-probed 10 hosts,
 1 query each (11 probes total: deezer×3, tagesschau×2 to nail shapes).

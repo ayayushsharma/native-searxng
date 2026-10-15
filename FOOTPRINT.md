@@ -17,7 +17,7 @@ Method: `tools/measure.sh <bin>` — `ls/size` for disk, then 50 sequential
 | Binary | Peak | Avg | Ceiling | Status |
 |---|---|---|---|---|
 | dev (unoptimized) | 12.6 MB | 12.4 MB | 10 MB soft | ABOVE — expected for dev (upper bound) |
-| release x86_64 | TBD | TBD | 10 MB soft / 5 MB core-only | must be measured in CI (phone never builds release) |
+| release x86_64 (CI, run 38613483575) | 9.7 MB | 9.5 MB | 10 MB soft / 5 MB core-only | PASSES with 0.3 MB margin — margin too thin; diet queue (GAP-PLAN P2 / LTO / TLS-pool / scraper) is justified |
 
 ## Reading the numbers
 

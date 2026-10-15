@@ -20,6 +20,7 @@ pub mod mwmbl;
 pub mod openalex;
 pub mod openlibrary;
 pub mod pubmed;
+pub mod rubygems;
 pub mod stackexchange;
 pub mod startpagina;
 pub mod wikinews;
@@ -48,6 +49,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "pubmed" => Some(Box::new(pubmed::Pubmed)),
         "npm" => Some(Box::new(npm::Npm)),
         "openalex" => Some(Box::new(openalex::OpenAlex)),
+        "rubygems" => Some(Box::new(rubygems::Rubygems)),
         "crates" => Some(Box::new(crates::Crates)),
         "stackoverflow" => Some(Box::new(stackexchange::StackExchange::new("stackoverflow"))),
         "superuser" => Some(Box::new(stackexchange::StackExchange::new("superuser"))),

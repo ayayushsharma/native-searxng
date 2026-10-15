@@ -40,7 +40,7 @@ Each: oracle survey (≤1 live probe) → fixture → port → `check.py` →
 | 6 | dictzone | plain HTML | **RE-SKIPPED 2026-10-15**: Cloudflare `Just a moment...` 403 from home egress; oracle returns 0 dictzone-attributed results too. Needs Translations/answers rendering anyway — revisit with translate vertical. |
 | 7 | pypi | plain HTML | **RE-SKIPPED 2026-10-15**: `Client Challenge` anti-bot page (3KB shell) from home egress; oracle packages bench carries no pypi results either. Side-find: oracle packages bench is wider (voidlinux, pkg.go.dev, pub.dev, packagist, hex, hoogle, alpine, cachy) — future survey candidates. |
 | 8 | openalex | keyless JSON | **DONE 2026-10-15** — replaces dead OpenAIRE; inverted-abstract rebuild; needed `body_cap_kb=300` (works ~250KB > 96KB default cap — truncated JSON parses to nothing). |
-| 9 | rubygems | keyless JSON | Packages depth. |
+| 9 | rubygems | keyless JSON | **DONE 2026-10-15** — `/api/v1/search.json`, packages.html, live 7/7/6 round-robin. (Debug note: `[]` for non-matching queries is correct, not a bug.) |
 | 10 | bpb | keyless JSON/HTML | Survey; niche DE civic content, value TBD — drop if thin. |
 | 11 | iseek | classify-first | Token origin audit: calculator or session fetch, then port. |
 | 12 | swisscows | pure-math signing | COMPLEXITY DECISION: ~100 lines crypto-adjacent (SHA-256 + b64url + Caesar). No new deps. Port iff P0–P11 stay green. |

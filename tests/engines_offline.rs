@@ -39,6 +39,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("europepmc", Some("tests-fixture-europepmc-test.json"), None, 5),
     ("pubmed", Some("tests-fixture-pubmed-test.json"), None, 5),
     ("openalex", Some("tests-fixture-openalex-test.json"), None, 2),
+    ("rubygems", Some("tests-fixture-rubygems-test.json"), None, 5),
     ("bingnews", Some("tests-fixture-bingnews-test.json"), None, 1),
     ("wikinews", Some("tests-fixture-wikinews-test.json"), None, 5),
     ("ddgnews", None, Some(INLINE_DDG), 1),

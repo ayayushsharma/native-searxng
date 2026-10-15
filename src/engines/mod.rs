@@ -21,10 +21,12 @@ pub mod crates;
 pub mod crossref;
 pub mod datatracker;
 pub mod artifacthub;
+pub mod cheatsh;
 pub mod hexpm;
 pub mod packagist;
 pub mod mdn;
 pub mod microsoftlearn;
+pub mod flask;
 pub mod npm;
 pub mod nuget;
 pub mod nvd;
@@ -33,6 +35,7 @@ pub mod maven;
 pub mod neosearch;
 pub mod openalex;
 pub mod openlibrary;
+pub mod pipdocs;
 pub mod pubmed;
 pub mod pubdev;
 pub mod rubygems;
@@ -72,6 +75,9 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "nuget" => Some(Box::new(nuget::Nuget)),
         "maven" => Some(Box::new(maven::Maven)),
         "datatracker" => Some(Box::new(datatracker::Datatracker)),
+        "flask" => Some(Box::new(flask::Flask)),
+        "pipdocs" => Some(Box::new(pipdocs::Pip)),
+        "cheatsh" => Some(Box::new(cheatsh::Cheatsh)),
         "pubdev" => Some(Box::new(pubdev::Pubdev)),
         "terraform" => Some(Box::new(terraform::Terraform)),
         "openalex" => Some(Box::new(openalex::OpenAlex)),

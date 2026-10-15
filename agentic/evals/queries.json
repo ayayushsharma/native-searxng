@@ -77,6 +77,14 @@
     {
       "q": "terraform aws vpc",
       "categories": "packages"
+    },
+    {
+      "q": "flask request context",
+      "categories": "it"
+    },
+    {
+      "q": "pip install requirements",
+      "categories": "it"
     }
   ]
 }

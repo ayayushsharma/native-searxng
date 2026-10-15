@@ -193,7 +193,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         if let Some(body) = last_body {
             // Stamp the served category (SearXNG tags each result with
             // its search category; parsers default general).
-            let mut v = engine.parse(&body);
+            let mut v = engine.parse_scored(&body, qq);
             for r in &mut v {
                 r.category = want.into();
             }

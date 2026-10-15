@@ -51,6 +51,13 @@ pub trait Engine: Send + Sync {
     /// Parse a (possibly truncated) response body into results. Never panics
     /// on malformed input — skips what it can't parse.
     fn parse(&self, body: &str) -> Vec<SearchResult>;
+    /// Query-aware parse for engines whose response is an index, not
+    /// answers (Sphinx `searchindex.js`, cheat.sh topics). Default:
+    /// plain `parse` (back-compatible — every existing engine and test
+    /// is untouched). The server always calls this, never `parse`.
+    fn parse_scored(&self, body: &str, _query: &str) -> Vec<SearchResult> {
+        self.parse(body)
+    }
     /// Bot-wall / challenge detection (iron rule 5). `Some(reason)` means the
     /// body is a captcha/challenge page: caller reports 0 results plus an
     /// `unresponsive_engines` entry instead of silent empties. Default: none.

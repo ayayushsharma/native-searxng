@@ -68,6 +68,32 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("datatracker", Some("tests-fixture-datatracker-test.json"), None, 3),
 ];
 
+/// Engines whose response is an index, not answers: scored offline with a query.
+const SCORED: &[(&str, &str, &str, usize)] = &[
+    ("flask", "tests-fixture-flask-test.json", "request context", 1),
+    ("pipdocs", "tests-fixture-pipdocs-test.json", "requirements file", 1),
+    ("cheatsh", "tests-fixture-cheatsh-test.txt", "python", 1),
+];
+
+#[test]
+fn scored_engines_parse_with_query() {
+    for (name, file, query, min) in SCORED {
+        let e = engine(name);
+        let b = std::fs::read_to_string(file)
+            .unwrap_or_else(|_| panic!("missing fixture {file}"));
+        let out = e.parse_scored(&b, query);
+        assert!(out.len() >= *min, "{name}: only {} results (min {min})", out.len());
+        for r in &out {
+            assert!(!r.url.is_empty(), "{name}: empty url");
+            assert!(!r.title.is_empty(), "{name}: empty title");
+            assert_eq!(r.engine, *name, "{name}: wrong engine tag");
+        }
+        // Malformed index never panics, never yields results.
+        for bad in ["", "{}", "[]", "Search.setIndex({});", "Search.setIndex({bad"] {
+            assert!(e.parse_scored(bad, query).is_empty(), "{name}: garbage in -> results out");
+        }
+    }
+}
 fn body(file: Option<&str>, inline: Option<&str>) -> String {
     match (file, inline) {
         (Some(f), _) => std::fs::read_to_string(f)

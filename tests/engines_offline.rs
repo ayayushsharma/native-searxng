@@ -51,6 +51,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("chatnoir", Some("tests-fixture-chatnoir-test.json"), None, 5),
     ("dogpile", Some("tests-fixture-dogpile-test.json"), None, 5),
     ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
+    ("keenable", Some("tests-fixture-keenable-test.json"), None, 5),
 ];
 
 fn body(file: Option<&str>, inline: Option<&str>) -> String {

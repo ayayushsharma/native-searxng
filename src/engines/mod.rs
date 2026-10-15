@@ -16,6 +16,7 @@ pub mod gmx;
 pub mod keenable;
 pub mod grokipedia;
 pub mod crates;
+pub mod crossref;
 pub mod mdn;
 pub mod npm;
 pub mod mwmbl;
@@ -58,6 +59,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "openalex" => Some(Box::new(openalex::OpenAlex)),
         "rubygems" => Some(Box::new(rubygems::Rubygems)),
         "crates" => Some(Box::new(crates::Crates)),
+        "crossref" => Some(Box::new(crossref::Crossref)),
         "stackoverflow" => Some(Box::new(stackexchange::StackExchange::new("stackoverflow"))),
         "superuser" => Some(Box::new(stackexchange::StackExchange::new("superuser"))),
         "askubuntu" => Some(Box::new(stackexchange::StackExchange::new("askubuntu"))),

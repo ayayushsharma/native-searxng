@@ -9,11 +9,11 @@ All `require_api_key: False` upstream. New hosts probed per user request.
 
 | # | Engine | Cat (native) | Shape | Notes |
 |---|---|---|---|---|
-| 1 | crossref | science | GET `api.crossref.org/works?query=&rows=&offset=` → `message.items[]` (title/DOI/URL/author) | `status:ok` live; simplest port |
-| 2 | hackernews | it | GET `hn.algolia.com/api/v1/search?query=&page=` → `hits[]` (title/url/points) | 700k hits for "test"; trivial JSON |
-| 3 | archlinux | it | MediaWiki `api.php?action=query&list=search` | wikipedia-pattern clone, near-zero risk |
+| 1 | crossref | science | GET `api.crossref.org/works?query=&rows=&offset=` → `message.items[]` (title/DOI/URL/author) | `status:ok` live; simplest port. POLICY OK: no robots.txt on API host; etiquette asks optional `mailto=` for the polite pool (no credential invented — descriptive UA only, 1 req/query, well within public-pool limits) |
+| 2 | hackernews | it | GET `hn.algolia.com/api/v1/search?query=&page=` → `hits[]` (title/url/points) | 700k hits for "test"; trivial JSON. POLICY OK: public documented community endpoint, no key, no auth; upstream ships an engine against it; no prohibition found |
+| 3 | archlinux | it | MediaWiki `api.php?action=query&list=search` | wikipedia-pattern clone, near-zero risk. POLICY OK: robots.txt disallows `/index.php?` but NOT `api.php` — our API path is robots-clean; wiki content freely licensed |
 | 4 | tagesschau | news | GET `www.tagesschau.de/api2u/search?searchText=&resultPage=` → `searchResults[25]` (title/date/content/teaserImage) | 477KB fat JSON → needs `body_cap_kb` (openalex pattern); URL assembly from sophoraId at port time |
-| 5 | nvd | it | GET `services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=&resultsPerPage=` → `vulnerabilities[]` (cve.id/descriptions) | keyless OK (5 req/30s limit — our SLEEP_S=2 + lanes are fine, P3-watch); use REST API, not upstream's nudp endpoint |
+| 5 | nvd | it | GET `services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=&resultsPerPage=` → `vulnerabilities[]` (cve.id/descriptions) | keyless OK. POLICY OK: US federal public data; keyless tier (5 req/30s) comfortably fits 1 req/query sequential+SLEEP_S=2; use REST API, not upstream's nudp endpoint |
 | 6 | jisho | dictionaries* | GET `jisho.org/api/v1/search/words?keyword=` → `data[20]` (slug/japanese/senses) | *new category → `answers[]` or results; needs gate+conf like packages wave |
 | 7 | open_meteo | weather* | geo `geocoding-api…/v1/search?name=` → `results[0]` lat/lon, then `api…/v1/forecast?latitude=&longitude=&current=` → `current` block | two-step via `follow_up` (pubmed pattern); *new category → `answers[]` |
 | 8 | sepiasearch | videos* | GET `sepiasearch.org/api/v1/search/videos?search=&start=&count=` → `data[]` (name/url/**embedUrl**) | `embedUrl` maps to existing `iframe_src` contract key; *new category needs gate+conf |

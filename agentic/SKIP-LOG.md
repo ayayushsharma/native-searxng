@@ -4,6 +4,31 @@ Rule: anything needing keys, JS rendering, CAPTCHA solving, or TLS
 impersonation = skip + log (AGENT-MISSION.md stop triggers). Guarded
 engines stay behind the strangler (`proxy_to` → Python `:8889`).
 
+## QUEUED for porting (2026-10-15 review — no browser/JS needed)
+
+Session flows (fetch A → extract token/cookie → fetch B; the pubmed
+`follow_up` hook already implements this shape). Ordered simplest-first:
+
+| # | Engine | Flow | Note |
+|---|---|---|---|
+| 1 | boardreader | homepage-scraped `currentSessionId` | Looks MISCLASSIFIED in the early pass — plain GET + substring. Audit first. |
+| 2 | fireball | settings-cookie + Referer | Cookie likely from one homepage GET. |
+| 3 | gmx | token pre-fetch in `request()` | Confirm token endpoint is GET. |
+| 4 | chatnoir | home/token pre-fetch | Same pattern as gmx. |
+| 5 | dogpile | home/token pre-fetch | Same pattern as gmx. |
+| 6 | neosearch | `X-XSRF-TOKEN` pre-fetch + POST | LAST — also needs the POST wave (native client is GET-only). |
+| ? | iseek | per-query token, origin unaudited | Classify first: calculator (QuickJS/Rust) or session fetch. |
+
+Plain-HTML backlog (single GET + selectors, no session, no JS):
+
+| Engine | Status |
+|---|---|
+| dictzone | Unprobed here — survey (1 probe, fixture-first). |
+| pypi | SearXNG scrapes HTML — survey. |
+| bpb | Keyless `bpbapi` endpoint noted — survey; niche DE civic content, value TBD. |
+| brave HTML | NOT plain-backlog — 429-walled at IP level. |
+| 360search | NOT plain-backlog — CN region + likely gate. |
+
 ## Challenged / rate-limited at IP level (verified live, ≤2 probes each)
 
 | Engine | Signal | Verdict |

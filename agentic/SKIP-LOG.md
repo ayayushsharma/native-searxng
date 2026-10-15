@@ -36,7 +36,7 @@ Each: oracle survey (≤1 live probe) → fixture → port → `check.py` →
 | 2 | fireball | session (cookie) | **RE-SKIPPED 2026-10-15**: Cloudflare 403 host-wide from home egress (POST /settings AND GET / both `Attention Required!`); oracle concurs (`firewall: access denied`). IP-bound, not code. Watch only. |
 | 3 | gmx | session | **DONE 2026-10-15** — hash page + desk JSON; rate-sensitive (oracle concurs). Shipped with status-gating + empty-body rules (below). |
 | 4 | chatnoir | POST+cookie | **DONE 2026-10-15** — 3-leg chain (GET home → POST ?init → POST _search), Bearer+csrf, `SEARXNG_API_KEY_CHATNOIR` honored. quality 1/36 unresponsive. |
-| 5 | dogpile | session | Same shape as gmx. |
+| 5 | dogpile | POST | **DONE 2026-10-15** — 2-leg POST (token refresh → /api/search JSON), live 2-8 results. |
 | 6 | dictzone | plain HTML | Survey. |
 | 7 | pypi | plain HTML | Survey. |
 | 8 | openalex | keyless JSON | Replaces dead OpenAIRE slot (science depth). |

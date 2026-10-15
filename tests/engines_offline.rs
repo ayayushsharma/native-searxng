@@ -45,6 +45,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("crates", Some("tests-fixture-crates-test.json"), None, 5),
     ("boardreader", Some("tests-fixture-boardreader-test.json"), None, 5),
     ("chatnoir", Some("tests-fixture-chatnoir-test.json"), None, 5),
+    ("dogpile", Some("tests-fixture-dogpile-test.json"), None, 5),
     ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
 ];
 
@@ -242,6 +243,26 @@ fn unescape_numeric_refs() {
     assert_eq!(u("&lt;em&gt;hi&#39;s&amp;"), "<em>hi's&");
     assert_eq!(u("no entities"), "no entities");
     assert_eq!(u("&#xZZ; &#; &#123"), "&#xZZ; &#; &#123");
+}
+
+#[test]
+fn dogpile_two_leg_post_chain() {
+    let e = engine("dogpile");
+    assert_eq!(e.rounds(), 2);
+    // Leg 1: token refresh POST with cookie + Origin.
+    let r1 = e.request("test", 1, &[]).expect("leg 1");
+    assert!(matches!(r1.method, Method::Post));
+    assert!(r1.url.ends_with("/api/token/refresh"));
+    assert!(r1.headers.iter().any(|(k, v)| k == "Cookie" && v == "dp_api_token=1"));
+    // Leg 2: search POST with the minted token (real shape, scrubbed).
+    let refresh = body(Some("tests-fixture-dogpile-refresh.json"), None);
+    let r2 = e.request("test query", 3, &prev(&[&refresh], &[])).expect("leg 2");
+    assert!(r2.url.ends_with("/api/search"));
+    assert!(r2.headers.iter().any(|(k, v)| k == "x-dogpile-token" && v == "v1.REDACTED"));
+    assert!(r2.json.as_ref().expect("json").contains("\"page\":3"), "pageno passes through");
+    // No token -> chain stops; chain terminates after leg 2.
+    assert!(e.request("q", 1, &prev(&["{}"], &[])).is_none());
+    assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
 }
 
 #[test]

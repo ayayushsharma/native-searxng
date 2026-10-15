@@ -7,6 +7,7 @@ pub mod chatnoir;
 pub mod ddgnews;
 pub mod ddg;
 pub mod dockerhub;
+pub mod dogpile;
 pub mod europepmc;
 pub mod gentoo;
 pub mod github;
@@ -40,6 +41,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "bingnews" => Some(Box::new(bingnews::BingNews)),
         "boardreader" => Some(Box::new(boardreader::Boardreader)),
         "chatnoir" => Some(Box::new(chatnoir::ChatNoir)),
+        "dogpile" => Some(Box::new(dogpile::Dogpile)),
         "wikinews" => Some(Box::new(wikinews::Wikinews)),
         "ddgnews" => Some(Box::new(ddgnews::DdgNews)),
         "pubmed" => Some(Box::new(pubmed::Pubmed)),

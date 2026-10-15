@@ -20,6 +20,7 @@ pub mod hackernews;
 pub mod crates;
 pub mod crossref;
 pub mod mdn;
+pub mod microsoftlearn;
 pub mod npm;
 pub mod nvd;
 pub mod mwmbl;
@@ -70,6 +71,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "github" => Some(Box::new(github::Github)),
         "hackernews" => Some(Box::new(hackernews::HackerNews)),
         "mdn" => Some(Box::new(mdn::Mdn)),
+        "microsoftlearn" => Some(Box::new(microsoftlearn::MicrosoftLearn)),
         "dockerhub" => Some(Box::new(dockerhub::DockerHub)),
         "gentoo" => Some(Box::new(gentoo::Gentoo)),
         "archlinux" => Some(Box::new(archlinux::ArchLinux)),

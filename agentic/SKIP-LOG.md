@@ -20,6 +20,17 @@ generosity, verified 2026-10-15 unless noted.
 | 6 | marginalia | Unknown (indie; reverify if pursued) | — |
 | 7 | bing API | Status uncertain (retirement rumors — verify before any work) | — |
 | — | google CSE | **Dead to new customers, sunset 2027-01-01** | Off the table by Google's decision. |
+| — | azure (ResourceGraph) | Requires ARM API key (`require_api_key: True` upstream) | Keyed cloud-inventory query, not docs search. Parked with keyed lot. |
+
+## CLOUD-DOCS SURVEY (2026-10-15)
+
+Probed because `it` returned zero official doc URLs (SO/GitHub/MDN only).
+
+| Cloud | Verdict |
+|---|---|
+| Microsoft | **PORTED 2026-10-15 as `microsoftlearn`** — keyless `learn.microsoft.com/api/search` (mirrors upstream `microsoft_learn.py`: scoringprofile + `$top/$skip` + partnerId). Live 10 hits, real doc URLs + dates. Covers Azure/MS365/.NET. |
+| AWS | PARKED — docs search is a JS shell (4KB boot page, endpoint buried in rotating hashed bundles). No stable keyless JSON. Revisit only if a stable endpoint surfaces. |
+| GCP | PARKED — `cloud.google.com/search` is a 688KB JS shell (results hydrated client-side). No keyless JSON. Same revisit rule. |
 
 Rule: no key work without a key in hand (user-owned, local XDG/env).
 First slot if unlocked: braveapi (category impact) or exa (generosity).

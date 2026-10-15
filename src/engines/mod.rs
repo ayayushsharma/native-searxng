@@ -19,19 +19,27 @@ pub mod grokipedia;
 pub mod hackernews;
 pub mod crates;
 pub mod crossref;
+pub mod datatracker;
+pub mod artifacthub;
+pub mod hexpm;
+pub mod packagist;
 pub mod mdn;
 pub mod microsoftlearn;
 pub mod npm;
+pub mod nuget;
 pub mod nvd;
 pub mod mwmbl;
+pub mod maven;
 pub mod neosearch;
 pub mod openalex;
 pub mod openlibrary;
 pub mod pubmed;
+pub mod pubdev;
 pub mod rubygems;
 pub mod stackexchange;
 pub mod startpagina;
 pub mod swisscows;
+pub mod terraform;
 pub mod wikinews;
 pub mod wikipedia;
 
@@ -61,9 +69,17 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "pubmed" => Some(Box::new(pubmed::Pubmed)),
         "npm" => Some(Box::new(npm::Npm)),
         "nvd" => Some(Box::new(nvd::Nvd)),
+        "nuget" => Some(Box::new(nuget::Nuget)),
+        "maven" => Some(Box::new(maven::Maven)),
+        "datatracker" => Some(Box::new(datatracker::Datatracker)),
+        "pubdev" => Some(Box::new(pubdev::Pubdev)),
+        "terraform" => Some(Box::new(terraform::Terraform)),
         "openalex" => Some(Box::new(openalex::OpenAlex)),
         "rubygems" => Some(Box::new(rubygems::Rubygems)),
         "crates" => Some(Box::new(crates::Crates)),
+        "packagist" => Some(Box::new(packagist::Packagist)),
+        "hexpm" => Some(Box::new(hexpm::Hex)),
+        "artifacthub" => Some(Box::new(artifacthub::Artifacthub)),
         "crossref" => Some(Box::new(crossref::Crossref)),
         "stackoverflow" => Some(Box::new(stackexchange::StackExchange::new("stackoverflow"))),
         "superuser" => Some(Box::new(stackexchange::StackExchange::new("superuser"))),

@@ -58,6 +58,14 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
     ("keenable", Some("tests-fixture-keenable-test.json"), None, 5),
     ("neosearch", Some("tests-fixture-neosearch-test.json"), None, 5),
+    ("packagist", Some("tests-fixture-packagist-test.json"), None, 3),
+    ("hexpm", Some("tests-fixture-hexpm-test.json"), None, 3),
+    ("pubdev", Some("tests-fixture-pubdev-test.json"), None, 3),
+    ("maven", Some("tests-fixture-maven-test.json"), None, 3),
+    ("nuget", Some("tests-fixture-nuget-test.json"), None, 2),
+    ("artifacthub", Some("tests-fixture-artifacthub-test.json"), None, 3),
+    ("terraform", Some("tests-fixture-terraform-test.json"), None, 3),
+    ("datatracker", Some("tests-fixture-datatracker-test.json"), None, 3),
 ];
 
 fn body(file: Option<&str>, inline: Option<&str>) -> String {

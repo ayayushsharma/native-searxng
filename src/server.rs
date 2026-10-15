@@ -69,7 +69,10 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         q.categories.as_str()
     };
     let native = matches!(want, "general" | "it" | "science" | "news" | "packages");
-    if (!q.engines.is_empty() && engines::find(&q.engines).is_none()) || !native {
+    // engines= filter (SearXNG compat): comma list restricts natives.
+    // Unknown names -> whole query proxies (strangler owns the unknown).
+    let filter: Vec<&str> = q.engines.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+    if (!filter.is_empty() && filter.iter().any(|n| engines::find(n).is_none())) || !native {
         if !cfg.proxy_to.is_empty() {
             return match client.proxy(&cfg.proxy_to, url) {
                 Ok((s, b)) => (s, b"application/json", b),
@@ -88,6 +91,9 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             continue;
         };
         if engine.category() != want {
+            continue;
+        }
+        if !filter.is_empty() && !filter.contains(&name.as_str()) {
             continue;
         }
         work.push(engine);

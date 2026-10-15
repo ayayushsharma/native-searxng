@@ -4,30 +4,33 @@ Rule: anything needing keys, JS rendering, CAPTCHA solving, or TLS
 impersonation = skip + log (AGENT-MISSION.md stop triggers). Guarded
 engines stay behind the strangler (`proxy_to` → Python `:8889`).
 
-## QUEUED for porting (2026-10-15 review — no browser/JS needed)
+## PORT QUEUE — 14 engines (2026-10-15, keyed APIs parked)
 
-Session flows (fetch A → extract token/cookie → fetch B; the pubmed
-`follow_up` hook already implements this shape). Ordered simplest-first:
+Order: simplest-first; POST-gated and complexity-decision items flagged.
+Each: oracle survey (≤1 live probe) → fixture → port → `check.py` →
+`quality.py` delta → one commit. Traffic budget: ≤14 probes + gates.
 
-| # | Engine | Flow | Note |
+| # | Engine | Kind | Note |
 |---|---|---|---|
-| 1 | boardreader | homepage-scraped `currentSessionId` | Looks MISCLASSIFIED in the early pass — plain GET + substring. Audit first. |
-| 2 | fireball | settings-cookie + Referer | Cookie likely from one homepage GET. |
-| 3 | gmx | token pre-fetch in `request()` | Confirm token endpoint is GET. |
-| 4 | chatnoir | home/token pre-fetch | Same pattern as gmx. |
-| 5 | dogpile | home/token pre-fetch | Same pattern as gmx. |
-| 6 | neosearch | `X-XSRF-TOKEN` pre-fetch + POST | LAST — also needs the POST wave (native client is GET-only). |
-| ? | iseek | per-query token, origin unaudited | Classify first: calculator (QuickJS/Rust) or session fetch. |
+| 1 | boardreader | session | Likely misclassified — plain GET + substring. Audit first. |
+| 2 | fireball | session | Settings cookie, likely one homepage GET. |
+| 3 | gmx | session | Token pre-fetch; confirm GET. |
+| 4 | chatnoir | session | Same shape as gmx. |
+| 5 | dogpile | session | Same shape as gmx. |
+| 6 | dictzone | plain HTML | Survey. |
+| 7 | pypi | plain HTML | Survey. |
+| 8 | openalex | keyless JSON | Replaces dead OpenAIRE slot (science depth). |
+| 9 | rubygems | keyless JSON | Packages depth. |
+| 10 | bpb | keyless JSON/HTML | Survey; niche DE civic content, value TBD — drop if thin. |
+| 11 | iseek | classify-first | Token origin audit: calculator or session fetch, then port. |
+| 12 | swisscows | pure-math signing | COMPLEXITY DECISION: ~100 lines crypto-adjacent (SHA-256 + b64url + Caesar). No new deps. Port iff P0–P11 stay green. |
+| 13 | keenable | POST | Needs POST support in native client (one small feature). |
+| 14 | neosearch | session + POST | LAST — needs POST support too. |
 
-Plain-HTML backlog (single GET + selectors, no session, no JS):
+Top of the old list (npm/crates/pubmed/ddgnews) is DONE — 21 native.
+This queue takes us to ~30+ (minus drops), near the portable ceiling
+from this network (blocked/dead/keyed correctly skipped).
 
-| Engine | Status |
-|---|---|
-| dictzone | Unprobed here — survey (1 probe, fixture-first). |
-| pypi | SearXNG scrapes HTML — survey. |
-| bpb | Keyless `bpbapi` endpoint noted — survey; niche DE civic content, value TBD. |
-| brave HTML | NOT plain-backlog — 429-walled at IP level. |
-| 360search | NOT plain-backlog — CN region + likely gate. |
 
 ## Challenged / rate-limited at IP level (verified live, ≤2 probes each)
 

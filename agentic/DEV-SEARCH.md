@@ -106,6 +106,13 @@ General engines stay as the fallback layer, not the answer layer.
 
 ## Priority queue (coding-agent order)
 
+> MCP server (queued 2026-10-15, design agreed): `src/mcp.rs`, 2 tools
+> (`search`, `fetch`), stdio first then stateless Streamable HTTP
+> (`POST /mcp`), zero new crates, one pinned protocol version
+> (2025-06-18). Replaces the bespoke pi TS adapter — pi speaks MCP
+> natively. Offline transcript tests + Inspector conformance before
+> claiming compatibility.
+
 1. packagist (verified green — port next)
 2. Maven Central + NuGet (one probe each to confirm, then port)
 3. ArtifactHUB + Terraform registry (IaC is code)

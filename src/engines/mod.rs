@@ -1,5 +1,6 @@
 //! Table of compiled-in engines. Adding one = one small file + one line here.
 
+pub mod archlinux;
 pub mod arxiv;
 pub mod bingnews;
 pub mod boardreader;
@@ -69,6 +70,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "mdn" => Some(Box::new(mdn::Mdn)),
         "dockerhub" => Some(Box::new(dockerhub::DockerHub)),
         "gentoo" => Some(Box::new(gentoo::Gentoo)),
+        "archlinux" => Some(Box::new(archlinux::ArchLinux)),
         "gmx" => Some(Box::new(gmx::Gmx)),
         "keenable" => Some(Box::new(keenable::Keenable)),
         _ => None,

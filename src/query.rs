@@ -38,6 +38,21 @@ fn hex_pair(hi: u8, lo: u8) -> u8 {
     hex(hi) * 16 + hex(lo)
 }
 
+/// Single query-string param (percent-decoded), for non-/search routes.
+pub fn param(url: &str, key: &str) -> String {
+    let Some((_, qs)) = url.split_once('?') else {
+        return String::new();
+    };
+    for pair in qs.split('&') {
+        if let Some((k, v)) = pair.split_once('=') {
+            if k == key {
+                return percent_decode(v);
+            }
+        }
+    }
+    String::new()
+}
+
 pub fn parse(url: &str) -> Query {
     let mut q = Query {
         format: "html".into(),

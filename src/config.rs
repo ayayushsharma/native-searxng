@@ -40,6 +40,17 @@ impl Config {
     }
 }
 
+/// API keys for keyed engines. Convention: `SEARXNG_API_KEY_<ENGINE>`
+/// (uppercased), env-only — never in the conf file, never in the repo.
+/// Env wins because supervisors (runit, Termux:Boot, systemd) inject env
+/// cleanly, files leak via backups and git, and rotation needs no edits.
+/// Same-UID `/proc` visibility is the accepted residual (single-user box).
+/// Returns None when unset/empty = engine stays dormant (see availability).
+pub fn api_key(engine: &str) -> Option<String> {
+    let var = format!("SEARXNG_API_KEY_{}", engine.to_uppercase());
+    std::env::var(&var).ok().filter(|v| !v.trim().is_empty())
+}
+
 /// Config path resolution (XDG-first, no new deps):
 /// 1. `$SEARXNG_CONF` when set (explicit wins — supervisors/daemons).
 /// 2. `$XDG_CONFIG_HOME/native-searxng/searxng.conf`.

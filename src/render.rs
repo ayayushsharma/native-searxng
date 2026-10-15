@@ -31,6 +31,21 @@ pub fn error_json(msg: &str) -> String {
     serde_json::json!({"error": msg}).to_string()
 }
 
+/// `/fetch` envelope: mirrors the ollama `web_fetch` shape the pi
+/// adapter expects ({title, content, links}) plus the fetched url.
+#[derive(Serialize)]
+struct FetchEnvelope<'a> {
+    url: &'a str,
+    title: &'a str,
+    content: &'a str,
+    links: &'a [String],
+}
+
+pub fn fetch_json(url: &str, title: &str, content: &str, links: &[String]) -> String {
+    serde_json::to_string(&FetchEnvelope { url, title, content, links })
+        .unwrap_or_else(|_| "{\"error\":\"render failed\"}".into())
+}
+
 /// Minimal HTML for human smoke checks. Agents use JSON; the pretty page
 /// comes later (deferred per PLAN.md).
 pub fn html(query: &str, results: &[SearchResult]) -> String {

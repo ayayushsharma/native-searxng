@@ -13,7 +13,7 @@ generosity, verified 2026-10-15 unless noted.
 | # | Engine | Free tier | Notes |
 |---|---|---|---|
 | 1 | exaapi | **$120/yr free credits** to start | Most generous. Search + contents — also a `web_fetch` candidate. |
-| 2 | jina | **Free tier, works even keyless** (free key = better limits) | Reader = page extraction — the `web_fetch` gap, not just search. |
+| 2 | jina | **Free tier, works even keyless** (free key = better limits) | **PORTED 2026-10-15 as `/fetch`** (Reader extraction, `SEARXNG_API_KEY_JINA` optional). |
 | 3 | braveapi | **$5 free monthly credits** | Directly fixes general (weakest category). Slot design already approved. |
 | 4 | kagi | Paid plans only (no meaningful free tier) | Pursue only with a paid account on the table. |
 | 5 | mojeek API | Paid plans (memory — reverify if pursued) | Walled HTML + paid API, same funnel as Brave. |

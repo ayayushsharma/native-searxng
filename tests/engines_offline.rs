@@ -165,6 +165,44 @@ fn json_contract_keys_byte_exact() {
 }
 
 #[test]
+fn jina_parse_shapes() {
+    use native_searxng::jina;
+    // JSON envelope (Accept: application/json).
+    let env = r#"{"code":200,"status":20000,"data":{"title":"Example Title","url":"https://example.com","content":"Hello world, this is the extracted page text.","links":["https://example.com/a","https://example.com/b"]}}"#;
+    let r = jina::parse(env).expect("envelope");
+    assert_eq!(r.title, "Example Title");
+    assert!(r.content.contains("extracted page"));
+    assert_eq!(r.links.len(), 2);
+    // Non-200 code -> None (caller maps to {"error"}).
+    assert!(jina::parse(r#"{"code":429,"status":42900,"data":{}}"#).is_none());
+    // Empty content -> None.
+    assert!(jina::parse(r#"{"code":200,"data":{"title":"T","content":"  "}}"#).is_none());
+    // Plain-text fallback (no Accept header).
+    let r = jina::parse("# Headline\n\nSome reasonably long body text here.").expect("text");
+    assert!(!r.content.is_empty());
+    // Garbage -> None, never panics.
+    for bad in ["", "{}", "<html>", "xx"] {
+        assert!(jina::parse(bad).is_none());
+    }
+}
+
+#[test]
+fn api_key_env_convention() {
+    use native_searxng::config;
+    let saved = std::env::var("SEARXNG_API_KEY_JINA").ok();
+    std::env::remove_var("SEARXNG_API_KEY_JINA");
+    assert!(config::api_key("jina").is_none());
+    std::env::set_var("SEARXNG_API_KEY_JINA", "jina_testkey");
+    assert_eq!(config::api_key("jina").as_deref(), Some("jina_testkey"));
+    std::env::set_var("SEARXNG_API_KEY_JINA", "   ");
+    assert!(config::api_key("jina").is_none(), "blank key = dormant");
+    match saved {
+        Some(v) => std::env::set_var("SEARXNG_API_KEY_JINA", v),
+        None => std::env::remove_var("SEARXNG_API_KEY_JINA"),
+    }
+}
+
+#[test]
 fn config_xdg_resolution_order() {
     use native_searxng::config;
     // Save/restore: this is the only test touching these vars.

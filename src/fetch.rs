@@ -33,7 +33,18 @@ impl Client {
     /// GET url, return body truncated to cap. Err(String) is log-safe
     /// (no query content) — mark engine unresponsive on any error.
     pub fn get(&self, url: &str) -> Result<String, String> {
-        let mut res = self.agent.get(url).call().map_err(|e| e.to_string())?;
+        self.get_with(url, &[])
+    }
+
+    /// GET with extra headers (e.g. `Authorization: Bearer <key>`).
+    /// Key material never appears in errors — ureq errors carry status
+    /// text only, and we never log request headers.
+    pub fn get_with(&self, url: &str, headers: &[(&str, &str)]) -> Result<String, String> {
+        let mut call = self.agent.get(url);
+        for (k, v) in headers {
+            call = call.header(*k, *v);
+        }
+        let mut res = call.call().map_err(|e| e.to_string())?;
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
         if body.len() <= self.cap {
             return Ok(body);

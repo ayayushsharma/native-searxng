@@ -1,8 +1,9 @@
 //! Single-threaded sync server (tiny_http). One request at a time —
 //! queue depth 1 is the RAM-flatness guarantee (PLAN.md §1).
-//! Routes: / -> form, /search -> pipeline, /healthz, /opensearch.xml.
+//! Routes: / -> form, /search -> pipeline, /fetch -> page extract,
+//! /healthz, /opensearch.xml.
 
-use crate::{config::Config, engine::SearchResult, engines, fetch, merge, query, render};
+use crate::{config::Config, engine::SearchResult, engines, fetch, jina, merge, query, render};
 use tiny_http::{Header, Response, Server};
 
 pub fn run(cfg: &Config) {
@@ -25,11 +26,26 @@ fn route(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8]
         "/healthz" => (200, b"text/plain", "ok".into()),
         "/opensearch.xml" => (200, b"text/xml", OPENSEARCH.into()),
         "/search" => search(cfg, client, url),
+        "/fetch" => fetch_page(client, url),
         _ => (404, b"application/json", render::error_json("not found")),
     }
 }
 
 const OPENSEARCH: &str = r#"<?xml version="1.0"?><OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"><ShortName>SearXNG</ShortName><Url type="text/html" template="/?q={searchTerms}"/></OpenSearchDescription>"#;
+
+/// `/fetch?url=<http(s)://…>` — page extraction via Jina Reader.
+/// Keyless works (free tier); SEARXNG_API_KEY_JINA raises limits.
+/// Failures are `{"error":…}`, never key material, never bodies.
+fn fetch_page(client: &fetch::Client, url: &str) -> (u16, &'static [u8], String) {
+    let target = query::param(url, "url");
+    if target.is_empty() {
+        return (400, b"application/json", render::error_json("No url"));
+    }
+    match jina::fetch(client, &target) {
+        Ok(r) => (200, b"application/json", render::fetch_json(&target, &r.title, &r.content, &r.links)),
+        Err(e) => (502, b"application/json", render::error_json(&e)),
+    }
+}
 
 fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8], String) {
     let q = query::parse(url);

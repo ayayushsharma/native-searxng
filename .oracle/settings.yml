@@ -1,0 +1,12 @@
+use_default_settings: true
+server:
+  port: 8889
+  bind_address: "127.0.0.1"
+  secret_key: "oracle-test-secret-12345"
+  limiter: false
+  public_instance: false
+  image_proxy: false
+search:
+  formats:
+    - html
+    - json

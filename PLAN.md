@@ -76,10 +76,13 @@ Debug binary 43 MB unstripped (expected); release (`opt-z`, strip,
 `panic=abort`) targets <800 KB.
 
 Discipline (binding — this is what keeps Rust inside budget):
-- SYNC ONLY: blocking client + single-threaded server. No tokio/async runtime.
-- Minimal deps, all audited (Cargo.toml): `tiny_http` (server), `ureq` (client),
-  `scraper` (selectors), `encoding_rs`, `serde`/`serde_json`, hand-rolled INI +
-  query parsing. REJECTED 2026-10-14: `wreq` (Chrome spoofing) — audited the
+- SYNC ONLY: blocking client + 4-lane scoped server threads. No tokio/async runtime.
+- Minimal deps, all audited (Cargo.toml): `tiny_http` (server), `ureq` (client,
+  rustls/ring + gzip only), `serde`/`serde_json`, hand-rolled INI + query
+  parsing + HTML scanners + SHA-256/b64url (`src/crypto.rs`).
+  REMOVED 2026-10-15: `scraper` (html5ever stack), `encoding_rs` — replaced by
+  `engine::attr/strip_tags/ddg_parse` hand scanners (dev bin −10MB).
+  REJECTED 2026-10-14: `wreq` (Chrome spoofing) — audited the
   crate (v0.16.1): async-first (tokio in default features, no blocking client),
   TLS is BoringSSL via btls-sys (bindgen + libclang + C compile at build time),
   111 packages (+40 over our tree). Violates all three hard constraints at once.
@@ -102,8 +105,8 @@ hybrid (two toolchains + supervision on a fragile box).
 
 | Region | Budget | How enforced |
 |---|---|---|
-| Binary text + rustls + html5ever/encoding tables (resident) | ~3–4 MB | `opt-level="z"`, strip, `panic=abort`, system CA (no embedded roots) |
-| Main thread stack | <1 MB touched | single thread, small frames |
+| Binary text + rustls/ring (resident; no html5ever/encoding tables since 2026-10-15) | ~3–4 MB | `opt-level="z"`, `lto=true`, strip, `panic=abort`, system CA (no embedded roots) |
+| 4 lane stacks (scoped threads, demand-paged) + 4 malloc arenas | <2 MB touched | lanes=4 fixed (GAP-PLAN P2); per-engine threads measured +3MB, rejected |
 | Per-request buffers (one engine body 96 KB + results ≤20 × ~1 KB) | <256 KB peak | body cap + truncate, result caps, freed at end of scope |
 | Global (config, engine table, UA strings) | ~50 KB | parsed once at startup |
 | LRU cache (optional, default off) | 0 | fixed slots when enabled, never unbounded |

@@ -14,6 +14,9 @@ opt-level = 0
 
 [profile.release]
 opt-level = "z"
+# Cross-crate inlining (phone never builds release — LMK risk;
+# CI proves binary size + RSS on v* tags / workflow_dispatch).
+lto = true
 panic = "abort"
 strip = true
 codegen-units = 1

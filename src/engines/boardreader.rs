@@ -1,7 +1,7 @@
 //! Boardreader (forum search) — session-flow engine (queue #1).
 //! Step 1 (build_url): homepage `https://boardreader.com`
 //!   → contains `localStorage.setItem('currentSessionId', '<id>')`.
-//! Step 2 (follow_up): `/return.php?query=..&page=..&language=All&session_id=<id>`
+//! Step 2 (request, prev.len()==1): `/return.php?query=..&page=..&language=All&session_id=<id>`
 //!   → `{"SearchResults": [{Subject, Text, Url, Published, Author}]}`.
 //! `Subject`/`Text` carry `[Keyword]…[/Keyword]` markers — stripped.
 //! Language pinned to `All` (oracle defaults per-locale via traits; MVP
@@ -19,20 +19,26 @@ impl Engine for Boardreader {
         "boardreader"
     }
 
-    fn two_step(&self) -> bool {
-        true
+    fn rounds(&self) -> usize {
+        2
     }
 
     fn build_url(&self, _q: &str, _pageno: u32) -> String {
         BASE.into()
     }
 
-    fn follow_up(&self, query: &str, pageno: u32, first_body: &str) -> Option<String> {
-        let sid = session_id(first_body)?;
-        Some(format!(
+    fn request(&self, query: &str, pageno: u32, prev: &[crate::engine::InResponse]) -> Option<crate::engine::OutRequest> {
+        if prev.is_empty() {
+            return Some(crate::engine::OutRequest::get(self.build_url(query, pageno)));
+        }
+        if prev.len() > 1 {
+            return None;
+        }
+        let sid = session_id(&prev[0].body)?;
+        Some(crate::engine::OutRequest::get(format!(
             "{BASE}/return.php?query={}&page={pageno}&language=All&session_id={sid}",
             encode(query),
-        ))
+        )))
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

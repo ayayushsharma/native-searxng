@@ -63,37 +63,130 @@ pub trait Engine {
     fn category(&self) -> &'static str {
         "general"
     }
-    /// Two-step engines (e.g. PubMed esearch → esummary): given the FIRST
-    /// response body, return the follow-up URL, or None when the first
-    /// body is already parseable. The server performs at most ONE extra
-    /// fetch and hands the second body to `parse`. Default: single-step.
-    /// True for engines whose first fetch is scaffolding (homepage,
-    /// esearch, hash page) rather than results. If their `follow_up`
-    /// yields no second URL, the flow broke — report unresponsive instead
-    /// of parsing scaffolding as results. Single-step engines parse
-    /// their (only) body directly, so this stays false for them.
-    fn two_step(&self) -> bool {
-        false
+    /// Legs in this engine's request chain (1 default). If `request()`
+    /// stops before this many responses exist, the scaffolding flow broke
+    /// — the server reports unresponsive instead of parsing scaffolding
+    /// as results. PubMed/boardreader/gmx = 2, chatnoir = 3.
+    fn rounds(&self) -> usize {
+        1
     }
-
-    /// Two-step engines: build the second URL from the first body.
-    /// `query`/`pageno` are passed through because step two usually
-    /// re-states them (boardreader's return.php needs both + session).
-    /// At most one follow-up fetch; None = parse the first body.
-    fn follow_up(&self, _query: &str, _pageno: u32, _first_body: &str) -> Option<String> {
+    /// Next fetch in a stateless chain. `prev` holds all responses so far
+    /// (empty = first request). Return None to stop and parse the last
+    /// body. Default: single GET of `build_url`, then stop.
+    /// `query`/`pageno` are passed through because later legs usually
+    /// re-state them (boardreader's return.php needs both + session).
+    fn request(
+        &self,
+        query: &str,
+        pageno: u32,
+        prev: &[InResponse],
+    ) -> Option<OutRequest> {
+        if prev.is_empty() {
+            return Some(OutRequest::get(self.build_url(query, pageno)));
+        }
         None
     }
 }
 
+/// A request the server should execute. Multi-step flows (chatnoir:
+/// GET home → POST ?init → POST _search) are expressed as a chain:
+/// `request()` sees all previous responses and returns the next fetch,
+/// or None to stop and parse the last body. Capped at 3 rounds.
+#[derive(Debug)]
+pub enum Method {
+    Get,
+    Post,
+}
+
+#[derive(Debug)]
+pub struct OutRequest {
+    pub url: String,
+    pub method: Method,
+    /// POST application/x-www-form-urlencoded pairs (fireball settings).
+    pub form: Vec<(String, String)>,
+    /// POST application/json body (chatnoir search). Beats `form` if set.
+    pub json: Option<String>,
+    pub headers: Vec<(String, String)>,
+}
+
+impl OutRequest {
+    pub fn get(url: String) -> Self {
+        Self { url, method: Method::Get, form: vec![], json: None, headers: vec![] }
+    }
+}
+
+/// What came back: status + raw Set-Cookie values + capped body.
+#[derive(Debug)]
+pub struct InResponse {
+    pub status: u16,
+    pub cookies: Vec<String>,
+    pub body: String,
+}
+
+/// `name=value` out of `Set-Cookie: name=value; Path=/; …` values.
+/// Engines pick what their next leg needs (chatnoir's csrftoken).
+pub fn cookie(cookies: &[String], name: &str) -> Option<String> {
+    let prefix = format!("{name}=");
+    for c in cookies {
+        if let Some(rest) = c.strip_prefix(&prefix) {
+            let end = rest.find(';').unwrap_or(rest.len());
+            let v = rest[..end].trim();
+            if !v.is_empty() {
+                return Some(v.to_string());
+            }
+        }
+    }
+    None
+}
+
 /// Minimal HTML-entity unescape for engine titles/snippets
 /// (`&quot;`, `&amp;`, …). Never panics; unknown entities pass through.
+/// HTML-entity decoding for titles/snippets (oracle `html_to_text` twin):
+/// named entities plus decimal/hex numeric refs (`&#47;`, `&#x2F;`).
+/// Unknown entities pass through untouched; never panics.
 pub fn unescape(s: &str) -> String {
-    s.replace("&amp;", "&")
+    let named = s
+        .replace("&amp;", "&")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
         .replace("&quot;", "\"")
         .replace("&#39;", "'")
-        .replace("&apos;", "'")
+        .replace("&apos;", "'");
+    let mut out = String::with_capacity(named.len());
+    let mut rest = named.as_str();
+    while let Some(i) = rest.find("&#") {
+        out.push_str(&rest[..i]);
+        let tail = &rest[i + 2..];
+        let (digits, hex) = match tail.strip_prefix('x').or_else(|| tail.strip_prefix('X')) {
+            Some(h) => (h, true),
+            None => (tail, false),
+        };
+        let n = digits
+            .bytes()
+            .take_while(|b| b.is_ascii_hexdigit())
+            .count();
+        let after = &digits[n..];
+        if n > 0 && after.starts_with(';') {
+            let num = &digits[..n];
+            let code = if hex {
+                u32::from_str_radix(num, 16).ok()
+            } else if num.bytes().all(|b| b.is_ascii_digit()) {
+                num.parse::<u32>().ok()
+            } else {
+                None
+            };
+            match code.and_then(char::from_u32) {
+                Some(c) => out.push(c),
+                None => out.push_str(&rest[i..i + 2 + n + 1]),
+            }
+            rest = &after[1..];
+        } else {
+            out.push_str("&#");
+            rest = tail;
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Normalize for dedup: lowercase, strip scheme noise, trailing slash.

@@ -30,12 +30,18 @@ impl Engine for Pubmed {
         )
     }
 
-    fn two_step(&self) -> bool {
-        true
+    fn rounds(&self) -> usize {
+        2
     }
 
-    fn follow_up(&self, _query: &str, _pageno: u32, first_body: &str) -> Option<String> {
-        let v: serde_json::Value = serde_json::from_str(first_body).ok()?;
+    fn request(&self, _query: &str, _pageno: u32, prev: &[crate::engine::InResponse]) -> Option<crate::engine::OutRequest> {
+        if prev.is_empty() {
+            return Some(crate::engine::OutRequest::get(self.build_url(_query, _pageno)));
+        }
+        if prev.len() > 1 {
+            return None;
+        }
+        let v: serde_json::Value = serde_json::from_str(&prev[0].body).ok()?;
         let ids = v
             .get("esearchresult")?
             .get("idlist")?
@@ -47,10 +53,10 @@ impl Engine for Pubmed {
         if list.is_empty() {
             return None;
         }
-        Some(format!(
+        Some(crate::engine::OutRequest::get(format!(
             "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id={}&retmode=json",
             list.join(",")
-        ))
+        )))
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

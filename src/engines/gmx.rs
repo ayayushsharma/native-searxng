@@ -2,7 +2,7 @@
 //! Step 1 (build_url): `/web/result?q=..&page=..` (browser-like headers help;
 //! oracle warns look-offs get rate-limited fast)
 //!   → HTML containing `&h=<hash>&t=` (captcha = `#spam-messages` element).
-//! Step 2 (follow_up): `/desk?lang=en&q=..&page=..&h=<hash>&t=<now/10>`
+//! Step 2 (request, prev.len()==1): `/desk?lang=en&q=..&page=..&h=<hash>&t=<now/10>`
 //!   → `{"results": {"hits": [{u, t, s}], "rs": [{t}]}}`.
 //! Hash sits ~40KB into the page — inside the 96KB body cap, safe.
 //! Captcha element → challenge(); either leg failing → unresponsive.
@@ -23,20 +23,26 @@ impl Engine for Gmx {
         format!("{BASE}/web/result?q={}&page={pageno}", encode(q))
     }
 
-    fn two_step(&self) -> bool {
-        true
+    fn rounds(&self) -> usize {
+        2
     }
 
-    fn follow_up(&self, query: &str, pageno: u32, first_body: &str) -> Option<String> {
-        let hash = page_hash(first_body)?;
+    fn request(&self, query: &str, pageno: u32, prev: &[crate::engine::InResponse]) -> Option<crate::engine::OutRequest> {
+        if prev.is_empty() {
+            return Some(crate::engine::OutRequest::get(self.build_url(query, pageno)));
+        }
+        if prev.len() > 1 {
+            return None;
+        }
+        let hash = page_hash(&prev[0].body)?;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs() / 10)
             .unwrap_or(0);
-        Some(format!(
+        Some(crate::engine::OutRequest::get(format!(
             "{BASE}/desk?lang=en&q={}&page={pageno}&h={hash}&t={now}",
             encode(query),
-        ))
+        )))
     }
 
     fn challenge(&self, body: &str) -> Option<String> {

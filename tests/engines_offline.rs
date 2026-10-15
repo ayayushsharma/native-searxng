@@ -9,7 +9,7 @@
 //! follow-up, query parsing, JSON contract keys, merge dedup.
 
 use native_searxng::{
-    engine::{Engine, SearchResult},
+    engine::{Engine, InResponse, Method, OutRequest, SearchResult, cookie},
     engines, merge, query, render,
 };
 
@@ -44,6 +44,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("npm", Some("tests-fixture-npm-test.json"), None, 5),
     ("crates", Some("tests-fixture-crates-test.json"), None, 5),
     ("boardreader", Some("tests-fixture-boardreader-test.json"), None, 5),
+    ("chatnoir", Some("tests-fixture-chatnoir-test.json"), None, 5),
     ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
 ];
 
@@ -118,49 +119,129 @@ fn challenge_pages_report_unresponsive() {
     }
 }
 
+/// Chain-test helper: previous responses from bodies (+ optional cookies).
+fn prev(bodies: &[&str], cookies: &[&str]) -> Vec<InResponse> {
+    bodies
+        .iter()
+        .enumerate()
+        .map(|(i, b)| InResponse {
+            status: 200,
+            cookies: if i == 0 {
+                cookies.iter().map(|c| c.to_string()).collect()
+            } else {
+                vec![]
+            },
+            body: b.to_string(),
+        })
+        .collect()
+}
+
+fn req_url(e: &Box<dyn Engine>, q: &str, p: u32, pr: &[InResponse]) -> Option<(String, String)> {
+    e.request(q, p, pr).map(|r| (format!("{:?}", r.method), r.url))
+}
+
 #[test]
 fn boardreader_two_step_session_flow() {
     let e = engine("boardreader");
+    assert_eq!(e.rounds(), 2);
     // Step 1 targets the homepage (session mint).
     assert_eq!(e.build_url("test", 1), "https://boardreader.com");
+    let r0 = e.request("test query", 1, &[]).expect("leg 1");
+    assert_eq!(r0.url, "https://boardreader.com");
     // Step 2: session id out of real homepage bytes -> return.php URL.
     let home = body(Some("tests-fixture-boardreader-home.html"), None);
-    let url2 = e.follow_up("test query", 1, &home).expect("session flow");
+    let (m, url2) = req_url(&e, "test query", 1, &prev(&[&home], &[])).expect("session flow");
+    assert_eq!(m, "Get");
     assert!(url2.contains("/return.php?query=test+query&page=1&language=All&session_id="), "{url2}");
-    // Malformed homepages -> None (parse first body, no crash).
+    // Malformed homepages -> None (chain stops -> session flow failed).
     for bad in ["", "<html>no marker</html>", "'currentSessionId', ''"] {
-        assert!(e.follow_up("q", 1, bad).is_none());
+        assert!(e.request("q", 1, &prev(&[bad], &[])).is_none());
     }
+    // Chain terminates: no third leg (protocol invariant).
+    assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
+    assert!(engine("gmx").request("q", 1, &prev(&["a", "b"], &[])).is_none());
+    assert!(engine("pubmed").request("q", 1, &prev(&["a", "b"], &[])).is_none());
 }
 
 #[test]
 fn gmx_two_step_page_hash() {
     let e = engine("gmx");
+    assert_eq!(e.rounds(), 2);
     assert!(e.build_url("test", 1).contains("/web/result?q=test&page=1"));
     let step1 = body(Some("tests-fixture-gmx-home.html"), None);
-    let url2 = e.follow_up("test query", 2, &step1).expect("page hash");
+    let (m, url2) = req_url(&e, "test query", 2, &prev(&[&step1], &[])).expect("page hash");
+    assert_eq!(m, "Get");
     assert!(url2.contains("/desk?lang=en&q=test+query&page=2&h="), "{url2}");
     // Captcha element -> challenge, not results.
     assert!(e.challenge("<div id='spam-messages'>x</div>").is_some());
     assert!(e.challenge(&step1).is_none(), "JS string mentions are not the element");
     for bad in ["", "<html>no hash</html>", "&h=&t="] {
-        assert!(e.follow_up("q", 1, bad).is_none());
+        assert!(e.request("q", 1, &prev(&[bad], &[])).is_none());
     }
 }
 
 #[test]
 fn pubmed_two_step_follow_up() {
     let e = engine("pubmed");
+    assert_eq!(e.rounds(), 2);
     // Leg 1 shape (inline, no network): IDs -> esummary URL.
     let leg1 = r#"{"esearchresult": {"idlist": ["1", "2"], "count": "2"}}"#;
-    let url = e.follow_up("test", 1, leg1).expect("pubmed follow_up");
+    let (m, url) = req_url(&e, "test", 1, &prev(&[leg1], &[])).expect("pubmed leg 2");
+    assert_eq!(m, "Get");
     assert!(url.contains("esummary.fcgi"), "wrong leg-2 url: {url}");
     assert!(url.contains("id=1,2"), "IDs missing: {url}");
-    // Empty ID list -> no follow-up (parse leg 1 directly = no results).
-    assert!(e.follow_up("test", 1, r#"{"esearchresult": {"idlist": []}}"#).is_none());
+    // Empty ID list -> no follow-up (chain stops -> session flow failed).
+    assert!(e.request("test", 1, &prev(&[r#"{"esearchresult": {"idlist": []}}"#], &[])).is_none());
     assert!(e.parse(leg1).is_empty());
-    // Single-step engines never follow up.
-    assert!(engine("arxiv").follow_up("test", 1, leg1).is_none());
+    // Single-step engines stop after leg 1.
+    assert_eq!(engine("arxiv").rounds(), 1);
+    assert!(engine("arxiv").request("test", 1, &prev(&[leg1], &[])).is_none());
+}
+
+#[test]
+fn chatnoir_three_leg_chain() {
+    let e = engine("chatnoir");
+    assert_eq!(e.rounds(), 3);
+    // Leg 1: homepage GET (cookie jar fills from Set-Cookie).
+    let r1 = e.request("test", 1, &[]).expect("leg 1");
+    assert_eq!(r1.url, "https://www.chatnoir.eu/");
+    // Leg 2: POST ?init with the csrf (real Set-Cookie shape).
+    let init = body(Some("tests-fixture-chatnoir-init.json"), None);
+    let r2 = e
+        .request("test query", 1, &prev(&["<html>home</html>"], &["csrftoken=abc123; Path=/"]))
+        .expect("leg 2");
+    assert!(matches!(r2.method, Method::Post));
+    assert!(r2.url.ends_with("/?init"));
+    assert!(r2.headers.iter().any(|(k, v)| k == "X-Csrf-Token" && v == "abc123"));
+    // No csrf cookie -> chain stops (session flow failed).
+    assert!(e.request("q", 1, &prev(&["<html>home</html>"], &[])).is_none());
+    // Leg 3: POST _search with token from leg 2 + csrf from leg 1.
+    let home_prev = prev(&["<html>home</html>", &init], &["csrftoken=abc123; Path=/"]);
+    let r3 = e.request("test query", 2, &home_prev).expect("leg 3");
+    assert!(r3.url.ends_with("/api/v1/_search"));
+    assert!(r3.headers.iter().any(|(k, v)| k == "Authorization" && v.starts_with("Bearer sig:")));
+    assert!(r3.headers.iter().any(|(k, v)| k == "X-Csrf-Token" && v == "abc123"));
+    assert!(r3.json.as_ref().expect("json body").contains("\"from\":10"), "pageno 2 -> from 10");
+    // Chain ends after leg 3.
+    let done = prev(&["a", "b", "c"], &[]);
+    assert!(e.request("q", 1, &done).is_none());
+    // Parse the real results shape (offline fixture, token pre-scrubbed).
+    let parsed = e.parse(&body(Some("tests-fixture-chatnoir-test.json"), None));
+    assert_eq!(parsed.len(), 10, "expected 10, got {}", parsed.len());
+    assert!(parsed[0].url.starts_with("https://"));
+    // cookie() picks name=value out of Set-Cookie values.
+    let cs = vec!["other=1; Path=/".to_string(), "csrftoken=zz9; Path=/; HttpOnly".to_string()];
+    assert_eq!(cookie(&cs, "csrftoken").as_deref(), Some("zz9"));
+    assert!(cookie(&cs, "missing").is_none());
+}
+
+#[test]
+fn unescape_numeric_refs() {
+    let u = native_searxng::engine::unescape;
+    assert_eq!(u("a &#x2F; b &#47; c"), "a / b / c");
+    assert_eq!(u("&lt;em&gt;hi&#39;s&amp;"), "<em>hi's&");
+    assert_eq!(u("no entities"), "no entities");
+    assert_eq!(u("&#xZZ; &#; &#123"), "&#xZZ; &#; &#123");
 }
 
 #[test]

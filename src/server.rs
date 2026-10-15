@@ -81,60 +81,86 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         if engine.category() != want {
             continue;
         }
-        let fetch_url = engine.build_url(&q.q, q.pageno);
-        // Full fetch: non-200 legs are reported, never parsed as results
-        // (303 → spamprotection, 403, 429 — iron rule 5 for statuses).
-        match client.get_full(&fetch_url, &[]) {
-            Ok((200, _cookies, body)) if body.trim().is_empty() => {
-                unresponsive.push((name.clone(), "empty response".into()));
-            }
-            Ok((200, _cookies, body)) => {
-                // Challenge/captcha pages -> 0 results + unresponsive entry
-                // (iron rule 5), never silent empties or garbage.
-                if let Some(reason) = engine.challenge(&body) {
-                    unresponsive.push((name.clone(), reason));
+        // Request chain: the engine describes each fetch (GET or POST)
+        // from all previous responses; max 3 rounds (chatnoir needs 3).
+        // Every leg is gated the same way: non-200, challenge page, or
+        // empty body reports honestly (iron rule 5) — never parsed.
+        let mut prev: Vec<crate::engine::InResponse> = vec![];
+        // Cookie jar: session legs (chatnoir ?init, fireball settings)
+        // need the cookies minted by earlier legs — the oracle passes
+        // `response.cookies` forward, so do we (per query, never shared).
+        let mut jar: Vec<(String, String)> = vec![];
+        let last_body: Option<String> = loop {
+            let Some(req) = engine.request(&q.q, q.pageno, &prev) else {
+                break if prev.is_empty() {
+                    unresponsive.push((name.clone(), "no request".into()));
+                    None
+                } else if prev.len() < engine.rounds() {
+                    // Chain stopped early on scaffolding — flow broke.
+                    // (Single-step engines stop after leg 1 by design.)
+                    unresponsive.push((name.clone(), "session flow failed".into()));
+                    None
                 } else {
-                    // Two-step engines: at most one follow-up fetch, then
-                    // parse the final body (PubMed esearch -> esummary).
-                    // A broken scaffolding flow reports; it never falls back
-                    // to parsing scaffolding as results.
-                    let final_body;
-                    let body = match engine.follow_up(&q.q, q.pageno, &body) {
-                        Some(url2) => match client.get_full(&url2, &[]) {
-                            Ok((200, _, b2)) if b2.trim().is_empty() => {
-                                unresponsive.push((name.clone(), "empty response".into()));
-                                continue;
-                            }
-                            Ok((200, _, b2)) => {
-                                final_body = b2;
-                                &final_body
-                            }
-                            Ok((s, _, _)) => {
-                                unresponsive.push((name.clone(), format!("http {s}")));
-                                continue;
-                            }
-                            Err(e) => {
-                                unresponsive.push((name.clone(), e));
-                                continue;
-                            }
-                        },
-                        None if engine.two_step() => {
-                            unresponsive.push((name.clone(), "session flow failed".into()));
-                            continue;
-                        }
-                        None => &body,
-                    };
-                    // Stamp the served category (SearXNG tags each result
-                    // with its search category; parsers default general).
-                    let mut v = engine.parse(body);
-                    for r in &mut v {
-                        r.category = want.into();
+                    prev.pop().map(|r| r.body)
+                };
+            };
+            if prev.len() >= 3 {
+                unresponsive.push((name.clone(), "chain too long".into()));
+                break None;
+            }
+            let mut req = req;
+            if !jar.is_empty() {
+                let header = jar
+                    .iter()
+                    .map(|(k, v)| format!("{k}={v}"))
+                    .collect::<Vec<_>>()
+                    .join("; ");
+                req.headers.push(("Cookie".into(), header));
+            }
+            match client.execute(&req) {
+                Ok(r) if r.status != 200 => {
+                    unresponsive.push((name.clone(), format!("http {}", r.status)));
+                    break None;
+                }
+                Ok(r) if r.body.trim().is_empty() => {
+                    unresponsive.push((name.clone(), "empty response".into()));
+                    break None;
+                }
+                Ok(r) => {
+                    if let Some(reason) = engine.challenge(&r.body) {
+                        unresponsive.push((name.clone(), reason));
+                        break None;
                     }
-                    lists.push(v);
+                    for c in &r.cookies {
+                        let pair = c.split(';').next().unwrap_or("");
+                        if let Some((k, v)) = pair.split_once('=') {
+                            let (k, v) = (k.trim().to_string(), v.trim().to_string());
+                            if k.is_empty() || v.is_empty() {
+                                continue;
+                            }
+                            if let Some(slot) = jar.iter_mut().find(|(ek, _)| *ek == k) {
+                                slot.1 = v;
+                            } else {
+                                jar.push((k, v));
+                            }
+                        }
+                    }
+                    prev.push(r);
+                }
+                Err(e) => {
+                    unresponsive.push((name.clone(), e));
+                    break None;
                 }
             }
-            Ok((s, _, _)) => unresponsive.push((name.clone(), format!("http {s}"))),
-            Err(e) => unresponsive.push((name.clone(), e)),
+        };
+        if let Some(body) = last_body {
+            // Stamp the served category (SearXNG tags each result with
+            // its search category; parsers default general).
+            let mut v = engine.parse(&body);
+            for r in &mut v {
+                r.category = want.into();
+            }
+            lists.push(v);
         }
     }
     let results = merge::merge(lists, cfg.max_results);

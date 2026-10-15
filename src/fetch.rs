@@ -52,11 +52,52 @@ impl Client {
         url: &str,
         headers: &[(&str, &str)],
     ) -> Result<(u16, Vec<String>, String), String> {
-        let mut call = self.agent.get(url);
-        for (k, v) in headers {
-            call = call.header(*k, *v);
-        }
-        let mut res = call.call().map_err(|e| e.to_string())?;
+        let req = crate::engine::OutRequest {
+            url: url.to_string(),
+            method: crate::engine::Method::Get,
+            form: vec![],
+            json: None,
+            headers: headers
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+        };
+        self.execute(&req).map(|r| (r.status, r.cookies, r.body))
+    }
+
+    /// Execute one engine-described request (GET or POST). POST carries
+    /// either urlencoded `form` or a raw `json` body. Responses are
+    /// capped like GETs; key material never enters errors or logs.
+    pub fn execute(&self, req: &crate::engine::OutRequest) -> Result<crate::engine::InResponse, String> {
+        use crate::engine::Method;
+        let mut res = match req.method {
+            Method::Get => {
+                let mut call = self.agent.get(&req.url);
+                for (k, v) in &req.headers {
+                    call = call.header(k.as_str(), v.as_str());
+                }
+                call.call().map_err(|e| e.to_string())?
+            }
+            Method::Post => {
+                let mut call = self.agent.post(&req.url);
+                for (k, v) in &req.headers {
+                    call = call.header(k.as_str(), v.as_str());
+                }
+                if let Some(json) = req.json.as_ref() {
+                    call = call.content_type("application/json");
+                    call.send(json.as_bytes()).map_err(|e| e.to_string())?
+                } else {
+                    let form: String = req
+                        .form
+                        .iter()
+                        .map(|(k, v)| format!("{}={}", encode(k), encode(v)))
+                        .collect::<Vec<_>>()
+                        .join("&");
+                    call = call.content_type("application/x-www-form-urlencoded");
+                    call.send(form.as_bytes()).map_err(|e| e.to_string())?
+                }
+            }
+        };
         let status = res.status().as_u16();
         let mut cookies = vec![];
         for v in res.headers().get_all("set-cookie") {
@@ -66,11 +107,11 @@ impl Client {
         }
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
         if body.len() <= self.cap {
-            return Ok((status, cookies, body));
+            return Ok(crate::engine::InResponse { status, cookies, body });
         }
         let mut s = body;
         s.truncate(s.floor_char_boundary(self.cap).min(s.len()));
-        Ok((status, cookies, s))
+        Ok(crate::engine::InResponse { status, cookies, body: s })
     }
 
     /// Strangler proxy: forward raw path+query to the Python reference.
@@ -82,4 +123,19 @@ impl Client {
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
         Ok((status, body))
     }
+}
+
+/// application/x-www-form-urlencoded pair encoding (POST forms).
+fn encode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for b in s.as_bytes() {
+        match b {
+            b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(*b as char)
+            }
+            b' ' => out.push('+'),
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
 }

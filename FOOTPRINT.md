@@ -18,6 +18,7 @@ Method: `tools/measure.sh <bin>` — `ls/size` for disk, then 50 sequential
 |---|---|---|---|---|
 | dev (unoptimized) | 12.6 MB | 12.4 MB | 10 MB soft | ABOVE — expected for dev (upper bound) |
 | release x86_64 (CI, run 38613483575) | 9.7 MB | 9.5 MB | 10 MB soft / 5 MB core-only | PASSES with 0.3 MB margin — margin too thin; diet queue (GAP-PLAN P2 / LTO / TLS-pool / scraper) is justified |
+| release Android on-device (run 38682374578, N=200) | 11.4 MB | 9.0 MB | 10 MB soft | BREACH on extended run — peak over ceiling while avg holds. Trend unknown (pool fill vs slow growth); needs per-sample series + diet before next wave. |
 
 ## Reading the numbers
 

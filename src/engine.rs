@@ -70,6 +70,12 @@ pub trait Engine {
     fn rounds(&self) -> usize {
         1
     }
+    /// Response cap override in KB (None = server default). Fat-JSON
+    /// APIs (OpenAlex works ~250KB with inverted abstracts) need room;
+    /// the buffer is transient per fetch, freed after parse.
+    fn body_cap_kb(&self) -> Option<usize> {
+        None
+    }
     /// Next fetch in a stateless chain. `prev` holds all responses so far
     /// (empty = first request). Return None to stop and parse the last
     /// body. Default: single GET of `build_url`, then stop.

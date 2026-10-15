@@ -117,7 +117,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                     .join("; ");
                 req.headers.push(("Cookie".into(), header));
             }
-            match client.execute(&req) {
+            match client.execute_capped(&req, engine.body_cap_kb()) {
                 Ok(r) if r.status != 200 => {
                     unresponsive.push((name.clone(), format!("http {}", r.status)));
                     break None;

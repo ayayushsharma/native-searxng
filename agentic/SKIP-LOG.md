@@ -37,9 +37,9 @@ Each: oracle survey (≤1 live probe) → fixture → port → `check.py` →
 | 3 | gmx | session | **DONE 2026-10-15** — hash page + desk JSON; rate-sensitive (oracle concurs). Shipped with status-gating + empty-body rules (below). |
 | 4 | chatnoir | POST+cookie | **DONE 2026-10-15** — 3-leg chain (GET home → POST ?init → POST _search), Bearer+csrf, `SEARXNG_API_KEY_CHATNOIR` honored. quality 1/36 unresponsive. |
 | 5 | dogpile | POST | **DONE 2026-10-15** — 2-leg POST (token refresh → /api/search JSON), live 2-8 results. |
-| 6 | dictzone | plain HTML | Survey. |
-| 7 | pypi | plain HTML | Survey. |
-| 8 | openalex | keyless JSON | Replaces dead OpenAIRE slot (science depth). |
+| 6 | dictzone | plain HTML | **RE-SKIPPED 2026-10-15**: Cloudflare `Just a moment...` 403 from home egress; oracle returns 0 dictzone-attributed results too. Needs Translations/answers rendering anyway — revisit with translate vertical. |
+| 7 | pypi | plain HTML | **RE-SKIPPED 2026-10-15**: `Client Challenge` anti-bot page (3KB shell) from home egress; oracle packages bench carries no pypi results either. Side-find: oracle packages bench is wider (voidlinux, pkg.go.dev, pub.dev, packagist, hex, hoogle, alpine, cachy) — future survey candidates. |
+| 8 | openalex | keyless JSON | **DONE 2026-10-15** — replaces dead OpenAIRE; inverted-abstract rebuild; needed `body_cap_kb=300` (works ~250KB > 96KB default cap — truncated JSON parses to nothing). |
 | 9 | rubygems | keyless JSON | Packages depth. |
 | 10 | bpb | keyless JSON/HTML | Survey; niche DE civic content, value TBD — drop if thin. |
 | 11 | iseek | classify-first | Token origin audit: calculator or session fetch, then port. |

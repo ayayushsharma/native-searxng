@@ -69,6 +69,16 @@ impl Client {
     /// either urlencoded `form` or a raw `json` body. Responses are
     /// capped like GETs; key material never enters errors or logs.
     pub fn execute(&self, req: &crate::engine::OutRequest) -> Result<crate::engine::InResponse, String> {
+        self.execute_capped(req, None)
+    }
+
+    /// `execute` with a per-engine cap override (KB); None = client cap.
+    pub fn execute_capped(
+        &self,
+        req: &crate::engine::OutRequest,
+        cap_kb: Option<usize>,
+    ) -> Result<crate::engine::InResponse, String> {
+        let cap = cap_kb.map(|k| k * 1024).unwrap_or(self.cap);
         use crate::engine::Method;
         let mut res = match req.method {
             Method::Get => {
@@ -106,11 +116,11 @@ impl Client {
             }
         }
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
-        if body.len() <= self.cap {
+        if body.len() <= cap {
             return Ok(crate::engine::InResponse { status, cookies, body });
         }
         let mut s = body;
-        s.truncate(s.floor_char_boundary(self.cap).min(s.len()));
+        s.truncate(s.floor_char_boundary(cap).min(s.len()));
         Ok(crate::engine::InResponse { status, cookies, body: s })
     }
 

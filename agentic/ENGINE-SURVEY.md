@@ -29,21 +29,41 @@ All `require_api_key: False` upstream. New hosts probed per user request.
   regression — park, re-probe P3. Upstream file kept (`up-deezer.py` not
   saved; re-pull at re-probe).
 
-## PARKED by shape, not by wall (4)
+## PARKED by shape, not by wall (4 → 2 left)
 
+Resolved 2026-10-16 (overnight session):
+- **tagesschau** ✅ PORTED — 477KB fat JSON → `body_cap_kb` 512
+  (cap softened per session); `detailsweb` canonical URLs with
+  `shareURL` fallback; `content[].value` join; ISO dates. Live 10.
+- **pkg.go.dev** ✅ PORTED (`pkggodev`) — server-rendered
+  `SearchSnippet` cards, `data-test-id` hooks; query-dependent
+  latency (0.5s vs 8.8s cold shard) surfaces as honest timeout
+  vs the 3s engine budget. Live 10. Parser lesson: never size a
+  window from the *next* card (nested divs precede the hook) —
+  cap forward from the hook instead (fixed a lane panic in review).
+- **metacpan** PARKED (wall, not shape): `POST /v1/search` →
+  `402` empty twice (GET `?q=` too). API shape changed or gated;
+  re-probe P3, not code.
+- **lib_rs** PARKED: `/search?q=` → `403` bot wall. Hand-scanner
+  can't fix a wall; P3-watch.
+
+Still parked:
 - **metacpan** (packages/it): POST ES `_search` to `fastapi.metacpan.org`
   — chain/POST infra ready, template in upstream file. P2.
-- **lib_rs / pkg_go_dev** (packages/it): plain-HTML search pages —
-  hand-scanner territory (bingnews pattern). P2.
 - **wikidata** (general): SPARQL POST with locale query-builder —
   complex, low result-value vs effort. Park.
 - **google_news**: `google_request` helper = walled Google family. Skip.
 
 ## Proposed port order (simplest-first, existing categories first)
 
-1. crossref → 2. hackernews → 3. archlinux → 4. nvd → 5. tagesschau
-6. metacpan → 7. lib_rs → 8. pkg_go_dev → 9. jisho → 10. open_meteo
+1. crossref → 2. hackernews → 3. archlinux → 4. nvd → 5. tagesschau ✅
+6. metacpan (402-parked) → 7. lib_rs (403-parked) → 8. pkg_go_dev ✅
+9. jisho → 10. open_meteo
 11. sepiasearch (new categories need gate+contract+conf per wave)
+
+Remaining (9–11) need NEW categories (dict/weather/video): contract
++ conf + gate work per wave — deferred to a dedicated session, not
+this queue. Strangler proxies them meanwhile.
 
 Traffic budget if approved: ≤2 probes/engine (fixture + live verify) +
 gates, same protocol as the 14-queue.

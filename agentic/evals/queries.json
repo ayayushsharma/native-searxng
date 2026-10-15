@@ -85,6 +85,14 @@
     {
       "q": "pip install requirements",
       "categories": "it"
+    },
+    {
+      "q": "router",
+      "categories": "packages"
+    },
+    {
+      "q": "bundestag",
+      "categories": "news"
     }
   ]
 }

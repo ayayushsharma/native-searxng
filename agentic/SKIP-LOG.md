@@ -134,3 +134,31 @@ Step-0 walls 3 (DDG/Mojeek/Wikipedia) · fixtures 5 (ol 1, mwmbl 2 incl.
 brave 1 (429) · fireball 1 (403) · gates via `check.py --limit 10`
 (general/news/science/it via oracle + native). No ban observed; only
 transient 429s (Wikipedia once under burst, Brave on first touch).
+
+## Overnight session 2026-10-16 (DEV queue + survey P2 — all resolved)
+
+Queue verdicts (all 9 closed: 7 ported, 2 proven-parked):
+- packagist/maven/nuget/hexpm/pubdev/artifacthub/terraform/datatracker
+  PORTED (keyless GET JSON; artifacthub kind→slug map; maven `G:A`
+  coords; terraform `published_date`; datatracker Tastypie envelope
+  + canonical `/doc/{name}/` + 400-char abstracts).
+- docs.python.org PARKED: `searchindex.js` 4.1MB (10× class cap);
+  flask 187KB + pip 226KB ported via new `src/sphinx.rs` class
+  instead (token scoring terms+1/titleterms+2, title-substring
+  fallback, int|array postings, tolerant envelope). django/fastapi
+  parked (302→404 / 404, non-Sphinx).
+- grep.app re-probe: STILL 429 Vercel checkpoint. P3-watch stands.
+- cheat.sh PORTED (curl-UA text API + `?QT`, ANSI strip).
+- Survey P2: tagesschau PORTED (512KB cap, detailsweb URLs),
+  pkggodev PORTED (data-test-id hooks; 0.5s vs 8.8s cold shards →
+  honest timeouts). metacpan 402×2 PARKED, lib_rs 403 PARKED.
+- MCP: stdio (`--mcp`) + stateless `POST /mcp` DONE, E2E verified
+  both transports; Inspector conformance still open.
+- `engines=` filter fixed (intersect cfg natives; unknown → proxy).
+- New-category items (jisho/open_meteo/sepiasearch) deferred to a
+  dedicated session: each needs contract+conf+gate work; strangler
+  proxies them meanwhile.
+
+Probe spend: ~20 (all ≤2/engine) · gates: check.py 23/23 0/0.
+Live `flask request context` 62 results · `router` (packages) 98 ·
+`bundestag` (news) 24.

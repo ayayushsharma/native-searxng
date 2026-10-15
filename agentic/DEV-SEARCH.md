@@ -106,19 +106,29 @@ General engines stay as the fallback layer, not the answer layer.
 
 ## Priority queue (coding-agent order)
 
-> MCP server (queued 2026-10-15, design agreed): `src/mcp.rs`, 2 tools
-> (`search`, `fetch`), stdio first then stateless Streamable HTTP
-> (`POST /mcp`), zero new crates, one pinned protocol version
-> (2025-06-18). Replaces the bespoke pi TS adapter — pi speaks MCP
-> natively. Offline transcript tests + Inspector conformance before
-> claiming compatibility.
+> MCP server — DONE 2026-10-16 (overnight): `src/mcp.rs`, 2 tools
+> (`search`, `fetch`), stdio (`--mcp`) + stateless Streamable HTTP
+> (`POST /mcp`, shared `dispatch()` seam, 64KB POST cap, no SSE/sessions),
+> zero new crates, pinned `2025-06-18`. E2E verified over both
+> transports (pipe + curl). Inspector conformance still open before
+> claiming pi compatibility. Replaces the bespoke pi TS adapter.
 
-1. packagist (verified green — port next)
-2. Maven Central + NuGet (one probe each to confirm, then port)
-3. ArtifactHUB + Terraform registry (IaC is code)
-4. hex.pm + pub.dev (cheap, same shape as packagist)
-5. IETF datatracker API (RFC behavior questions)
-6. docs.python.org search (biggest gap, hardest — Sphinx/JS)
-7. grep.app re-probe (P3-watch, weekly)
+1. packagist ✅ PORTED (overnight)
+2. Maven Central ✅ + NuGet ✅ PORTED (overnight, 1 probe each)
+3. ArtifactHUB ✅ + Terraform registry ✅ PORTED (overnight)
+4. hex.pm ✅ + pub.dev ✅ PORTED (overnight)
+5. IETF datatracker ✅ PORTED (overnight; keyless 5 req/30s —
+   honest `unresponsive`, recovers after wait)
+6. docs.python.org search ❌ PARKED (overnight: `searchindex.js` is
+   4.1MB `Search.setIndex`, 10× the class cap — no stored state per
+   the statelessness invariant; PyPI-per-package + SO cover Python)
+7. grep.app ❌ still walled (overnight re-probe: 429 Vercel
+   checkpoint again — P3-watch stands)
 8. ~~Static-index pattern design → node all.json, caniuse~~ (killed — see pattern #1; revisit on a concrete offline usecase)
-9. cheat.sh answers engine (fast win, anytime)
+9. cheat.sh ✅ PORTED (overnight: curl-UA text API, `?QT`, ANSI
+   strip, `Unknown topic.` → `[]`)
+
+Bonus overnight: Sphinx-index class (`src/sphinx.rs`, flask + pipdocs
+live) — pattern #2 proved on two rows; django 302→404 + fastapi 404
+(non-Sphinx) parked. `engines=` filter fixed (intersect cfg natives,
+unknown → proxy). tagesschau + pkggodev (survey P2) also ported.

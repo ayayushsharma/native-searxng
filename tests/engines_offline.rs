@@ -46,6 +46,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("npm", Some("tests-fixture-npm-test.json"), None, 5),
     ("crates", Some("tests-fixture-crates-test.json"), None, 5),
     ("boardreader", Some("tests-fixture-boardreader-test.json"), None, 5),
+    ("bpb", Some("tests-fixture-bpb-test.json"), None, 5),
     ("chatnoir", Some("tests-fixture-chatnoir-test.json"), None, 5),
     ("dogpile", Some("tests-fixture-dogpile-test.json"), None, 5),
     ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),

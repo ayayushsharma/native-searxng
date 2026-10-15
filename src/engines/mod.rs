@@ -3,6 +3,7 @@
 pub mod arxiv;
 pub mod bingnews;
 pub mod boardreader;
+pub mod bpb;
 pub mod chatnoir;
 pub mod ddgnews;
 pub mod ddg;
@@ -42,6 +43,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "europepmc" => Some(Box::new(europepmc::EuropePmc)),
         "bingnews" => Some(Box::new(bingnews::BingNews)),
         "boardreader" => Some(Box::new(boardreader::Boardreader)),
+        "bpb" => Some(Box::new(bpb::Bpb)),
         "chatnoir" => Some(Box::new(chatnoir::ChatNoir)),
         "dogpile" => Some(Box::new(dogpile::Dogpile)),
         "wikinews" => Some(Box::new(wikinews::Wikinews)),

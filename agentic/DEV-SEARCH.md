@@ -36,7 +36,7 @@ General engines stay as the fallback layer, not the answer layer.
 |---|---|---|---|
 | Rust | ✅ crates | 🔵 docs.rs search; static rustdoc searchindex (cache pattern) | core covered |
 | Python | ❌ PyPI search walled (per-package `/pypi/<pkg>/json` works, no search API) | 🔵 docs.python.org search | **gap**: biggest agent ecosystem, weakest coverage |
-| JS/TS | ✅ npm | ✅ MDN; 🔵 node `all.json` (static, cache pattern); 🔵 typescriptlang search | strong |
+| JS/TS | ✅ npm | ✅ MDN; 🔵 TypeScript docs search; node `all.json` dropped (9.2MB — un-fetchable live, un-cacheable per invariant; LSP covers signatures) | strong |
 | Go | 🟡 pkg.go.dev (survey P2) | pkg.go.dev/std (same port) | queued |
 | Java/Kotlin | 🔵 Maven Central `search.maven.org/solrsearch/select` (keyless Solr, high confidence) | — | high-value probe |
 | .NET | 🔵 NuGet `azuresearch-usnc.nuget.org/query` (keyless, high confidence) | ✅ MS Learn | Learn covers docs; registry to-probe |
@@ -47,7 +47,7 @@ General engines stay as the fallback layer, not the answer layer.
 | C/C++ | 🔵 conan/vcpkg (low) | ❌ cppreference (evidence below) | **gap**: no good stdlib source right now |
 | IaC | 🔵 Terraform `registry.terraform.io/v1/modules/search` + ArtifactHUB `/api/v1/packages/search` (both keyless, good confidence) | 🔵 K8s docs (Algolia — policy-gray, see §4) | high agent value (configs are code) |
 | Linux/CLI | ✅ arch, gentoo | 🔵 cheat.sh `cheat.sh/<cmd>?Q` (plain-text → answers engine), explainshell, man7 | cheat.sh is a ~30-line port |
-| Web platform | ✅ MDN | 🔵 caniuse static `data.json` (cache pattern) | — |
+| Web platform | ✅ MDN | 🔵 caniuse only via live paths (per-feature scrape or MDN compat tables — no snapshot, see pattern #1) | — |
 | Prose tutorials | — | 🔵 dev.to API | after references work |
 
 ## Evidence log (2026-10-15, 5 probes)
@@ -70,11 +70,23 @@ General engines stay as the fallback layer, not the answer layer.
 
 ## New engine patterns (beyond one-URL-one-parser)
 
-1. **Static-index + disk cache.** node `all.json`, brew `formula.json`,
-   caniuse `data.json` are multi-MB single files — per-query fetch
-   breaks body caps. `src/cache.rs` already exists: one engine class
-   that refreshes weekly, searches locally. New pattern, one design
-   pass before first use.
+> **Statelessness invariant (2026-10-15):** an engine is a pure function
+> of (query, page): fetch live, parse, drop. Anything requiring refresh
+> schedules, version pinning, or schema migration is out of scope —
+> that's a data product, not a search engine.
+
+1. **Static-index + disk cache — KILLED (deferred).** node `all.json`
+   (measured 9.2MB 2026-10-15, not 2–4MB), brew `formula.json`,
+   caniuse `data.json` (measured 4.8MB, not ~2MB) are multi-MB single
+   files: un-fetchable per query (96× body cap) and un-cacheable under
+   the invariant (invalidation × refresh × schema drift × N languages
+   = a second product). Resident parse would also blow the 4MB RAM
+   target (~2–3× file size on heap). The data stays documented here;
+   revisit only if a concrete usecase arrives that live sources cannot
+   serve (e.g. fully-offline agent). `src/cache.rs` stays for HTTP
+   TTLs, not language datasets. Note: LSP already covers node
+   signatures project-locally (see discussion 2026-10-15) — `all.json`
+   demoted regardless.
 2. **Sphinx `searchindex.js` class.** Django/Flask/FastAPI/pip docs all
    ship a static search index. One fetcher + per-site table = many doc
    sets for one engine. Config-heavy — after single-site wins.
@@ -101,5 +113,5 @@ General engines stay as the fallback layer, not the answer layer.
 5. IETF datatracker API (RFC behavior questions)
 6. docs.python.org search (biggest gap, hardest — Sphinx/JS)
 7. grep.app re-probe (P3-watch, weekly)
-8. Static-index pattern design → node all.json, caniuse
+8. ~~Static-index pattern design → node all.json, caniuse~~ (killed — see pattern #1; revisit on a concrete offline usecase)
 9. cheat.sh answers engine (fast win, anytime)

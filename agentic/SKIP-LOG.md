@@ -45,7 +45,9 @@ Each: oracle survey (≤1 live probe) → fixture → port → `check.py` →
 | 11 | iseek | classify-first | **RE-SKIPPED 2026-10-15**: pure-calculation qToken (sha256→base64[0:4]) PROVEN IRRELEVANT — nginx plain `403 Forbidden` with a valid token (`n4bQ_1`); the wall is edge IP/UA filtering before any token check. Oracle: 0 iseek results. No SHA-256 code written (correctly — code can't fix a network wall). |
 | 12 | swisscows | pure-math signing | **DONE 2026-10-15** — decision: PORT (400 proved the signature IS the gate, unlike iseek). `src/crypto.rs` (SHA-256+b64url, hashlib-verified vectors) + nonce/caesar/JWT-parse; web only. Live 2/hits, tags stripped via shared `engine::strip_tags`. |
 | 13 | keenable | POST | **DONE 2026-10-15** — single POST to `/v1/search/public` (chain protocol already had POST from chatnoir/dogpile); env key upgrades to keyed `/v1/search`. Live 2 hits. |
-| 14 | neosearch | session + POST | LAST — needs POST support too. |
+| 14 | neosearch | session + POST | **DONE 2026-10-15** — 2-leg (GET home xsrf-meta → POST /search, last-line lenses JSON, 19 links live). QUEUE COMPLETE: 10 ported (boardreader, gmx*, chatnoir, dogpile, openalex, rubygems, bpb, swisscows, keenable, neosearch), 4 walled with evidence (fireball, dictzone, pypi, iseek). *gmx port-complete but live-walled (honest `empty response`). |
+
+**Latency flag 2026-10-15**: 12-engine sequential fan-out now brushes check.py's 30s client budget on slow queries (`rust async runtime comparison` failed once at >30s, passed on re-run at ~20s). Correctness green; concurrency lanes (GAP-PLAN P2) + diet queue are next, before any new engine.
 
 Top of the old list (npm/crates/pubmed/ddgnews) is DONE — 21 native.
 This queue takes us to ~30+ (minus drops), near the portable ceiling

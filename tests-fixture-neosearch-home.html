@@ -1,0 +1,2678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeoSearch</title>
+    <meta name="description" content="AI-powered search engine that combines traditional web search with Large Language Models for enhanced results, intelligent summaries, and multiple perspectives." />
+  <script>
+    const schemes = {
+    'dark': {
+      'font': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      'font-size': '14px',
+      'font-size-large': '17px',
+      'font-size-small': '12px',
+      'font-size-xsmall': '10px',
+      'text-muted': '#666',
+      'text-normal': '#aaa',
+      'text-bright': '#fff',
+      'bg-primary': '#1c1c1e',
+      'bg-secondary': '#2a2a2a',
+      'bg-active': '#5757ff',
+      'border-color': '#444',
+      'hover-overlay': '#2a2a2a',
+    },
+    light: {
+      'font': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      'font-size': '14px',
+      'font-size-large': '17px',
+      'font-size-small': '12px',
+      'font-size-xsmall': '10px',
+      'text-muted': '#999',
+      'text-normal': '#333',
+      'text-bright': '#000',
+      'bg-primary': '#f5f5f5',
+      'bg-secondary': '#e0e0e0',
+      'bg-active': '#a7a7ff',
+      'border-color': '#ddd',
+      'hover-overlay': '#e0e0e0',
+    }};
+
+    // Get color scheme from localStorage first, fall back to browser preference
+    function getCurrentColorScheme() {
+      const saved = localStorage.getItem('colorScheme');
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+      // Fall back to browser preference
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    window.currentColorScheme = getCurrentColorScheme();
+
+    function parseColor(c){var e=document.createElement("div"),p=document.documentElement;p.appendChild(e);e.style.color=c;var s=getComputedStyle(e).color.match(/[\d.]+/g).map(Number);p.removeChild(e);var r=s[0]/255,g=s[1]/255,b=s[2]/255,M=Math.max(r,g,b),m=Math.min(r,g,b),d=M-m,l=(M+m)/2,h=d?((M===r?(g-b)/d+(g<b?6:0):M===g?(b-r)/d+2:(r-g)/d+4)*60):0,sng=d?d/(1-Math.abs(2*l-1)):0;return[h,sng,l]}
+    const toHSL=a=>`hsl(${a[0]},${(100*a[1]).toFixed(1)}%,${(100*a[2]).toFixed(1)}%)`;
+    const highlight=([h,s,l],d=.1)=>[h,s,(nl=l+(l<.9?d:-d),nl<0?0:nl>1?1:nl)];
+
+    function setColorScheme(schemeName) {
+      const scheme = schemes[schemeName];
+      if (!scheme) return;
+      
+      const root = document.documentElement;
+      for (const [key, value] of Object.entries(scheme)) {
+        root.style.setProperty(`--${key}`, value);
+        // If the style name starts with text or bg, also set the hover version
+        if (key.startsWith('text') || key.startsWith('bg')) {
+          const hoverKey = `${key}-hover`;
+          const color = parseColor(value);
+          const highlightedColor = highlight(color, key.startsWith('text') ? 0.2 : 0.06);
+          root.style.setProperty(`--${hoverKey}`, toHSL(highlightedColor));
+        }
+      }
+      window.currentColorScheme = schemeName;
+    }
+
+    function toggleColorScheme() {
+      const newScheme = window.currentColorScheme === 'dark' ? 'light' : 'dark';
+      setColorScheme(newScheme);
+      localStorage.setItem('colorScheme', newScheme);
+    }
+
+    setColorScheme(window.currentColorScheme);
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      background: var(--bg-primary);
+      color: var(--text-normal);
+      font-family: var(--font);
+      font-size: var(--font-size);
+    }
+    [v-cloak] { display: none; }
+  </style>
+  <style>:root {
+  --containerWidth: 700px;
+  --sidebarWidth: 100px;
+  --sidebarGap: 16px;
+  --sidebarGapMobile: 8px;
+  --gap: 8px;
+  --verticalGap: 16px;
+  --verticalGapMobile: 8px;
+  --resultsGap: 16px;
+  --resultGlowSize: 8px;
+  --imgBorderRadius: 8px;
+}
+
+body {
+  padding: 0 8px;
+}
+
+a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--text-normal-hover);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+#container {
+  max-width: var(--containerWidth);
+  margin: 16px auto;
+
+  @media (max-width: 840px) {
+    margin: 0px auto;
+  }
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-primary);
+  z-index: 1;
+}
+
+.sidebar {
+  width: var(--sidebarWidth);
+  min-width: var(--sidebarWidth);
+  display: flex;
+  justify-content: end;
+  align-items: flex-end;
+
+  @media (max-width: 840px) {
+    width: 100%;
+    min-width: 0;
+    justify-content: start;
+    align-items: flex-start;
+  }
+}
+
+.mainRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sidebarGap);
+
+  @media (max-width: 840px) {
+    gap: var(--sidebarGapMobile);
+  }
+}
+
+.category {
+  align-items: flex-start;
+  margin-top: var(--verticalGap);
+  z-index: 10;
+
+  @media (max-width: 840px) {
+    margin-top: var(--verticalGapMobile);
+  }
+
+  a {
+    color: var(--text-normal);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  a:hover {
+    color: var(--text-normal-hover);
+  }
+
+  .sidebar {
+    display: table;
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--text-normal);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: right;
+    border-top: solid var(--border-color) 1px;
+    padding-top: 3px;
+
+    @media (max-width: 840px) {
+      text-align: left;
+      border-top: none;
+      border-bottom: solid var(--border-color) 1px;
+    }
+  }
+
+  .drawer {
+    overflow: hidden;
+    transition: all 0.3s ease;
+    max-height: 0px;
+    /* collapsed state */
+  }
+
+  .drawer.expanded {
+    max-height: 300px;
+    /* expanded state - generous height */
+  }
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--resultsGap);
+  width: 100%;
+}
+
+.result-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.result {
+  display: flex;
+  text-decoration: none;
+  color: inherit;
+  padding: var(--resultGlowSize);
+  margin: calc(-1 * var(--resultGlowSize));
+  user-select: text;
+  border-radius: 8px;
+  position: relative;
+  gap: 12px;
+  overflow: visible;
+  z-index: 0;
+}
+
+.result:hover {
+  @media (min-width: 840px) {
+    background: var(--bg-primary-hover);
+  }
+}
+
+.fav,
+.result-content img.fav {
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  object-fit: fill;
+  filter: grayscale(40%);
+  vertical-align: top;
+}
+
+.result-content {
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  >img {
+    float: left;
+    border-radius: var(--imgBorderRadius);
+    max-width: 118px;
+    max-height: 118px;
+    margin-right: 8px;
+  }
+
+  .title {
+    font-size: var(--font-size-large);
+    font-weight: 400;
+    color: var(--text-bright);
+    text-decoration: none;
+    display: inline;
+
+    small {
+      font-size: var(--font-size-small);
+      color: var(--text-muted);
+    }
+  }
+
+  .title:hover {
+    color: var(--text-bright-hover);
+  }
+}
+
+
+@media (max-width: 840px) {
+  .sm-hide {
+    display: none;
+  }
+
+  .sm-min-width {
+    width: initial;
+    min-width: 0;
+  }
+
+  .sm-vertical {
+    flex-direction: column;
+  }
+}
+
+.queryContainer {
+  position: relative;
+  width: 100%;
+}
+
+.logo {
+  height: 32px;
+  cursor: pointer;
+  user-select: none;
+}
+
+
+#query {
+  width: 100%;
+  outline: none;
+  color: var(--text-bright);
+  position: relative;
+  z-index: 2;
+  caret-color: var(--text-bright);
+}
+
+#queryEllipses {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 1;
+  color: var(--text-muted);
+  padding: 0;
+  margin: 0;
+}
+
+.suggestions {
+  display: flex;
+  gap: 16px;
+  overflow: clip;
+  margin-top: 4px;
+}
+
+.suggestion-item {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Film roll styles for image galleries */
+.film-roll {
+  display: flex;
+  gap: 8px;
+  position: relative;
+}
+
+.film-roll a {
+  flex-shrink: 0;
+  width: auto;
+  height: 120px;
+  margin: 0;
+  display: relative;
+}
+
+.film-roll a img {
+  height: 100%;
+  width: auto;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--bg-secondary);
+  cursor: pointer;
+}
+
+.scroll-horizontal {
+  flex-wrap: nowrap;
+  overflow-x: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-horizontal::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-horizontal.fade-left {
+  -webkit-mask-image: linear-gradient(to right, transparent 0px, black 20px, black 100%);
+  mask-image: linear-gradient(to right, transparent 0px, black 20px, black 100%);
+}
+
+.scroll-horizontal.fade-right {
+  -webkit-mask-image: linear-gradient(to left, transparent 0px, black 20px, black 100%);
+  mask-image: linear-gradient(to left, transparent 0px, black 20px, black 100%);
+}
+
+.scroll-horizontal.fade-left.fade-right {
+  -webkit-mask-image: linear-gradient(to right, transparent 0px, black 20px, black calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0px, black 20px, black calc(100% - 20px), transparent 100%);
+}
+
+.tabs {
+  display: flex;
+  opacity: 0;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ready .tabs {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: none;
+  outline: none;
+  color: var(--text-normal);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  background: none;
+  white-space: nowrap;
+  border-bottom: solid var(--border-color) 2px;
+}
+
+.tab:hover {
+  color: var(--text-normal-hover);
+  background: var(--bg-primary-hover);
+}
+
+.tab.active {
+  color: var(--text-bright);
+  border-bottom: solid var(--bg-active) 2px;
+}
+
+.tab.active:hover {
+  color: var(--text-bright-hover);
+  background: var(--bg-primary-hover);
+}
+
+.url-list-grid {
+  margin-top: 8px;
+}
+
+.emoticon-button {
+  position: fixed;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 1001;
+  transition: all 0.3s ease;
+  background: none;
+  filter: grayscale(100%);
+}
+
+#colorSchemeToggle {
+  top: 16px;
+  right: 16px;
+}
+
+#aboutButton {
+  top: 16px;
+  right: 40px;
+}
+
+select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-normal);
+  padding: 2px 20px 2px 6px;
+  border-radius: 4px;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+}
+
+select:hover {
+  background-color: var(--bg-primary-hover);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--bg-active);
+}
+
+footer {
+  width: 100%;
+  margin-top: 24px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-color);
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+}
+
+.loading-skeleton .skeleton-block {
+  border-radius: var(--imgBorderRadius);
+  background-color: var(--bg-secondary);
+  background-image: linear-gradient(100deg,
+      transparent 35%,
+      color-mix(in srgb, var(--text-normal) 10%, transparent) 50%,
+      transparent 65%);
+  background-size: 240% 100%;
+  animation: loading-skeleton-sweep 1.6s ease-in-out infinite;
+  color: transparent;
+}
+
+.loading-skeleton .skeleton-poster {
+  display: block;
+  width: min(30%, 118px);
+  aspect-ratio: 11 / 16;
+  flex: none;
+}
+
+.loading-skeleton .skeleton-media {
+  display: flex;
+}
+
+.loading-skeleton .skeleton-lines {
+  flex: 1;
+  min-width: 0;
+  margin-left: 8px;
+}
+
+.loading-skeleton .mainRow:nth-child(1) .skeleton-block {
+  animation-delay: 0s;
+}
+
+.loading-skeleton .mainRow:nth-child(2) .skeleton-block {
+  animation-delay: .15s;
+}
+
+.loading-skeleton .mainRow:nth-child(3) .skeleton-block {
+  animation-delay: .3s;
+}
+
+@keyframes loading-skeleton-sweep {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-skeleton .skeleton-block {
+    animation: loading-skeleton-pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes loading-skeleton-pulse {
+    50% {
+      opacity: .6;
+    }
+  }
+}</style>
+  
+  <meta name="xsrf-token" content="73A6E60F01CF63A71AE53B8E075AA095B97C2FA3D2C1F9102235849BD51A4CAE" />
+
+  <link rel="search" type="application/opensearchdescription+xml" title="NeoSearch" href="/opensearch.xml">
+  
+  <script>// ——— UTILITIES ———
+
+// ——— FAVICON CACHE ———
+class FaviconCache {
+  constructor() {
+    this.dbName = 'faviconCache';
+    this.storeName = 'favicons';
+    this.version = 1;
+    this.db = null;
+    this.initPromise = this.init();
+  }
+
+  async init() {
+    if (!window.indexedDB) {
+      console.warn('IndexedDB not supported, favicon caching disabled');
+      return false;
+    }
+
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, this.version);
+      
+      request.onerror = () => {
+        console.warn('Failed to open IndexedDB for favicon cache');
+        resolve(false);
+      };
+      
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve(true);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          const store = db.createObjectStore(this.storeName, { keyPath: 'domain' });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+      };
+    });
+  }
+
+  async get(domain) {
+    await this.initPromise;
+    if (!this.db) return null;
+
+    return new Promise((resolve) => {
+      const transaction = this.db.transaction([this.storeName], 'readonly');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.get(domain);
+      
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result) {
+          // Check if cache is still valid (7 days)
+          const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+          if (Date.now() - result.timestamp < maxAge) {
+            resolve(result.dataUrl);
+            return;
+          } else {
+            // Cache expired, delete it
+            this.delete(domain);
+          }
+        }
+        resolve(null);
+      };
+      
+      request.onerror = () => resolve(null);
+    });
+  }
+
+  async set(domain, dataUrl) {
+    await this.initPromise;
+    if (!this.db) return;
+
+    return new Promise((resolve) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      const data = {
+        domain: domain,
+        dataUrl: dataUrl,
+        timestamp: Date.now()
+      };
+      
+      const request = store.put(data);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  }
+
+  async delete(domain) {
+    await this.initPromise;
+    if (!this.db) return;
+
+    return new Promise((resolve) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.delete(domain);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  }
+
+  async clear() {
+    await this.initPromise;
+    if (!this.db) return;
+
+    return new Promise((resolve) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.clear();
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  }
+}
+
+// Global favicon cache instance
+const faviconCache = new FaviconCache();
+
+async function fetchFavicon(hostname) {
+  try {
+    // Try to get from cache first
+    const cachedDataUrl = await faviconCache.get(hostname);
+    if (cachedDataUrl !== null) {
+      return cachedDataUrl; // Return cached value, even if it's empty string
+    }
+    
+    // Not in cache, fetch from server and convert to data URL
+    const serverUrl = `/favicon?domain=${encodeURIComponent(hostname)}`;
+    
+    try {
+      console.log(`Fetching favicon from server for ${hostname}: ${serverUrl}`);
+      const response = await fetch(serverUrl);
+      if (response.ok) {
+        const blob = await response.blob();
+        
+        // Convert blob to data URL
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        
+        // Cache the data URL
+        await faviconCache.set(hostname, dataUrl);
+        
+        return dataUrl;
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch favicon for ${hostname}:`, error);
+    }
+    
+    // Cache the failure as empty string to avoid repeated attempts
+    await faviconCache.set(hostname, '');
+    return '';
+  } catch {
+    // Cache the failure as empty string to avoid repeated attempts
+    await faviconCache.set(hostname, '');
+    return '';
+  }
+}
+
+function smartDiff(oldText, newText) {
+  if (!oldText || !newText) return newText;
+  
+  const oldLower = oldText.toLowerCase().trim();
+  const newLower = newText.toLowerCase().trim();
+  
+  // If strings are identical, return the new text
+  if (oldLower === newLower) return newText;
+  
+  // If old text is 3 characters or less, just return the full new text
+  if (oldLower.length <= 3) return newText;
+  
+  // First handle simple substring cases
+  if (newLower.includes(oldLower)) {
+    const index = newLower.indexOf(oldLower);
+    const before = newText.substring(0, index).trim();
+    const after = newText.substring(index + oldText.length).trim();
+    
+    // Special case: if old text doesn't end with space and we're completing a word
+    if (!oldText.endsWith(' ') && after && !after.startsWith(' ')) {
+      // Find the end of the current word
+      const afterWords = after.split(' ');
+      const completedWord = afterWords[0];
+      const restAfter = afterWords.slice(1).join(' ').trim();
+      
+      if (before && restAfter) {
+        return `${before}...${completedWord} ${restAfter}`;
+      } else if (before) {
+        return `${before}...${completedWord}`;
+      } else if (restAfter) {
+        return `...${completedWord} ${restAfter}`;
+      } else {
+        return `...${completedWord}`;
+      }
+    }
+    
+    if (before && after) return `${before}...${after}`;
+    if (before) return `${before}...`;
+    if (after) return `...${after}`;
+    return newText;
+  }
+  
+  // For more complex cases, find common prefix and suffix
+  let prefixLength = 0;
+  const minLength = Math.min(oldLower.length, newLower.length);
+  while (prefixLength < minLength && oldLower[prefixLength] === newLower[prefixLength]) {
+    prefixLength++;
+  }
+  
+  let suffixLength = 0;
+  while (suffixLength < minLength - prefixLength && 
+         oldLower[oldLower.length - 1 - suffixLength] === newLower[newLower.length - 1 - suffixLength]) {
+    suffixLength++;
+  }
+  
+  // Make sure prefix and suffix don't overlap in the original text
+  if (prefixLength + suffixLength > oldLower.length) {
+    suffixLength = Math.max(0, oldLower.length - prefixLength);
+  }
+  
+  // Extract the inserted part (what's new in the middle)
+  const insertedPart = newText.substring(prefixLength, newText.length - suffixLength).trim();
+  
+  // If there's something inserted, show it with ellipses
+  if (insertedPart) {
+    const hasPrefix = prefixLength > 0;
+    const hasSuffix = suffixLength > 0;
+    
+    if (hasPrefix && hasSuffix) {
+      return `...${insertedPart}...`;
+    } else if (hasPrefix) {
+      return `...${insertedPart}`;
+    } else if (hasSuffix) {
+      return `${insertedPart}...`;
+    } else {
+      return insertedPart;
+    }
+  }
+  
+  return newText;
+}
+
+function hostname(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'unknown';
+  }
+}
+
+// ——— COMPONENT EXPANSION ———
+// Expands <result-header> custom tags into their full Vue Petite HTML before mounting.
+// This is a pure string transformation — it never sees runtime data.
+
+const _RESULT_HEADER_TPL = (title, url, emoji, faviconUrl) => {
+  const fav  = faviconUrl ? `app.favicon('${faviconUrl}')` : `app.favicon(link.url)`;
+  const alt  = faviconUrl ? `"${faviconUrl} favicon"` : `hostname(link.url) + " favicon"`;
+  return `<div class='result-header' style='margin-bottom:8px'>
+  <img v-if='${fav}' class='fav' :src='${fav}' :alt='${alt}'>
+  <span v-else class='fav emoji-favicon'>${emoji}</span>
+  <a v-if='link.url' class='title' :href='${url}' target='_blank' rel='noopener noreferrer'>
+    {{ ${title} }} <small>{{ hostname(link.url) }}</small>
+  </a>
+  <span v-else class='title'>{{ ${title} }}</span>
+</div>`;
+};
+
+function expandComponents(html) {
+  return html
+    .replace(/<result-header([^>]*)>/gi, (_, attrs) => {
+      const get = name => { const m = attrs.match(new RegExp(`\\s${name}="([^"]+)"`)); return m?.[1]; };
+      return _RESULT_HEADER_TPL(
+        get('title') ?? 'link.title',
+        get('url')   ?? 'link.url',
+        get('emoji') ?? '🌐',
+        get('faviconUrl')
+      );
+    })
+    .replace(/<\/result-header>/gi, '');
+}
+
+function getQueryFromUrl() {
+  return new URLSearchParams(window.location.search).get('q') ?? '';
+}
+
+function updateUrlWithQuery(query, addToHistory = false) {
+  const url = new URL(window.location);
+  if (query.trim()) {
+    url.searchParams.set('q', query);
+  } else {
+    url.searchParams.delete('q');
+  }
+
+  if (addToHistory) {
+    window.history.pushState({}, '', url);
+  } else {
+    window.history.replaceState({}, '', url);
+  }
+}
+
+function setCursorToEnd(element) {
+  element.focus();
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(element);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+// ——— RELEVANCE AND LABEL EMOTICONS ———
+
+function getRelevanceEmoticon(relevance) {
+  const relevanceMap = {
+    // 'perfect': '🎯',
+    // 'low': '❌'
+  };
+  return relevanceMap[relevance] || '';
+}
+
+function getLabelEmoticons(labels) {
+  const labelMap = {
+    // Source Type
+    'official': '🏢',
+    'community': '👥',
+    'news': '📰',
+    'academic': '🎓',
+    
+    // Commercial Status
+    'commercial': '💰',
+    'independent': '🔓',
+    
+    // Content Nature
+    'informational': '📚',
+    'tutorial': '📖',
+    'reference': '📋',
+    'comparison': '⚖️',
+    'discussion': '💬',
+    
+    // Quality/Trust
+    'authoritative': '✅',
+    'comprehensive': '📄',
+    'recent': '🕐',
+    'quick_answer': '⚡'
+  };
+  
+  return labels.map(label => labelMap[label]).filter(Boolean);
+}
+
+// ——— SCROLL FADE INDICATORS ———
+/**
+ * Initializes scroll fade indicators for all horizontal scroll containers in the component.
+ * Automatically detects scroll position and updates fade-left/fade-right classes.
+ * Call this once in mounted() and it will handle all .scroll-horizontal elements.
+ */
+function initScrollFades(vueInstance) {
+  vueInstance.$nextTick(() => {
+    const containers = document.querySelectorAll('.scroll-horizontal');
+    
+    containers.forEach(el => {
+      // Skip if already initialized
+      if (el._scrollFadesInitialized) return;
+      el._scrollFadesInitialized = true;
+      
+      const updateFades = () => {
+        console.log('Updating scroll fades for element:', el.clientWidth, el.scrollWidth, el.scrollLeft);
+        el.classList.toggle('fade-left', el.scrollLeft > 0);
+        el.classList.toggle('fade-right', el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+      };
+      
+      // Initial update on next tick to ensure layout is calculated
+      vueInstance.$nextTick(() => updateFades());
+      
+      // Update on scroll
+      el.addEventListener('scroll', updateFades);
+      
+      // Update when content resizes (e.g., images loading)
+      // Observe all direct children since their size changes affect scrollWidth
+      const resizeObserver = new ResizeObserver(() => {
+        if (el.isConnected) {
+          console.log('Resize observed for scroll fade element');
+          updateFades();
+        } else {
+          resizeObserver.disconnect();
+        }
+      });
+      
+      // Observe all children
+      Array.from(el.children).forEach(child => {
+        resizeObserver.observe(child);
+      });
+    });
+  });
+}
+</script>
+  <script>// Location codes and names
+const LOCATIONS = [
+  { code: 'dz', name: 'Algeria' },
+  { code: 'ar', name: 'Argentina' },
+  { code: 'am', name: 'Armenia' },
+  { code: 'au', name: 'Australia' },
+  { code: 'at', name: 'Austria' },
+  { code: 'az', name: 'Azerbaijan' },
+  { code: 'bh', name: 'Bahrain' },
+  { code: 'by', name: 'Belarus' },
+  { code: 'be', name: 'Belgium' },
+  { code: 'bo', name: 'Bolivia' },
+  { code: 'br', name: 'Brazil' },
+  { code: 'bg', name: 'Bulgaria' },
+  { code: 'ca', name: 'Canada' },
+  { code: 'cl', name: 'Chile' },
+  { code: 'cn', name: 'China' },
+  { code: 'co', name: 'Colombia' },
+  { code: 'hr', name: 'Croatia' },
+  { code: 'cy', name: 'Cyprus' },
+  { code: 'cz', name: 'Czech Republic' },
+  { code: 'dk', name: 'Denmark' },
+  { code: 'ec', name: 'Ecuador' },
+  { code: 'eg', name: 'Egypt' },
+  { code: 'ee', name: 'Estonia' },
+  { code: 'fi', name: 'Finland' },
+  { code: 'fr', name: 'France' },
+  { code: 'ge', name: 'Georgia' },
+  { code: 'de', name: 'Germany' },
+  { code: 'gh', name: 'Ghana' },
+  { code: 'gr', name: 'Greece' },
+  { code: 'hk', name: 'Hong Kong' },
+  { code: 'hu', name: 'Hungary' },
+  { code: 'in', name: 'India' },
+  { code: 'id', name: 'Indonesia' },
+  { code: 'ie', name: 'Ireland' },
+  { code: 'il', name: 'Israel' },
+  { code: 'it', name: 'Italy' },
+  { code: 'jp', name: 'Japan' },
+  { code: 'jo', name: 'Jordan' },
+  { code: 'kz', name: 'Kazakhstan' },
+  { code: 'ke', name: 'Kenya' },
+  { code: 'kw', name: 'Kuwait' },
+  { code: 'kg', name: 'Kyrgyzstan' },
+  { code: 'lv', name: 'Latvia' },
+  { code: 'lb', name: 'Lebanon' },
+  { code: 'lt', name: 'Lithuania' },
+  { code: 'lu', name: 'Luxembourg' },
+  { code: 'my', name: 'Malaysia' },
+  { code: 'mt', name: 'Malta' },
+  { code: 'mx', name: 'Mexico' },
+  { code: 'md', name: 'Moldova' },
+  { code: 'ma', name: 'Morocco' },
+  { code: 'nl', name: 'Netherlands' },
+  { code: 'nz', name: 'New Zealand' },
+  { code: 'ng', name: 'Nigeria' },
+  { code: 'no', name: 'Norway' },
+  { code: 'om', name: 'Oman' },
+  { code: 'py', name: 'Paraguay' },
+  { code: 'pe', name: 'Peru' },
+  { code: 'ph', name: 'Philippines' },
+  { code: 'pl', name: 'Poland' },
+  { code: 'pt', name: 'Portugal' },
+  { code: 'qa', name: 'Qatar' },
+  { code: 'ro', name: 'Romania' },
+  { code: 'ru', name: 'Russia' },
+  { code: 'sa', name: 'Saudi Arabia' },
+  { code: 'sg', name: 'Singapore' },
+  { code: 'sk', name: 'Slovakia' },
+  { code: 'si', name: 'Slovenia' },
+  { code: 'za', name: 'South Africa' },
+  { code: 'kr', name: 'South Korea' },
+  { code: 'es', name: 'Spain' },
+  { code: 'se', name: 'Sweden' },
+  { code: 'ch', name: 'Switzerland' },
+  { code: 'tw', name: 'Taiwan' },
+  { code: 'tj', name: 'Tajikistan' },
+  { code: 'th', name: 'Thailand' },
+  { code: 'tn', name: 'Tunisia' },
+  { code: 'tr', name: 'Turkey' },
+  { code: 'tm', name: 'Turkmenistan' },
+  { code: 'ua', name: 'Ukraine' },
+  { code: 'ae', name: 'United Arab Emirates' },
+  { code: 'gb', name: 'United Kingdom' },
+  { code: 'us', name: 'United States' },
+  { code: 'uy', name: 'Uruguay' },
+  { code: 'uz', name: 'Uzbekistan' },
+  { code: 've', name: 'Venezuela' },
+  { code: 'vn', name: 'Vietnam' }
+];
+
+// Function to get location name by code
+function getLocationName(code) {
+  const location = LOCATIONS.find(c => c.code === code.toLowerCase());
+  return location ? location.name : code.toLowerCase();
+}
+
+// Function to get user's saved location preference or detect from CloudFlare
+function getUserLocation() {
+  // First check localStorage for user preference
+  const savedLocation = localStorage.getItem('user_location');
+  if (savedLocation && savedLocation.length === 2) {
+    return savedLocation.toLowerCase();
+  }
+  return null;
+}
+
+// Function to save user's location preference
+function saveUserLocation(locationCode) {
+  localStorage.setItem('user_location', locationCode.toLowerCase());
+}
+</script>
+  <script>// Central configuration for all URL list types
+// Each type defines its name, storage key, and default items
+
+const URL_LIST_CONFIGS = {
+  searchEngines: {
+    title: 'Search Engines',
+    storageKey: 'search_engines',
+    urlPlaceholder: 'https://www.google.com/search?q={searchTerms}',
+    helpText: 'Use {searchTerms} as a placeholder for the search query',
+    defaults: [
+      { domain: 'google.com', url: 'https://www.google.com/search?q={searchTerms}', name: 'Google', enabled: true },
+      { domain: 'bing.com', url: 'https://www.bing.com/search?q={searchTerms}', name: 'Bing', enabled: false },
+      { domain: 'brave.com', url: 'https://search.brave.com/search?q={searchTerms}', name: 'Brave', enabled: false },
+      { domain: 'duckduckgo.com', url: 'https://www.duckduckgo.com/?q={searchTerms}', name: 'DuckDuckGo', enabled: false },
+      { domain: 'marginalia-search.com', url: 'https://marginalia-search.com/search?query={searchTerms}', name: 'Marginalia Search', enabled: false },
+
+      { domain: 'chatgpt.com', url: 'https://chatgpt.com/?q={searchTerms}', name: 'ChatGPT', enabled: true },
+      { domain: 'claude.ai', url: 'https://claude.ai/new?q={searchTerms}', name: 'Claude AI', enabled: false },
+
+      { domain: 'bing.com/images', url: 'https://www.bing.com/images/search?q={searchTerms}', name: 'Bing Images', enabled: false },
+
+      { domain: 'youtube.com', url: 'https://www.youtube.com/results?search_query={searchTerms}', name: 'YouTube', enabled: true },
+      { domain: 'vimeo.com', url: 'https://vimeo.com/search?q={searchTerms}', name: 'Vimeo', enabled: false },
+      { domain: 'dailymotion.com', url: 'https://www.dailymotion.com/search/{searchTerms}', name: 'Dailymotion', enabled: false },
+      { domain: 'twitch.tv', url: 'https://www.twitch.tv/search?term={searchTerms}', name: 'Twitch', enabled: false },
+      { domain: 'bing.com/videos', url: 'https://www.bing.com/videos/search?q={searchTerms}', name: 'Bing Videos', enabled: true },
+
+      { domain: 'reddit.com', url: 'https://www.reddit.com/search/?q={searchTerms}', name: 'Reddit', enabled: true },
+      { domain: 'news.ycombinator.com', url: 'https://hn.algolia.com/?q={searchTerms}', name: 'Hacker News', enabled: false },
+      { domain: 'quora.com', url: 'https://www.quora.com/search?q={searchTerms}', name: 'Quora', enabled: false },
+
+      { domain: 'news.google.com', url: 'https://news.google.com/search?q={searchTerms}', name: 'Google News', enabled: false },
+      { domain: 'newsnow.com', url: 'https://www.newsnow.com/us/?search={searchTerms}', name: 'NewsNow', enabled: true }
+    ]
+  },
+
+  ethereumAddresses: {
+    title: 'Ethereum Addresses',
+    storageKey: 'ethereum_addresses',
+    urlPlaceholder: 'https://etherscan.io/address/{address}',
+    helpText: 'Use {address} as a placeholder for the Ethereum address',
+    defaults: [
+      // Main Blockchain Explorers
+      { domain: 'etherscan.io', url: 'https://etherscan.io/address/{address}', name: 'Etherscan', enabled: true },
+      { domain: 'ethplorer.io', url: 'https://ethplorer.io/address/{address}', name: 'Ethplorer', enabled: false },
+      { domain: 'blockchair.com', url: 'https://blockchair.com/ethereum/address/{address}', name: 'Blockchair', enabled: false },
+      { domain: 'blockchain.com', url: 'https://www.blockchain.com/explorer/addresses/eth/{address}', name: 'Blockchain.com', enabled: false },
+      { domain: 'blockscan.com', url: 'https://blockscan.com/address/{address}', name: 'Blockscan', enabled: false },
+      
+      // Portfolio & DeFi Trackers
+      { domain: 'zapper.xyz', url: 'https://zapper.xyz/account/{address}', name: 'Zapper', enabled: true },
+      { domain: 'debank.com', url: 'https://debank.com/profile/{address}', name: 'DeBank', enabled: true },
+      { domain: 'zerion.io', url: 'https://app.zerion.io/{address}/overview', name: 'Zerion', enabled: false },
+      { domain: 'ethvm.com', url: 'https://www.ethvm.com/address/{address}', name: 'EthVM', enabled: false },
+
+      // NFT-Focused Platforms
+      { domain: 'opensea.io', url: 'https://opensea.io/{address}', name: 'OpenSea', enabled: true },
+      { domain: 'looksrare.org', url: 'https://looksrare.org/accounts/{address}', name: 'LooksRare', enabled: false },
+      { domain: 'rarible.com', url: 'https://og.rarible.com/explore/search/{address}/items', name: 'Rarible', enabled: false },
+      
+      // On-chain Analytics
+      { domain: 'nansen.ai', url: 'https://app.nansen.ai/profiler?address={address}', name: 'Nansen', enabled: true },
+      { domain: 'dune.com', url: 'https://dune.com/browse/dashboards?q={address}', name: 'Dune Analytics', enabled: false },
+      { domain: 'arkham.com', url: 'https://platform.arkhamintelligence.com/explorer/address/{address}', name: 'Arkham', enabled: false },
+      { domain: 'breadcrumbs.app', url: 'https://www.breadcrumbs.app/address/eth/{address}', name: 'Breadcrumbs', enabled: false },
+      
+      // ENS & Identity
+      { domain: 'ens.domains', url: 'https://app.ens.domains/{address}', name: 'ENS', enabled: false },
+      
+      // Multi-chain Explorers
+      { domain: 'oklink.com', url: 'https://www.oklink.com/eth/address/{address}', name: 'OKLink', enabled: false },
+      { domain: 'tokenview.io', url: 'https://eth.tokenview.io/en/address/{address}', name: 'TokenView', enabled: false },
+      { domain: 'blockscout.com', url: 'https://blockscout.com/eth/mainnet/address/{address}', name: 'Blockscout', enabled: false }
+    ]
+  },
+
+  movies: {
+    title: 'Movie Databases',
+    storageKey: 'movie_databases',
+    urlPlaceholder: 'https://www.imdb.com/title/tt0111161/',
+    helpText: 'Add movie database URLs (IMDb, TMDb, etc.)',
+    defaults: [
+      { domain: 'imdb.com', url: 'https://www.imdb.com/title/tt0111161/', name: 'The Shawshank Redemption - IMDb', enabled: true },
+      { domain: 'themoviedb.org', url: 'https://www.themoviedb.org/movie/278', name: 'The Shawshank Redemption - TMDb', enabled: true },
+      { domain: 'rottentomatoes.com', url: 'https://www.rottentomatoes.com/m/the_shawshank_redemption', name: 'The Shawshank Redemption - RT', enabled: false },
+      { domain: 'letterboxd.com', url: 'https://letterboxd.com/film/the-shawshank-redemption/', name: 'The Shawshank Redemption - Letterboxd', enabled: false }
+    ]
+  }
+};
+</script>
+  <script>// Generic URL List Modal Component
+// Usage: createUrlListModal('searchEngines', 'modalInstanceName')
+// Returns a Vue Petite component factory function
+
+function createUrlListModal(configKey, instanceName = null) {
+  const config = URL_LIST_CONFIGS[configKey];
+  
+  if (!config) {
+    console.error(`URL list config not found: ${configKey}`);
+    return () => ({});
+  }
+
+  return ({
+    configKey,
+    config,
+    isVisible: false,
+    items: [],
+    editingIndex: null,
+    editingItem: { name: '', domain: '', url: '', enabled: true },
+    draggedIndex: null,
+
+    loadItems() {
+      const key = "url_list_" + this.config.storageKey;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          this.items = JSON.parse(stored);
+        } catch (e) {
+          console.error(`Error parsing stored ${key}:`, e);
+          this.items = [...this.config.defaults];
+        }
+      } else {
+        this.items = [...this.config.defaults];
+      }
+    },
+
+    saveItems() {
+      const key = "url_list_" + this.config.storageKey;
+      localStorage.setItem(key, JSON.stringify(this.items));
+      notifyUrlListUpdate(this.configKey);
+    },
+
+    getEnabledItems() {
+      return this.items.filter(item => item.enabled);
+    },
+
+    addItem() {
+      this.editingIndex = -1;
+      this.editingItem = { name: '', domain: '', url: '', enabled: true };
+    },
+
+    editItem(index) {
+      this.editingIndex = index;
+      this.editingItem = { ...this.items[index] };
+    },
+
+    saveItem() {
+      if (this.editingIndex === -1) {
+        this.items.push({ ...this.editingItem });
+      } else {
+        this.items[this.editingIndex] = { ...this.editingItem };
+      }
+      this.cancelEdit();
+      this.saveItems();
+    },
+
+    cancelEdit() {
+      this.editingIndex = null;
+      this.editingItem = { name: '', domain: '', url: '', enabled: true };
+    },
+
+    removeItem(index) {
+      this.items.splice(index, 1);
+      this.saveItems();
+    },
+
+    resetToDefault() {
+      this.items = [...this.config.defaults];
+      this.saveItems();
+    },
+
+    toggleItem(index) {
+      this.items[index].enabled = !this.items[index].enabled;
+      this.saveItems();
+    },
+
+    onDragStart(event, index) {
+      this.draggedIndex = index;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/html', event.target.outerHTML);
+      event.target.style.opacity = '0.5';
+    },
+
+    onDragEnd(event) {
+      event.target.style.opacity = '';
+      this.draggedIndex = null;
+    },
+
+    onDragOver(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    },
+
+    onDrop(event, dropIndex) {
+      event.preventDefault();
+      
+      if (this.draggedIndex === null || this.draggedIndex === dropIndex) {
+        return;
+      }
+
+      const draggedItem = this.items[this.draggedIndex];
+      this.items.splice(this.draggedIndex, 1);
+      
+      const newIndex = this.draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+      this.items.splice(newIndex, 0, draggedItem);
+      
+      this.saveItems();
+      this.draggedIndex = null;
+    },
+
+    show() {
+      this.isVisible = true;
+    },
+
+    overlayMouseDown(event) {
+      if (event.target.classList.contains('modal-overlay')) {
+        this.close();
+      }
+    },
+
+    close() {
+      this.isVisible = false;
+      this.saveItems();
+    },
+
+    mounted() {
+      this.loadItems();
+      
+      // Store reference globally if instance name provided
+      if (instanceName) {
+        window[instanceName] = this;
+      }
+    }
+  });
+}
+
+// Generic URL List Grid Component
+// Usage in HTML: <div v-scope="urlListGrid('searchEngines')" @vue:mounted="mounted"></div>
+function createUrlListGrid(configKey, replacements = {}) {
+  const config = URL_LIST_CONFIGS[configKey];
+  
+  if (!config) {
+    console.error(`URL list config not found: ${configKey}`);
+    return () => ({});
+  }
+
+  return ({
+    configKey,
+    config,
+    items: [],
+    modalInstanceName: `${configKey}ModalInstance`,
+    replacements,  // Store replacements dict
+
+    loadItems() {
+      console.log(`[Grid ${this.configKey}] loadItems called`);
+      const key = "url_list_" + this.config.storageKey;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          this.items = JSON.parse(stored);
+        } catch (e) {
+          console.error(`Error parsing stored ${key}:`, e);
+          this.items = [...this.config.defaults];
+        }
+      } else {
+        this.items = [...this.config.defaults];
+      }
+    },
+
+    get enabledItems() {
+      return this.items.filter(item => item.enabled);
+    },
+
+    openInUrl(item) {
+      if (!item.url) return;
+      let url = item.url;
+      
+      console.log(`[Grid ${this.configKey}] openInUrl called for item:`, item);
+      console.log(`[Grid ${this.configKey}] Original URL:`, url);
+      // Replace placeholders using the replacements dictionary
+      if (this.replacements && typeof this.replacements === 'object') {
+        console.log(`[Grid ${this.configKey}] Applying replacements:`, this.replacements);
+        for (let [key, value] of Object.entries(this.replacements)) {
+          if (typeof value === 'function') {
+            value = value();
+          }
+          url = url.replaceAll(`{${key}}`, encodeURIComponent(value));
+          console.log(`[Grid ${this.configKey}] Replaced {${key}} with:`, encodeURIComponent(value));
+        }
+      }
+      
+      console.log(`[Grid ${this.configKey}] Final URL to open:`, url);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    },
+
+    showModal() {
+      console.log(`[Grid ${this.configKey}] showModal called`);
+      console.log(`[Grid ${this.configKey}] modalInstanceName:`, this.modalInstanceName);
+      console.log(`[Grid ${this.configKey}] window object keys:`, window[this.modalInstanceName]);
+      const modalInstance = window[this.modalInstanceName];
+      if (modalInstance) {
+        modalInstance.show();
+      }
+    },
+
+    mounted() {
+      this.loadItems();
+      const key = "url_list_" + this.config.storageKey;
+
+      // Store bound functions so we can remove them later
+      this._storageListener = (e) => {
+        if (e.key === key) {
+          this.loadItems();
+        }
+      };
+      
+      this._updateListener = () => {
+        this.loadItems();
+      };
+      
+      // Reload items when storage changes (e.g., from modal edits)
+      window.addEventListener('storage', this._storageListener);
+      
+      // Also listen for custom event from same-window updates
+      window.addEventListener(`${key}_updated`, this._updateListener);
+    },
+
+    unmounted() {
+      const key = "url_list_" + this.config.storageKey;
+      console.log(`[Grid ${this.configKey}] unmounted called - cleaning up event listeners`);
+      
+      // Remove event listeners
+      if (this._storageListener) {
+        window.removeEventListener('storage', this._storageListener);
+      }
+      
+      if (this._updateListener) {
+        window.removeEventListener(`${key}_updated`, this._updateListener);
+      }
+    }
+  });
+}
+
+// Helper function to notify grid components of storage updates
+function notifyUrlListUpdate(configKey) {
+  const key = "url_list_" + URL_LIST_CONFIGS[configKey].storageKey;
+
+  const config = URL_LIST_CONFIGS[configKey];
+  if (config) {
+    window.dispatchEvent(new CustomEvent(`${key}_updated`));
+  }
+}
+
+// Counter for unique grid IDs
+let _urlListGridCounter = 0;
+
+function initUrlList(configKey, gridContainer = null, showConfig = true, containerSelector = 'body', replacements = {}) {
+  const config = URL_LIST_CONFIGS[configKey];
+  if (!config) {
+    console.error(`Config not found: ${configKey}`);
+    return null;
+  }
+
+  const container = document.querySelector(containerSelector);
+  if (!container) {
+    console.error('Container not found for URL list modals:', containerSelector);
+    return null;
+  }
+
+  // Modal is shared across all grids of the same configKey
+  const modalId = `${configKey}Modal`;
+  const instanceName = `${configKey}ModalInstance`;
+  
+  // Grid ID is always unique using counter
+  const gridId = `${configKey}Grid_${_urlListGridCounter++}`;
+  
+  // Create modal if it doesn't exist (only once per configKey)
+  if (!document.getElementById(modalId)) {
+    const modalHtml = `
+      <div id="${modalId}">
+        <div v-show="isVisible" class="modal-overlay" @mousedown="overlayMouseDown">
+          <div class="modal-content" @click.stop>
+            <button class="modal-close" @click="close()">×</button>
+            <div class="modal-header"><h3>${ config.title }</h3></div>
+            
+            <div v-for="(item, index) in items" :key="index" class="search-engine-item" 
+                 draggable="true" @dragstart="onDragStart($event, index)" @dragend="onDragEnd($event)"
+                 @dragover="onDragOver($event)" @drop="onDrop($event, index)">
+              <span class="drag-handle">⋮⋮</span>
+              <input type="checkbox" :checked="item.enabled" @change="toggleItem(index)">
+              <img v-if="appInstance?.favicon('https://' + item.domain)" class="fav" 
+                   :src="appInstance.favicon('https://' + item.domain)" :alt="item.name">
+              <span v-else class="fav emoji-favicon">🌐</span>
+              <span class="engine-name" :class="{ disabled: !item.enabled }">{{ item.name }}</span>
+              <button class="btn btn-icon clickable" @click="editItem(index)">
+                <span class="emoji-favicon">✏️</span>
+              </button>
+              <button class="btn btn-icon clickable" @click="removeItem(index)">
+                <span class="emoji-favicon">🗑️</span>
+              </button>
+            </div>
+            
+            <div v-if="editingIndex !== null" class="search-engine-config">
+              <h4>{{ editingIndex === -1 ? 'Add' : 'Edit' }} Item</h4>
+              <div class="config-row">
+                <label>Name:</label>
+                <input type="text" v-model="editingItem.name">
+              </div>
+              <div class="config-row">
+                <label>Domain:</label>
+                <input type="text" v-model="editingItem.domain">
+              </div>
+              <div class="config-row">
+                <label>URL:</label>
+                <input type="text" v-model="editingItem.url" :placeholder="config.urlPlaceholder">
+              </div>
+              <div v-if="config.helpText" class="config-help">${ config.helpText }</div>
+              <div class="config-row">
+                <label>Enabled:</label>
+                <input type="checkbox" v-model="editingItem.enabled">
+              </div>
+              <div style="margin-top: 12px;">
+                <button class="btn" @click="saveItem()">{{ editingIndex === -1 ? 'Add' : 'Save' }}</button>
+                <button class="btn" @click="cancelEdit()">Cancel</button>
+              </div>
+            </div>
+
+            <button v-else class="btn" @click="addItem()" style="margin-top: 12px;">Add Item</button>
+
+            <div class="modal-footer">
+              <button class="btn" @click="resetToDefault()">Reset to Default</button>
+              <button class="btn" @click="close()">Done</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    container.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  // Create grid if gridContainer is provided
+  let gridComponent = null;
+  
+  if (gridContainer) {
+    console.log(`[initUrlList] Grid container provided for ${configKey}`);
+    console.log(`[initUrlList] Grid container connected to DOM?`, gridContainer.isConnected);
+    console.log(`[initUrlList] Grid container parent:`, gridContainer.parentElement);
+    
+    // Add unique ID so we can re-query it later
+    gridContainer.id = gridId;
+    gridContainer.classList.add('url-list-grid');
+    
+    const gridHtml = `
+      <span 
+        v-for="engine in enabledItems"
+        :key="engine.name"
+        class="fav clickable"
+        :title="'Search on ' + engine.name"
+        @click="openInUrl(engine)"
+      >
+        <img 
+          v-if="appInstance.favicon('https://' + engine.domain)" 
+          class="fav" 
+          :src="appInstance.favicon('https://' + engine.domain)" 
+          :alt="engine.name + ' favicon'"
+        >
+        <span v-else class="fav emoji-favicon">🌐</span>
+      </span>
+      ${showConfig ? `
+      <span 
+        class="fav emoji-favicon clickable"
+        style="font-size: 16px"
+        title="Configure"
+        @click="showModal()"
+      >⚙️</span>
+      ` : ''}`;
+
+    gridContainer.innerHTML = gridHtml;
+    console.log(`[initUrlList] After setting innerHTML, children:`, gridContainer.children.length);
+    console.log(`[initUrlList] Still connected after innerHTML?`, gridContainer.isConnected);
+    
+    // Mount grid immediately while it's guaranteed to exist
+    console.log(`[initUrlList] About to mount grid immediately on ${gridId}`);
+    if (!gridContainer.__vue_app__) {
+      gridComponent = createUrlListGrid(configKey, replacements);
+      window.PetiteVue.createApp(gridComponent).mount(gridContainer);
+      gridComponent.mounted();
+      
+      console.log(`[initUrlList] Grid component mounted successfully on ${gridId}`);
+      console.log(`[initUrlList] Grid container still connected?`, gridContainer.isConnected);
+    } else {
+      console.warn(`[initUrlList] Grid element ${gridId} already has Vue app mounted`);
+    }
+  }
+
+  // Mount modal (can be async since it's not in the reactive DOM area)
+  const modalElement = document.getElementById(modalId);
+  console.log(`[initUrlList] Modal element found?`, !!modalElement);
+  
+  if (modalElement && !modalElement.__vue_app__) {
+    console.log(`[initUrlList] Mounting modal ${modalId}`);
+    const modalComponent = createUrlListModal(configKey, instanceName);
+    window.PetiteVue.createApp(modalComponent).mount(`#${modalId}`);
+    modalComponent.mounted();
+    console.log(`[initUrlList] Modal mounted successfully`);
+  }
+  
+  // Return the grid component so caller can call unmounted() later
+  return gridComponent;
+}
+</script>
+  <script>const app = () => ({
+  showHintText: !localStorage.getItem('hideQueryHint'),
+  query: '',
+  suggestions: [],
+  lenses: [],
+  currentLens: null,
+  aiOverview: null,
+  showFullAIOverview: false,
+  plugin: { template: null, data: null, scope: null },
+  handlerCache: {},
+  isLoading: false,
+  error: null,
+  _abortController: null,
+  _requestSequence: 0,
+  thinking: null,
+  colorScheme: 'dark',
+  resizeTick: 0,
+  faviconTriggers: {},
+  userLocation: getUserLocation(),
+
+  get noOtherLensSelected() {
+    return this.currentLens == null || this.lenses.length == 0 || this.currentLens == this.lenses[0];
+  },
+
+  get filteredResults() {
+    try {
+      if (!this.currentLens?.categories) return [];
+      return this.currentLens.categories.flatMap(category => category?.links || []);
+    } catch (e) {
+      console.error('Error in filteredResults:', e);
+      return [];
+    }
+  },
+
+  onLocationChange(event) {
+    this.userLocation = event.target.value;
+    saveUserLocation(this.userLocation);
+    
+    // Re-search with new location if we have a query
+    if (this.query) {
+      this.performSearch(this.query);
+    }
+  },
+
+  get formattedSuggestions() {
+    return this.suggestions.map(suggestion => ({
+      original: suggestion,
+      display: smartDiff(this.query, suggestion)
+    }));
+  },
+
+  get queryFontSize() {
+    this.resizeTick; // Access to make reactive
+    const queryLength = this.query.length;
+    const availableWidth = this.$refs.queryInput?.offsetWidth || 0;
+    const maxFontSize = 36;
+    const minFontSize = 16;
+    
+    if (queryLength === 0 || availableWidth <= 0) return maxFontSize;
+    const estimatedFontSize = Math.round(availableWidth / queryLength / 0.55);
+    return Math.max(minFontSize, Math.min(maxFontSize, estimatedFontSize));
+  },
+
+  clearSearchState() {
+    this.unmountPlugin();
+    this.unmountAllResultHandlers();
+    this.suggestions = [];
+    this.lenses = [];
+    this.currentLens = null;
+    this.aiOverview = null;
+    this.showFullAIOverview = false;
+    this.plugin = { template: null, data: null, scope: null };
+    this.thinking = null;
+    this.showThinking = false;
+  },
+
+  setQuery(newQuery) {
+    newQuery = newQuery.trim();
+    
+    if (this.query === newQuery) return;
+    
+    this.query = newQuery;
+    this.error = null;
+    
+    if (this.$refs.queryInput && this.$refs.queryInput.textContent.trim() !== newQuery) {
+      this.$refs.queryInput.textContent = newQuery;
+      setCursorToEnd(this.$refs.queryInput);
+    }
+
+    if (!newQuery) {
+      this._abortController?.abort();
+      this.isLoading = false;
+    }
+  },
+
+  async performSearch(query, fromHistory = false) {
+    this.clearSearchState();
+
+    query = query.trim();
+
+    // Update the query state first
+    this.setQuery(query);
+
+    // Always update URL with pushState for any search operation (including empty query)
+    if (!fromHistory) {
+      updateUrlWithQuery(query, true);
+    }
+    document.title = query ? `${query} - NeoSearch` : 'NeoSearch';
+
+    if (!query) {
+      return;
+    }
+
+    this.isLoading = true;
+
+    // Hide hint forever after first search
+    if (this.showHintText) {
+      this.showHintText = false;
+      localStorage.setItem('hideQueryHint', '1');
+    }
+
+    try {
+      await this.search(query, "auto");
+    } catch (error) {
+      console.error("Error in performSearch:", error);
+    }
+  },
+
+  handleQueryInput(event) {
+    this.setQuery(event.target.textContent);
+  },
+  handleKeyboard(e) {
+    const handler = {
+      'Escape': () => this.setQuery(''),
+      'Tab': () => this.navigateLenses(e.shiftKey ? -1 : 1),
+      'Enter': () => this.performSearch(this.query)
+    }[e.key];
+
+    if (handler) {
+      e.preventDefault();
+      e.stopPropagation();
+      handler();
+    }
+  },
+  navigateLenses(direction) {
+    if (!this.lenses || !this.lenses.length) return;
+
+    let idx = this.lenses.indexOf(this.currentLens);
+    if (idx === -1) idx = 0;
+
+    this.setActiveLens(this.lenses[(idx + direction + this.lenses.length) % this.lenses.length]);
+  },
+  setActiveLens(lens, initial) {
+    if (this.currentLens !== lens) {
+      if (!initial && this.noOtherLensSelected) {
+        this.unmountPlugin();
+      }
+
+      // Unmount handlers from the previous lens
+      this.unmountAllResultHandlers();
+      
+      this.currentLens = lens;
+      
+      // Mount handlers for the new lens
+      if (lens) {
+        this.$nextTick(() => {
+          this.mountAllResultHandlers();
+        });
+      }
+
+      if (!initial && this.noOtherLensSelected) {
+        this.$nextTick(() => {
+          this.mountPlugin();
+        });
+      }
+    }
+  },
+  async search(query, generateMode = "auto") {
+    if (query !== this.query) return false;
+
+    if (generateMode === "yes" || generateMode === true) this.isLoading = true;
+    this._abortController?.abort();
+    this._abortController = new AbortController();
+    const currentSequence = ++this._requestSequence;
+
+    try {
+      const generateParam = generateMode === true ? "yes" : generateMode;
+      const response = await fetch('/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': document.querySelector('meta[name="xsrf-token"]').content
+        },
+        body: JSON.stringify({ q: query, generate: generateParam, loc: this.userLocation }),
+        signal: this._abortController.signal
+      });
+      if (response.status === 403) {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('r')) {
+          url.searchParams.set('r', '1');
+          window.location.replace(url);
+          return false;
+        }
+      }
+      if (response.status === 429) {
+        this.error = 'Sorry, due to recent abuse of our service by AI agents, we have implemented a 100 searches/day limit. If you run an AI agent and you need search, please stop trying to kill our free open-source project.';
+        this.isLoading = false;
+        return false;
+      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.has('r')) {
+        currentUrl.searchParams.delete('r');
+        history.replaceState({}, '', currentUrl);
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let hasData = false;
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Keep the last potentially incomplete line in the buffer
+        buffer = lines.pop() || '';
+        
+        // Process complete lines
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const data = JSON.parse(line);
+              if (currentSequence === this._requestSequence) {
+                this.updateSearchData(data);
+                if (Object.keys(data).length > 0) hasData = true;
+              }
+            } catch (e) {
+              console.error('Error parsing JSON line:', e, 'Line:', line);
+            }
+          }
+        }
+      }
+      
+      // Process any remaining data in buffer
+      if (buffer.trim()) {
+        try {
+          const data = JSON.parse(buffer);
+          if (currentSequence === this._requestSequence) {
+            this.updateSearchData(data);
+            if (Object.keys(data).length > 0) hasData = true;
+          }
+        } catch (e) {
+          console.error('Error parsing final JSON:', e, 'Buffer:', buffer);
+        }
+      }
+
+      this.isLoading = false;
+      
+      // Return true if no data was received (cache miss, generation needed)
+      return generateMode === "no" && !hasData;
+      
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error("Error fetching search data:", error);
+        if (currentSequence === this._requestSequence) {
+          this.error = "Error fetching results. Please try again.";
+          this.isLoading = false;
+        }
+      }
+      return false;
+    }
+  },
+  updateSearchData(data) {
+    console.log('updateSearchData called with:', data);
+    
+    this.error = null;
+    
+    // Handle error responses
+    if (data.error) {
+      console.log('Error response received:', data.error);
+      this.error = data.error;
+      this.isLoading = false;
+      return;
+    }
+    
+    // Update location if provided by server
+    if (data.location !== undefined) {
+      console.log('Updating location from server:', data.location);
+      this.userLocation = data.location;
+      // Don't save to localStorage here as this is the server's decision
+    }
+    
+    if (data.suggestions !== undefined) {
+      console.log('Updating suggestions:', data.suggestions);
+      this.suggestions = data.suggestions || [];
+    }
+    
+    if (data.lenses !== undefined) {
+      console.log('Updating lenses:', data.lenses);
+      this.lenses = data.lenses || [];
+      this.setActiveLens(this.lenses.length > 0 ? this.lenses[0] : null, true);
+    }
+    
+    if (data.thinking !== undefined) {
+      this.thinking = (data.thinking || '').trim();
+      console.log('Updating thinking (length):', this.thinking.length);
+    }
+
+    if (data.overview !== undefined) {
+      console.log('Updating AI Overview:', data.overview);
+      this.aiOverview = data.overview;
+    }
+
+    if (data.plugin !== undefined) {
+      console.log('Plugin data received:', data.plugin);
+      if (data.plugin?.name && data.plugin?.templateChecksum && data.plugin?.scopeChecksum) {
+        this.handlePluginWithChecksums(data.plugin);
+      } else if (data.plugin?.template) {
+        // Fallback for old-style plugins
+        this.plugin = data.plugin;
+        this.$nextTick(() => {
+          this.mountPlugin();
+        });
+      }
+    }
+
+    if (data.lenses !== undefined || data.error) {
+      this.isLoading = false;
+    }
+  },  
+
+  async regenerateResults() {
+    if (!this.query) return;
+    
+    this.clearSearchState();
+    this.isLoading = true;
+    try {
+      await this.search(this.query, "yes");
+    } catch (error) {
+      console.error("Error regenerating results:", error);
+    }
+  },
+
+  toggleAIOverview() {
+    this.showFullAIOverview = !this.showFullAIOverview;
+  },
+
+  toggleColorScheme() {
+    window.toggleColorScheme();
+    this.colorScheme = window.currentColorScheme;
+  },
+  favicon(url) {
+    const hostname = new URL(url).hostname;
+    var favicon = this.faviconTriggers[hostname];
+    if (favicon !== undefined) {
+      return favicon;
+    }
+
+    (async () => {
+      this.faviconTriggers[hostname] = await fetchFavicon(hostname);
+    })();
+
+    return "";
+  },
+
+  thumbnailUrl(url) {
+    try {
+      return `/thumbnail?url=${encodeURIComponent(url)}`;
+    } catch (error) {
+      console.error('Error generating thumbnail URL:', error);
+      return '';
+    }
+  },
+
+  async handlePluginWithChecksums(pluginData) {
+    const { name, templateChecksum, scopeChecksum, data } = pluginData;
+    
+    var pluginInfo = JSON.parse(localStorage.getItem(`plugin_${name}`) || '{}');
+    if (pluginInfo.templateChecksum !== templateChecksum || pluginInfo.scopeChecksum !== scopeChecksum) {
+      console.log('Fetching plugin info for:', name);
+      try {
+        var response = await fetch(`/plugins/get_info?name=${encodeURIComponent(name)}`);
+        pluginInfo = (await response.json());
+        localStorage.setItem(`plugin_${name}`, JSON.stringify(pluginInfo));
+      } catch (error) {
+        console.error('Failed to fetch plugin info:', error);
+        return;
+      }
+    }
+    
+    Object.assign(this.plugin, { data, template: pluginInfo.template, scope: pluginInfo.scope });
+    this.$nextTick(() => this.mountPlugin());
+  },
+
+  async handleHandlerWithChecksums(handlerData) {
+    const { name, templateChecksum, scopeChecksum, data } = handlerData;
+    
+    var handlerInfo = JSON.parse(localStorage.getItem(`handler_${name}`) || '{}');
+    if (handlerInfo.templateChecksum !== templateChecksum || handlerInfo.scopeChecksum !== scopeChecksum) {
+      console.log('Fetching handler info for:', name);
+      try {
+        var response = await fetch(`/handlers/get_info?name=${encodeURIComponent(name)}`);
+        handlerInfo = (await response.json());
+        localStorage.setItem(`handler_${name}`, JSON.stringify(handlerInfo));
+      } catch (error) {
+        console.error('Failed to fetch handler info:', error);
+        return null;
+      }
+    }
+    
+    this.handlerCache[name] = { 
+      template: handlerInfo.template, 
+      scope: handlerInfo.scope
+    };
+    return { data, template: handlerInfo.template, scope: handlerInfo.scope };
+  },
+
+  mountPlugin() {
+    console.log('mountPlugin called');
+    
+    if (!this.plugin?.data || !this.plugin?.template) {
+      return;
+    }
+    if (!this.$refs.pluginContainer) {
+      return;
+    }
+
+    // Unmount existing plugin if any
+    this.unmountPlugin();
+
+    this.$refs.pluginContainer.innerHTML = this.plugin.template;
+    
+    console.log('Plugin data:', this.plugin.data);
+
+    const ctx = {
+      ...this.plugin.data,
+      ...eval(`(${this.plugin.scope})`)
+    };
+
+    console.log('Mounting plugin with context:', ctx);
+
+    window.PetiteVue.createApp(ctx).mount(this.$refs.pluginContainer);
+    
+    this._pluginContext = ctx;
+    
+    if (typeof ctx.mounted === 'function') {
+      ctx.mounted.call(ctx);
+    }
+
+    this.$nextTick(() => {
+      initScrollFades(this);
+    })
+  },
+
+  unmountPlugin() {
+    console.log('unmountPlugin called');
+    if (this._pluginContext && typeof this._pluginContext.unmounted === 'function') {
+      this._pluginContext.unmounted.call(this._pluginContext);
+    }
+    if (this.$refs.pluginContainer) {
+      this.$refs.pluginContainer.innerHTML = '';
+    }
+    this._pluginContext = null;
+  },
+
+  async mountResultHandler(link, containerElement, useEditedTemplate = false) {
+    if (!link.handler?.name || !containerElement) {
+      return;
+    }
+
+    const handlerInfo = useEditedTemplate && this.handlerCache[link.handler.name] 
+      ? { data: link.handler.data, template: this.handlerCache[link.handler.name].template, scope: this.handlerCache[link.handler.name].scope }
+      : await this.handleHandlerWithChecksums(link.handler);
+    
+    if (!handlerInfo) return;
+
+    containerElement.innerHTML = expandComponents(handlerInfo.template);
+    
+    const ctx = {
+      app: this,
+      link: link,
+      ...handlerInfo.data,
+      ...eval(`(${handlerInfo.scope})`)
+    };
+
+    window.PetiteVue.createApp(ctx).mount(containerElement);
+    
+    // Store app instance and context for cleanup
+    containerElement._handlerContext = ctx;
+    
+    if (typeof ctx.mounted === 'function') {
+      ctx.mounted.call(ctx);
+    }
+  },
+
+  unmountResultHandler(containerElement) {
+    if (containerElement._handlerContext && typeof containerElement._handlerContext.unmounted === 'function') {
+      containerElement._handlerContext.unmounted.call(containerElement._handlerContext);
+    }
+    
+    containerElement._handlerContext = null;
+  },
+
+  async mountAllResultHandlers(useEditedTemplates = false) {
+    const handlerContainers = document.querySelectorAll('.result-handler-container');
+    
+    for (const container of handlerContainers) {
+      const handlerName = container.dataset.handlerName;
+      const linkIndex = parseInt(container.dataset.linkIndex);
+      
+      // Find the corresponding link data
+      let linkData = null;
+      for (const lens of this.lenses) {
+        for (const category of lens.categories || []) {
+          for (const link of category.links || []) {
+            if (link.index === linkIndex && link.handler?.name === handlerName) {
+              linkData = link;
+              break;
+            }
+          }
+          if (linkData) break;
+        }
+        if (linkData) break;
+      }
+      
+      if (linkData) {
+        await this.mountResultHandler(linkData, container, useEditedTemplates);
+      }
+    }
+    
+    // Initialize scroll fades after DOM is fully rendered
+    initScrollFades(this);
+  },
+
+  unmountAllResultHandlers() {
+    const handlerContainers = document.querySelectorAll('.result-handler-container');
+    
+    for (const container of handlerContainers) {
+      this.unmountResultHandler(container);
+    }
+  },
+
+  mounted() {
+    // Initialize color scheme from current setting
+    this.colorScheme = window.currentColorScheme;
+    
+    // Store reference globally so modal can access it
+    window.appInstance = this;
+    
+    // Initialize URL list - creates modal and grid
+    initUrlList('searchEngines', this.$refs.searchEnginesGrid, true, 'body', { searchTerms: () => this.query });
+    
+    this.performSearch(getQueryFromUrl(), true);
+    
+    this.$refs.queryInput.focus();
+    
+    document.addEventListener('keydown', e => this.handleKeyboard(e));
+    window.addEventListener('popstate', () => this.performSearch(getQueryFromUrl(), true));
+    window.addEventListener('resize', () => this.resizeTick++);
+    this.$refs.queryInput.addEventListener('paste', e => {
+      e.preventDefault();
+      let text = (e.clipboardData || window.clipboardData)
+                    .getData('text/plain');
+      text = text.replace(/[\r\n]+/g, ' ');
+      document.execCommand('insertText', false, text);
+    });
+    
+    // Enable animations after Vue is fully ready
+    this.$nextTick(() => {
+      setTimeout(() => {
+        this.$nextTick(() => {
+          document.body.classList.add('ready');
+        });
+      }, 0);
+    });
+  },
+
+  selectSuggestion(suggestion) {
+    this.performSearch(suggestion);
+  },
+});</script>
+  <script>Date.prototype.addHours= function(h){
+    this.setHours(this.getHours()+h);
+    return this;
+}
+
+Date.prototype.addMinutes = function(m){
+	this.setMinutes(this.getMinutes()+m);
+	return this;
+}
+
+Date.prototype.addSeconds = function(s){
+	this.setSeconds(this.getSeconds()+s);
+	return this;
+}
+
+var romanNumerals = [0,"I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
+
+var clock = function(id, options){
+	var self = this;
+	
+	self.started = false;
+
+	//initialise canvas && context
+	self.canvas = document.getElementById(id);
+	self.context = self.canvas.getContext("2d");
+
+	var currentDate = new Date();
+	
+	//default options
+	self.options = {
+		radius: function(){ return Math.min(self.canvas.height, self.canvas.width) / 2 },
+		colour:"rgba(255,0,0,0.2)",
+		rim: function(){ return getValue("radius") * 0.2; },
+		rimColour: function(){ return self.options.colour; },
+		x: function(){ return self.canvas.width / 2 },
+		y: function(){ return self.canvas.height / 2 },
+		lineColour: function(){ return self.options.colour; },
+		fillColour: function(){  return self.options.colour; },
+		lineWidth: 1,
+		centreCircle: true,
+		centreCircleRadius: function(){ return getValue("radius") * 0.03; },
+		centreCircleColour: function(){return getValue("colour");},
+		centreCircleCutout: function(){ return getValue("radius") * 0.01; },
+		addHours: 0,
+		addMinutes: 0,
+		addSeconds: 0,
+		directionCoefficient: 1,
+		markerType: "number",
+		markerColour: function(){ return self.options.colour; },
+		markerSize: function(){ return getValue("radius") * 0.02; },
+		markerDistance: function(){ return getValue("radius") * 0.9; },
+		markerDisplay: true,
+	};
+	
+	//hands settings
+	self.hands = {
+		secondHand:{
+			length: 1, width: 0.1, 
+			percentile:function(){
+				return (currentDate.getSeconds() + currentDate.getMilliseconds() / 1000) / 60;
+			}},
+		minuteHand:{
+			length: 0.8, width: 0.4, 
+			percentile:function(){
+				return (currentDate.getMinutes() + currentDate.getSeconds() / 60) / 60;
+			}},
+		hourHand:{
+			length: 0.5, width: 0.9, 
+			percentile:function(){
+				return (currentDate.getHours() + currentDate.getMinutes() / 60) / 12;
+			}}
+	}
+	
+	//set specified options
+	for (var key in options) {
+		if (options.hasOwnProperty(key)) {
+			self.options[key] = options[key];
+		}
+	}
+	
+	//get function - gets a function, otherwise value.
+	var getValue = function(name, defaultName){
+		if(name == null){
+			if(defaultName == null){
+				throw new Error("No value set for this option.");
+			}
+			if(typeof defaultName == "function"){
+				return defaultName();
+			}
+			return (typeof self.options[defaultName] == "function") ? self.options[defaultName]() : self.options[defaultName];
+		}
+		if(self.options == null){
+			throw new Error("Someone has deleted the clock's options. Uh-oh!");
+		}
+		if(typeof self.options[name] == "function"){
+			var result = self.options[name]();
+			if(result != null){
+				return result;
+			}
+			if(typeof defaultName == "function"){
+				return defaultName();
+			}
+			return (typeof self.options[defaultName] == "function") ? self.options[defaultName]() : self.options[defaultName];
+		}
+		else {
+			return self.options[name];
+		}
+	}
+	
+	//for drawing a handleEvent
+	var drawHand = function(x, y, radius, theta, lineWidth){
+		self.context.lineWidth = 1;
+		self.context.beginPath();
+		self.context.moveTo(x,y);
+		var offAmount = (lineWidth != null) ? lineWidth : 0.5;
+		var one = {x: x + 2 * radius / 8 * Math.cos(theta + offAmount), y: y + 2 * radius / 8 * Math.sin(theta + offAmount)};
+		var two = {x: x, y: y};
+		var one2 = {x: x + 2 * radius / 8 * Math.cos(theta - offAmount), y: y + 2 * radius / 8 * Math.sin(theta - offAmount)};
+		var finalx = x + radius * Math.cos(theta);
+		var finaly = y + radius * Math.sin(theta);
+		self.context.bezierCurveTo(one.x, one.y, two.x, two.y, finalx,finaly);
+		self.context.bezierCurveTo(two.x, two.y, one2.x, one2.y, x,y);
+		self.context.stroke();
+		self.context.fill();
+		self.context.lineWidth = 1;	
+	}
+	
+	//draw single marker on the clock
+	var drawMarker = function(x, y, i){
+		self.context.beginPath();
+		self.context.fillStyle = getValue("markerColour", "colour");
+		var markerSize = getValue("markerSize");
+		
+		switch(getValue("markerType")){
+			case "numeral":
+				markerSize *= 4;
+				self.context.font = markerSize + "px sans-serif";
+				self.context.textAlign = "center";
+				self.context.fillStyle = getValue("markerColour");
+				self.context.textBaseline = "middle";
+				self.context.fillText(romanNumerals[i + 1],x,y);
+				break;
+			case "number":
+				markerSize *= 4;
+				self.context.font = markerSize + "px sans-serif";
+				self.context.textAlign = "center";
+				self.context.fillStyle = getValue("markerColour");
+				self.context.textBaseline = "middle";
+				self.context.fillText(i + 1,x,y);
+				break;
+			case "dot":
+				self.context.arc(x,y,markerSize,0,2*Math.PI);
+				self.context.fill();
+				break;
+			case "none":
+			default:
+				return;
+		}		
+	}
+	
+	//for drawing the markers on the clock
+	var drawMarkers = function(x, y){
+		if(getValue("markerDisplay") == false){
+			return;
+		}
+		var directionCoefficient = getValue("directionCoefficient");
+		var markerDistance = getValue("markerDistance");
+		var theta = directionCoefficient * 2 * Math.PI / 12 - Math.PI / 2
+		for(var i = 0; i < 12; i++){
+			var markerX =	x + markerDistance * Math.cos(theta);
+			var markerY = y + markerDistance * Math.sin(theta);
+			drawMarker(markerX, markerY, i);
+			theta += directionCoefficient * 2 * Math.PI / 12;
+		}
+	}
+	
+	//update the date, change time zone etc.
+	var updateDate = function(){
+		//update date;		
+		currentDate = new Date();
+		currentDate.addHours(getValue("addHours", function(){return 0;}));
+		currentDate.addMinutes(getValue("addMinutes", function(){return 0;}));
+		currentDate.addSeconds(getValue("addSeconds", function(){return 0;}));
+	}
+	
+	//updates and draws clock			
+	self.draw = function(){
+		self.canvas.height = self.canvas.parentNode.offsetHeight;
+		self.canvas.width = self.canvas.parentNode.offsetWidth;
+		
+		var radius = getValue("radius");
+		var x = getValue("x");
+		var y = getValue("y");
+		
+		self.context.clearRect(0,0, self.canvas.width, self.canvas.height);
+
+		//outer circle
+		if(getValue("rim") != "none"){
+			self.context.strokeStyle = getValue("rimColour");
+			self.context.lineWidth = getValue("rim");
+			self.context.beginPath();
+			self.context.arc(x,y,radius - getValue("rim")/2,0,2*Math.PI);
+			self.context.stroke();
+				
+			self.context.strokeStyle = getValue("lineColour");
+			self.context.fillStyle = getValue("fillColour");
+			self.context.lineWidth = getValue("lineWidth");
+		}
+		
+		//markers
+		drawMarkers(x, y);
+		
+		updateDate();
+		
+		var directionCoefficient = getValue("directionCoefficient", function(){return 1;});
+	
+		//draw all hands
+		for (var key in self.hands) {
+			if (self.hands.hasOwnProperty(key)) {
+				var tempTheta = directionCoefficient * self.hands[key].percentile() * 2 * Math.PI - Math.PI / 2;
+				var tempRadius = radius * self.hands[key].length;
+				drawHand(x, y, tempRadius, tempTheta, self.hands[key].width);
+			}
+		}
+			
+		//centreCircle
+		if(getValue("centreCircle")){	
+			self.context.beginPath();
+			self.context.fillStyle = getValue("centreCircleColour", "colour");
+			self.context.arc(x,y,getValue("centreCircleRadius"),0,2*Math.PI);
+			self.context.fill();
+			self.context.stroke();
+			
+			//cutout
+			self.context.beginPath();
+			self.context.arc(x,y,getValue("centreCircleCutout"),0,2*Math.PI);
+			self.context.clip();
+			self.context.clearRect(0,0,self.canvas.width, self.canvas.height);
+		}
+	};
+	
+	self.animate = function(){
+		if(self.started == false){
+			return;
+		}
+		
+		self.draw();
+		
+		window.requestAnimationFrame(self.animate);
+	};
+
+	self.start = function(){
+		self.started = true;
+		
+		self.animate();
+	};
+	
+	self.stop = function(){
+		self.started = false;
+	}
+	
+	return self;
+}
+</script>
+
+  <script>var pn=Object.defineProperty,hn=(e,t,n)=>t in e?pn(e,t,{enumerable:!0,configurable:!0,writable:!0,value:n}):e[t]=n,C=(e,t,n)=>(hn(e,"symbol"!=typeof t?t+"":t,n),n),PetiteVue=function(e){"use strict";function t(e){if(a(e)){const n={};for(let s=0;s<e.length;s++){const i=e[s],o=d(i)?r(i):t(i);if(o)for(const e in o)n[e]=o[e]}return n}return d(e)||g(e)?e:void 0}const n=/;(?![^(]*\))/g,s=/:(.+)/;function r(e){const t={};return e.split(n).forEach((e=>{if(e){const n=e.split(s);n.length>1&&(t[n[0].trim()]=n[1].trim())}})),t}function i(e){let t="";if(d(e))t=e;else if(a(e))for(let n=0;n<e.length;n++){const s=i(e[n]);s&&(t+=s+" ")}else if(g(e))for(const n in e)e[n]&&(t+=n+" ");return t.trim()}function o(e,t){if(e===t)return!0;let n=h(e),s=h(t);if(n||s)return!(!n||!s)&&e.getTime()===t.getTime();if(n=a(e),s=a(t),n||s)return!(!n||!s)&&function(e,t){if(e.length!==t.length)return!1;let n=!0;for(let s=0;n&&s<e.length;s++)n=o(e[s],t[s]);return n}(e,t);if(n=g(e),s=g(t),n||s){if(!n||!s)return!1;if(Object.keys(e).length!==Object.keys(t).length)return!1;for(const n in e){const s=e.hasOwnProperty(n),r=t.hasOwnProperty(n);if(s&&!r||!s&&r||!o(e[n],t[n]))return!1}}return String(e)===String(t)}function c(e,t){return e.findIndex((e=>o(e,t)))}const l=Object.assign,f=Object.prototype.hasOwnProperty,u=(e,t)=>f.call(e,t),a=Array.isArray,p=e=>"[object Map]"===y(e),h=e=>e instanceof Date,d=e=>"string"==typeof e,m=e=>"symbol"==typeof e,g=e=>null!==e&&"object"==typeof e,v=Object.prototype.toString,y=e=>v.call(e),b=e=>d(e)&&"NaN"!==e&&"-"!==e[0]&&""+parseInt(e,10)===e,x=e=>{const t=Object.create(null);return n=>t[n]||(t[n]=e(n))},_=/-(\w)/g,w=x((e=>e.replace(_,((e,t)=>t?t.toUpperCase():"")))),$=/\B([A-Z])/g,k=x((e=>e.replace($,"-$1").toLowerCase())),O=e=>{const t=parseFloat(e);return isNaN(t)?e:t};function S(e,t){(t=t||undefined)&&t.active&&t.effects.push(e)}const E=e=>{const t=new Set(e);return t.w=0,t.n=0,t},j=e=>(e.w&N)>0,A=e=>(e.n&N)>0,P=new WeakMap;let R=0,N=1;const T=[];let M;const B=Symbol(""),L=Symbol("");class W{constructor(e,t=null,n){this.fn=e,this.scheduler=t,this.active=!0,this.deps=[],S(this,n)}run(){if(!this.active)return this.fn();if(!T.includes(this))try{return T.push(M=this),F.push(V),V=!0,N=1<<++R,R<=30?(({deps:e})=>{if(e.length)for(let t=0;t<e.length;t++)e[t].w|=N})(this):I(this),this.fn()}finally{R<=30&&(e=>{const{deps:t}=e;if(t.length){let n=0;for(let s=0;s<t.length;s++){const r=t[s];j(r)&&!A(r)?r.delete(e):t[n++]=r,r.w&=~N,r.n&=~N}t.length=n}})(this),N=1<<--R,z(),T.pop();const e=T.length;M=e>0?T[e-1]:void 0}}stop(){this.active&&(I(this),this.onStop&&this.onStop(),this.active=!1)}}function I(e){const{deps:t}=e;if(t.length){for(let n=0;n<t.length;n++)t[n].delete(e);t.length=0}}function K(e){e.effect.stop()}let V=!0;const F=[];function z(){const e=F.pop();V=void 0===e||e}function H(e,t,n){if(!V||void 0===M)return;let s=P.get(e);s||P.set(e,s=new Map);let r=s.get(n);r||s.set(n,r=E()),function(e,t){let n=!1;R<=30?A(e)||(e.n|=N,n=!j(e)):n=!e.has(M),n&&(e.add(M),M.deps.push(e))}(r)}function J(e,t,n,s,r,i){const o=P.get(e);if(!o)return;let c=[];if("clear"===t)c=[...o.values()];else if("length"===n&&a(e))o.forEach(((e,t)=>{("length"===t||t>=s)&&c.push(e)}));else switch(void 0!==n&&c.push(o.get(n)),t){case"add":a(e)?b(n)&&c.push(o.get("length")):(c.push(o.get(B)),p(e)&&c.push(o.get(L)));break;case"delete":a(e)||(c.push(o.get(B)),p(e)&&c.push(o.get(L)));break;case"set":p(e)&&c.push(o.get(B))}if(1===c.length)c[0]&&Z(c[0]);else{const e=[];for(const t of c)t&&e.push(...t);Z(E(e))}}function Z(e,t){for(const n of a(e)?e:[...e])(n!==M||n.allowRecurse)&&(n.scheduler?n.scheduler():n.run())}const q=function(e,t){const n=Object.create(null),s=e.split(",");for(let r=0;r<s.length;r++)n[s[r]]=!0;return t?e=>!!n[e.toLowerCase()]:e=>!!n[e]}("__proto__,__v_isRef,__isVue"),D=new Set(Object.getOwnPropertyNames(Symbol).map((e=>Symbol[e])).filter(m)),G=X(),U=X(!0),Q=function(){const e={};return["includes","indexOf","lastIndexOf"].forEach((t=>{e[t]=function(...e){const n=le(this);for(let t=0,r=this.length;t<r;t++)H(n,0,t+"");const s=n[t](...e);return-1===s||!1===s?n[t](...e.map(le)):s}})),["push","pop","shift","unshift","splice"].forEach((t=>{e[t]=function(...e){F.push(V),V=!1;const n=le(this)[t].apply(this,e);return z(),n}})),e}();function X(e=!1,t=!1){return function(n,s,r){if("__v_isReactive"===s)return!e;if("__v_isReadonly"===s)return e;if("__v_raw"===s&&r===(e?t?re:se:t?ne:te).get(n))return n;const i=a(n);if(!e&&i&&u(Q,s))return Reflect.get(Q,s,r);const o=Reflect.get(n,s,r);return(m(s)?D.has(s):q(s))||(e||H(n,0,s),t)?o:fe(o)?i&&b(s)?o:o.value:g(o)?e?function(e){return ce(e,!0,ee,null,se)}(o):oe(o):o}}const Y={get:G,set:function(e=!1){return function(t,n,s,r){let i=t[n];if(!e&&!function(e){return!(!e||!e.__v_isReadonly)}(s)&&(s=le(s),i=le(i),!a(t)&&fe(i)&&!fe(s)))return i.value=s,!0;const o=a(t)&&b(n)?Number(n)<t.length:u(t,n),c=Reflect.set(t,n,s,r);return t===le(r)&&(o?((e,t)=>!Object.is(e,t))(s,i)&&J(t,"set",n,s):J(t,"add",n,s)),c}}(),deleteProperty:function(e,t){const n=u(e,t);e[t];const s=Reflect.deleteProperty(e,t);return s&&n&&J(e,"delete",t,void 0),s},has:function(e,t){const n=Reflect.has(e,t);return(!m(t)||!D.has(t))&&H(e,0,t),n},ownKeys:function(e){return H(e,0,a(e)?"length":B),Reflect.ownKeys(e)}},ee={get:U,set:(e,t)=>!0,deleteProperty:(e,t)=>!0},te=new WeakMap,ne=new WeakMap,se=new WeakMap,re=new WeakMap;function ie(e){return e.__v_skip||!Object.isExtensible(e)?0:function(e){switch(e){case"Object":case"Array":return 1;case"Map":case"Set":case"WeakMap":case"WeakSet":return 2;default:return 0}}((e=>y(e).slice(8,-1))(e))}function oe(e){return e&&e.__v_isReadonly?e:ce(e,!1,Y,null,te)}function ce(e,t,n,s,r){if(!g(e)||e.__v_raw&&(!t||!e.__v_isReactive))return e;const i=r.get(e);if(i)return i;const o=ie(e);if(0===o)return e;const c=new Proxy(e,2===o?s:n);return r.set(e,c),c}function le(e){const t=e&&e.__v_raw;return t?le(t):e}function fe(e){return Boolean(e&&!0===e.__v_isRef)}Promise.resolve();let ue=!1;const ae=[],pe=Promise.resolve(),he=e=>pe.then(e),de=e=>{ae.includes(e)||ae.push(e),ue||(ue=!0,he(me))},me=()=>{for(const e of ae)e();ae.length=0,ue=!1},ge=/^(spellcheck|draggable|form|list|type)$/,ve=({el:e,get:t,effect:n,arg:s,modifiers:r})=>{let i;"class"===s&&(e._class=e.className),n((()=>{let n=t();if(s)(null==r?void 0:r.camel)&&(s=w(s)),ye(e,s,n,i);else{for(const t in n)ye(e,t,n[t],i&&i[t]);for(const t in i)(!n||!(t in n))&&ye(e,t,null)}i=n}))},ye=(e,n,s,r)=>{if("class"===n)e.setAttribute("class",i(e._class?[e._class,s]:s)||"");else if("style"===n){s=t(s);const{style:n}=e;if(s)if(d(s))s!==r&&(n.cssText=s);else{for(const e in s)xe(n,e,s[e]);if(r&&!d(r))for(const e in r)null==s[e]&&xe(n,e,"")}else e.removeAttribute("style")}else e instanceof SVGElement||!(n in e)||ge.test(n)?"true-value"===n?e._trueValue=s:"false-value"===n?e._falseValue=s:null!=s?e.setAttribute(n,s):e.removeAttribute(n):(e[n]=s,"value"===n&&(e._value=s))},be=/\s*!important$/,xe=(e,t,n)=>{a(n)?n.forEach((n=>xe(e,t,n))):t.startsWith("--")?e.setProperty(t,n):be.test(n)?e.setProperty(k(t),n.replace(be,""),"important"):e[t]=n},_e=(e,t)=>{const n=e.getAttribute(t);return null!=n&&e.removeAttribute(t),n},we=(e,t,n,s)=>{e.addEventListener(t,n,s)},$e=/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/,ke=["ctrl","shift","alt","meta"],Oe={stop:e=>e.stopPropagation(),prevent:e=>e.preventDefault(),self:e=>e.target!==e.currentTarget,ctrl:e=>!e.ctrlKey,shift:e=>!e.shiftKey,alt:e=>!e.altKey,meta:e=>!e.metaKey,left:e=>"button"in e&&0!==e.button,middle:e=>"button"in e&&1!==e.button,right:e=>"button"in e&&2!==e.button,exact:(e,t)=>ke.some((n=>e[`${n}Key`]&&!t[n]))},Se=({el:e,get:t,exp:n,arg:s,modifiers:r})=>{if(!s)return;let i=$e.test(n)?t(`(e => ${n}(e))`):t(`($event => { ${n} })`);if("vue:mounted"!==s){if("vue:unmounted"===s)return()=>i();if(r){"click"===s&&(r.right&&(s="contextmenu"),r.middle&&(s="mouseup"));const e=i;i=t=>{if(!("key"in t)||k(t.key)in r){for(const e in r){const n=Oe[e];if(n&&n(t,r))return}return e(t)}}}we(e,s,i,r)}else he(i)},Ee=({el:e,get:t,effect:n})=>{n((()=>{e.textContent=Ce(t())}))},Ce=e=>null==e?"":g(e)?JSON.stringify(e,null,2):String(e),je=e=>"_value"in e?e._value:e.value,Ae=(e,t)=>{const n=t?"_trueValue":"_falseValue";return n in e?e[n]:t},Pe=e=>{e.target.composing=!0},Re=e=>{const t=e.target;t.composing&&(t.composing=!1,Ne(t,"input"))},Ne=(e,t)=>{const n=document.createEvent("HTMLEvents");n.initEvent(t,!0,!0),e.dispatchEvent(n)},Te=Object.create(null),Me=(e,t,n)=>Be(e,`return(${t})`,n),Be=(e,t,n)=>{const s=Te[t]||(Te[t]=Le(t));try{return s(e,n)}catch(r){console.error(r)}},Le=e=>{try{return new Function("$data","$el",`with($data){${e}}`)}catch(t){return console.error(`${t.message} in expression: ${e}`),()=>{}}},We={bind:ve,on:Se,show:({el:e,get:t,effect:n})=>{const s=e.style.display;n((()=>{e.style.display=t()?s:"none"}))},text:Ee,html:({el:e,get:t,effect:n})=>{n((()=>{e.innerHTML=t()}))},model:({el:e,exp:t,get:n,effect:s,modifiers:r})=>{const i=e.type,l=n(`(val) => { ${t} = val }`),{trim:f,number:u="number"===i}=r||{};if("SELECT"===e.tagName){const t=e;we(e,"change",(()=>{const e=Array.prototype.filter.call(t.options,(e=>e.selected)).map((e=>u?O(je(e)):je(e)));l(t.multiple?e:e[0])})),s((()=>{const e=n(),s=t.multiple;for(let n=0,r=t.options.length;n<r;n++){const r=t.options[n],i=je(r);if(s)a(e)?r.selected=c(e,i)>-1:r.selected=e.has(i);else if(o(je(r),e))return void(t.selectedIndex!==n&&(t.selectedIndex=n))}!s&&-1!==t.selectedIndex&&(t.selectedIndex=-1)}))}else if("checkbox"===i){let t;we(e,"change",(()=>{const t=n(),s=e.checked;if(a(t)){const n=je(e),r=c(t,n),i=-1!==r;if(s&&!i)l(t.concat(n));else if(!s&&i){const e=[...t];e.splice(r,1),l(e)}}else l(Ae(e,s))})),s((()=>{const s=n();a(s)?e.checked=c(s,je(e))>-1:s!==t&&(e.checked=o(s,Ae(e,!0))),t=s}))}else if("radio"===i){let t;we(e,"change",(()=>{l(je(e))})),s((()=>{const s=n();s!==t&&(e.checked=o(s,je(e)))}))}else{const t=e=>f?e.trim():u?O(e):e;we(e,"compositionstart",Pe),we(e,"compositionend",Re),we(e,(null==r?void 0:r.lazy)?"change":"input",(()=>{e.composing||l(t(e.value))})),f&&we(e,"change",(()=>{e.value=e.value.trim()})),s((()=>{if(e.composing)return;const s=e.value,r=n();document.activeElement===e&&t(s)===r||s!==r&&(e.value=r)}))}},effect:({el:e,ctx:t,exp:n,effect:s})=>{he((()=>s((()=>Be(t.scope,n,e)))))}},Ie=/([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/,Ke=/,([^,\}\]]*)(?:,([^,\}\]]*))?$/,Ve=/^\(|\)$/g,Fe=/^[{[]\s*((?:[\w_$]+\s*,?\s*)+)[\]}]$/,ze=(e,t,n)=>{const s=t.match(Ie);if(!s)return;const r=e.nextSibling,i=e.parentElement,o=new Text("");i.insertBefore(o,e),i.removeChild(e);const c=s[2].trim();let l,f,u,p,h=s[1].trim().replace(Ve,"").trim(),d=!1,m="key",v=e.getAttribute(m)||e.getAttribute(m=":key")||e.getAttribute(m="v-bind:key");v&&(e.removeAttribute(m),"key"===m&&(v=JSON.stringify(v))),(p=h.match(Ke))&&(h=h.replace(Ke,"").trim(),f=p[1].trim(),p[2]&&(u=p[2].trim())),(p=h.match(Fe))&&(l=p[1].split(",").map((e=>e.trim())),d="["===h[0]);let y,b,x,_=!1;const w=(e,t,s,r)=>{const i={};l?l.forEach(((e,n)=>i[e]=t[d?n:e])):i[h]=t,r?(f&&(i[f]=r),u&&(i[u]=s)):f&&(i[f]=s);const o=et(n,i),c=v?Me(o.scope,v):s;return e.set(c,s),o.key=c,o},$=(t,n)=>{const s=new nt(e,t);return s.key=t.key,s.insert(i,n),s};return n.effect((()=>{const e=Me(n.scope,c),t=x;if([b,x]=(e=>{const t=new Map,n=[];if(a(e))for(let s=0;s<e.length;s++)n.push(w(t,e[s],s));else if("number"==typeof e)for(let s=0;s<e;s++)n.push(w(t,s+1,s));else if(g(e)){let s=0;for(const r in e)n.push(w(t,e[r],s++,r))}return[n,t]})(e),_){for(let t=0;t<y.length;t++)x.has(y[t].key)||y[t].remove();const e=[];let n,s,r=b.length;for(;r--;){const c=b[r],l=t.get(c.key);let f;null==l?f=$(c,n?n.el:o):(f=y[l],Object.assign(f.ctx.scope,c.scope),l!==r&&(y[l+1]!==n||s===n)&&(s=f,f.insert(i,n?n.el:o))),e.unshift(n=f)}y=e}else y=b.map((e=>$(e,o))),_=!0})),r},He=({el:e,ctx:{scope:{$refs:t}},get:n,effect:s})=>{let r;return s((()=>{const s=n();t[s]=e,r&&s!==r&&delete t[r],r=s})),()=>{r&&delete t[r]}},Je=/^(?:v-|:|@)/,Ze=/\.([\w-]+)/g;let qe=!1;const De=(e,t)=>{const n=e.nodeType;if(1===n){const n=e;if(n.hasAttribute("v-pre"))return;let s;if(_e(n,"v-cloak"),s=_e(n,"v-if"))return((e,t,n)=>{const s=e.parentElement,r=new Comment("v-if");s.insertBefore(r,e);const i=[{exp:t,el:e}];let o,c;for(;(o=e.nextElementSibling)&&(c=null,""===_e(o,"v-else")||(c=_e(o,"v-else-if")));)s.removeChild(o),i.push({exp:c,el:o});const l=e.nextSibling;s.removeChild(e);let f,u=-1;const a=()=>{f&&(s.insertBefore(r,f.el),f.remove(),f=void 0)};return n.effect((()=>{for(let e=0;e<i.length;e++){const{exp:t,el:o}=i[e];if(!t||Me(n.scope,t))return void(e!==u&&(a(),f=new nt(o,n),f.insert(s,r),s.removeChild(r),u=e))}u=-1,a()})),l})(n,s,t);if(s=_e(n,"v-for"))return ze(n,s,t);if((s=_e(n,"v-scope"))||""===s){const e=s?Me(t.scope,s):{};t=et(t,e),e.$template&&Xe(n,e.$template)}const r=null!=_e(n,"v-once");r&&(qe=!0),(s=_e(n,"ref"))&&Qe(n,He,`"${s}"`,t),Ge(n,t);const i=[];for(const{name:e,value:o}of[...n.attributes])Je.test(e)&&"v-cloak"!==e&&("v-model"===e?i.unshift([e,o]):"@"===e[0]||/^v-on\b/.test(e)?i.push([e,o]):Ue(n,e,o,t));for(const[e,o]of i)Ue(n,e,o,t);r&&(qe=!1)}else if(3===n){const n=e.data;if(n.includes(t.delimiters[0])){let s,r=[],i=0;for(;s=t.delimitersRE.exec(n);){const e=n.slice(i,s.index);e&&r.push(JSON.stringify(e)),r.push(`$s(${s[1]})`),i=s.index+s[0].length}i<n.length&&r.push(JSON.stringify(n.slice(i))),Qe(e,Ee,r.join("+"),t)}}else 11===n&&Ge(e,t)},Ge=(e,t)=>{let n=e.firstChild;for(;n;)n=De(n,t)||n.nextSibling},Ue=(e,t,n,s)=>{let r,i,o;if(":"===(t=t.replace(Ze,((e,t)=>((o||(o={}))[t]=!0,""))))[0])r=ve,i=t.slice(1);else if("@"===t[0])r=Se,i=t.slice(1);else{const e=t.indexOf(":"),n=e>0?t.slice(2,e):t.slice(2);r=We[n]||s.dirs[n],i=e>0?t.slice(e+1):void 0}r&&(r===ve&&"ref"===i&&(r=He),Qe(e,r,n,s,i,o),e.removeAttribute(t))},Qe=(e,t,n,s,r,i)=>{const o=t({el:e,get:(t=n)=>Me(s.scope,t,e),effect:s.effect,ctx:s,exp:n,arg:r,modifiers:i});o&&s.cleanups.push(o)},Xe=(e,t)=>{if("#"!==t[0])e.innerHTML=t;else{const n=document.querySelector(t);e.appendChild(n.content.cloneNode(!0))}},Ye=e=>{const t={delimiters:["{{","}}"],delimitersRE:/\{\{([^]+?)\}\}/g,...e,scope:e?e.scope:oe({}),dirs:e?e.dirs:{},effects:[],blocks:[],cleanups:[],effect:e=>{if(qe)return de(e),e;const n=function(e,t){e.effect&&(e=e.effect.fn);const n=new W(e);t&&(l(n,t),t.scope&&S(n,t.scope)),(!t||!t.lazy)&&n.run();const s=n.run.bind(n);return s.effect=n,s}(e,{scheduler:()=>de(n)});return t.effects.push(n),n}};return t},et=(e,t={})=>{const n=e.scope,s=Object.create(n);Object.defineProperties(s,Object.getOwnPropertyDescriptors(t)),s.$refs=Object.create(n.$refs);const r=oe(new Proxy(s,{set:(e,t,s,i)=>i!==r||e.hasOwnProperty(t)?Reflect.set(e,t,s,i):Reflect.set(n,t,s)}));return tt(r),{...e,scope:r}},tt=e=>{for(const t of Object.keys(e))"function"==typeof e[t]&&(e[t]=e[t].bind(e))};class nt{constructor(e,t,n=!1){C(this,"template"),C(this,"ctx"),C(this,"key"),C(this,"parentCtx"),C(this,"isFragment"),C(this,"start"),C(this,"end"),this.isFragment=e instanceof HTMLTemplateElement,n?this.template=e:this.isFragment?this.template=e.content.cloneNode(!0):this.template=e.cloneNode(!0),n?this.ctx=t:(this.parentCtx=t,t.blocks.push(this),this.ctx=Ye(t)),De(this.template,this.ctx)}get el(){return this.start||this.template}insert(e,t=null){if(this.isFragment)if(this.start){let n,s=this.start;for(;s&&(n=s.nextSibling,e.insertBefore(s,t),s!==this.end);)s=n}else this.start=new Text(""),this.end=new Text(""),e.insertBefore(this.end,t),e.insertBefore(this.start,this.end),e.insertBefore(this.template,this.end);else e.insertBefore(this.template,t)}remove(){if(this.parentCtx&&((e,t)=>{const n=e.indexOf(t);n>-1&&e.splice(n,1)})(this.parentCtx.blocks,this),this.start){const e=this.start.parentNode;let t,n=this.start;for(;n&&(t=n.nextSibling,e.removeChild(n),n!==this.end);)n=t}else this.template.parentNode.removeChild(this.template);this.teardown()}teardown(){this.ctx.blocks.forEach((e=>{e.teardown()})),this.ctx.effects.forEach(K),this.ctx.cleanups.forEach((e=>e()))}}const st=e=>e.replace(/[-.*+?^${}()|[\]\/\\]/g,"\\$&"),rt=e=>{const t=Ye();if(e&&(t.scope=oe(e),tt(t.scope),e.$delimiters)){const[n,s]=t.delimiters=e.$delimiters;t.delimitersRE=new RegExp(st(n)+"([^]+?)"+st(s),"g")}let n;return t.scope.$s=Ce,t.scope.$nextTick=he,t.scope.$refs=Object.create(null),{directive(e,n){return n?(t.dirs[e]=n,this):t.dirs[e]},mount(e){if("string"==typeof e&&!(e=document.querySelector(e)))return;let s;return s=(e=e||document.documentElement).hasAttribute("v-scope")?[e]:[...e.querySelectorAll("[v-scope]")].filter((e=>!e.matches("[v-scope] [v-scope]"))),s.length||(s=[e]),n=s.map((e=>new nt(e,t,!0))),this},unmount(){n.forEach((e=>e.teardown()))}}},it=document.currentScript;return it&&it.hasAttribute("init")&&rt().mount(),e.createApp=rt,e.nextTick=he,e.reactive=oe,Object.defineProperty(e,"__esModule",{value:!0}),e[Symbol.toStringTag]="Module",e}({});</script>
+  <script>
+  window.addEventListener('DOMContentLoaded', () => {
+    PetiteVue.createApp().mount();
+  });
+  </script>
+</head>
+<body>
+  
+
+<div id="viewport">
+  <div id="container" v-scope="app()" :style="'padding-top:' + (isLoading || lenses.length || plugin.template ? '0px;' : '25vh')" v-cloak @vue:mounted="mounted">
+    <div class="emoticon-button" id="colorSchemeToggle" @click="toggleColorScheme()" :title="colorScheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+      {{ colorScheme === 'dark' ? '🔆' : '🌙' }}
+    </div>
+    
+    <div class="emoticon-button" id="aboutButton" @click="window.location.href='/About'" title="About NeoSearch">
+      ℹ️
+    </div>
+    
+    <div class="header">
+      <div class="mainRow ">
+        <div class="sidebar sm-min-width">
+          <img src="/Logo.svg" alt="Logo" class="logo" @click="performSearch(''); $refs.queryInput.focus()" />
+        </div>
+        <div class="queryContainer">
+          <div 
+            id="query"
+            ref="queryInput"
+            contenteditable="true"
+            spellcheck="false" 
+            :style="'font-size:' + queryFontSize + 'px'"
+            @input="handleQueryInput($event)"
+            @keydown="handleKeyboard"
+          ></div>
+          <div id="queryEllipses" :style="'font-size:' + queryFontSize + 'px'">{{ !query ? '...' : '' }}</div>
+        </div>
+      </div>
+      <div class="mainRow">
+        <div class="sidebar sm-hide"></div>
+        <div v-if="showHintText" class="query-hint-text">⤷Type your search query here</div>
+      </div>
+      <div class="mainRow">
+        <div class="sidebar sm-hide"></div>
+        <div class="suggestions scroll-horizontal" v-if="suggestions.length > 0">
+          <div 
+            v-for="formattedSuggestion in formattedSuggestions" 
+            class="suggestion-item"
+            @click="selectSuggestion(formattedSuggestion.original)"
+          >
+            ⤷ {{ formattedSuggestion.display }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mainRow">
+        <div class="sidebar sm-hide"></div>
+        <div class="tabs scroll-horizontal" v-if="lenses.length > 1">
+          <button 
+            v-for="lens in lenses"
+            class="tab"
+            :class="{ 'active': lens === currentLens }"
+            @click="setActiveLens(lens)"
+          >
+            <span class="chip-icon">{{ lens.icon }}</span> {{ lens.name }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mainRow" v-if="plugin.template">
+      <div class="sidebar sm-hide"></div>
+      <div id="pluginContainer" ref="pluginContainer" v-html="plugin.template" v-show="noOtherLensSelected"></div>
+    </div>
+
+    <div class="mainRow category sm-vertical" v-if="aiOverview?.items?.length && noOtherLensSelected && !error">
+      <div class="sidebar">
+        <div class="category-name">AI Overview</div>
+      </div>
+        
+      <div class="result" style="cursor: pointer;" @click="showFullAIOverview = !showFullAIOverview">
+        <div class="result-content" style="position: relative;">
+          <div class="description">
+            <div v-for="item in (aiOverview?.items || [])" style="margin-bottom: 4px;">
+              <div class="heading" :style="'color:' + (showFullAIOverview ? 'var(--text-bright)' : 'var(--text-normal)')">{{ item.key_finding }}</div>
+              <div class="drawer" :class="{ expanded: showFullAIOverview }">{{ item.overview }}</div>
+            </div>
+            
+            <div v-if="!showFullAIOverview" class="expand-fade"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading-skeleton" v-if="isLoading" role="status" aria-label="Loading results">
+      <div class="mainRow category sm-vertical">
+        <div class="sidebar">
+          <div class="category-name skeleton-block" aria-hidden="true">Loading</div>
+        </div>
+        <div class="results">
+          <div class="result">
+            <div class="result-content">
+            <div class="result-header">
+              <div class="fav skeleton-block"></div>
+              <div class="title skeleton-block" style="width: 46%">Loading</div>
+            </div>
+              <div class="description skeleton-block" style="width: 96%">Loading</div>
+              <div class="description skeleton-block" style="width: 40%">Loading</div>
+            </div>
+          </div>
+          <div class="result">
+            <div class="result-content">
+              <div class="result-header">
+                <div class="fav skeleton-block"></div>
+                <div class="title skeleton-block" style="width: 34%">Loading</div>
+              </div>
+              <div class="skeleton-media">
+                <div class="skeleton-poster skeleton-block"></div>
+                <div class="skeleton-lines">
+                  <div class="description skeleton-block" style="width: 98%">Loading</div>
+                  <div class="description skeleton-block" style="width: 92%">Loading</div>
+                  <div class="description skeleton-block" style="width: 96%">Loading</div>
+                  <div class="description skeleton-block" style="width: 88%">Loading</div>
+                  <div class="description skeleton-block" style="width: 94%">Loading</div>
+                  <div class="description skeleton-block" style="width: 56%">Loading</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mainRow category sm-vertical">
+        <div class="sidebar">
+          <div class="category-name skeleton-block" aria-hidden="true">Loading</div>
+        </div>
+        <div class="results">
+          <div class="result">
+            <div class="result-content">
+              <div class="result-header">
+                <div class="fav skeleton-block"></div>
+                <div class="title skeleton-block" style="width: 40%">Loading</div>
+              </div>
+              <div class="description skeleton-block" style="width: 90%">Loading</div>
+              <div class="description skeleton-block" style="width: 30%">Loading</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mainRow" v-if="!isLoading && error">
+      <div class="sidebar sm-hide"></div>
+      <div class="error-message">{{ error }}</div>
+    </div>
+
+    <div id="resultContainer" v-if="!isLoading && !error">
+      <div v-if="currentLens && currentLens.categories">
+        <div class="mainRow category sm-vertical" v-for="category in currentLens?.categories || []">
+          <div class="sidebar" v-if="category.name">
+            <a 
+              v-if="category.search_query"
+              :href="'/q=' + encodeURIComponent(category.search_query)"
+              class="category-name category-clickable"
+              @click.prevent="performSearch(category.search_query)"
+            >{{ category.name }}</a>
+            <div v-else class="category-name">{{ category.name }}</div>
+          </div>
+
+          <div class="results">
+            <div 
+              v-for="(link, categoryIndex) in category.links"
+              class="result"
+              :key="link.url"
+            >
+              <div 
+                v-if="link.handler?.name" 
+                class="result-handler-container result-content"
+                :data-handler-name="link.handler.name"
+                :data-link-index="link.index"
+              ></div>
+              
+              <div v-else class="result-content">
+                <div class="result-header">
+                  <img v-if="favicon(link.url)" class="fav" :src="favicon(link.url)" :alt="hostname(link.url) + ' favicon'">
+                  <span v-else class="fav emoji-favicon">🌐</span>
+                  <a 
+                    class="title"
+                    :href="link.url" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    @click="updateUrlWithQuery(query, true)"
+                  >
+                    <span v-if="link.relevance" class="relevance-indicator">{{ getRelevanceEmoticon(link.relevance) }}</span>{{ link.text }}
+                    <small>
+                      {{ hostname(link.url) }}
+                    </small>
+                  </a>
+                </div>
+                <div class="description" v-if="link.description">
+                    {{ link.description }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-show="!isLoading && !error && query && currentLens && filteredResults.length > 0" class="mainRow">
+      <div class="sidebar sm-hide"></div>
+      <div style="width:100%">
+        <!-- Continue your search section -->
+        <div style="padding: 16px 0">
+          <div><small>Continue your search...</small></div>
+          <div ref="searchEnginesGrid"></div>
+        </div>
+
+        <footer>
+          <span v-if="userLocation">
+            Results for 
+            <select class="location-dropdown" v-model="userLocation" @change="onLocationChange">
+              <option v-for="location in LOCATIONS" :key="location.code" :value="location.code">
+                {{ location.name }}
+              </option>
+            </select>
+          </span>
+        </footer>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4ad58728de4e211',t:'MTc5MjA1MTgwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -19,6 +19,7 @@ pub mod crates;
 pub mod mdn;
 pub mod npm;
 pub mod mwmbl;
+pub mod neosearch;
 pub mod openalex;
 pub mod openlibrary;
 pub mod pubmed;
@@ -39,6 +40,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "ddg" => Some(Box::new(ddg::Ddg)),
         "openlibrary" => Some(Box::new(openlibrary::Openlibrary)),
         "mwmbl" => Some(Box::new(mwmbl::Mwmbl)),
+        "neosearch" => Some(Box::new(neosearch::Neosearch)),
         "grokipedia" => Some(Box::new(grokipedia::Grokipedia)),
         "startpagina" => Some(Box::new(startpagina::Startpagina)),
         "swisscows" => Some(Box::new(swisscows::Swisscows)),

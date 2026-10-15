@@ -52,6 +52,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("dogpile", Some("tests-fixture-dogpile-test.json"), None, 5),
     ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
     ("keenable", Some("tests-fixture-keenable-test.json"), None, 5),
+    ("neosearch", Some("tests-fixture-neosearch-test.json"), None, 5),
 ];
 
 fn body(file: Option<&str>, inline: Option<&str>) -> String {
@@ -297,6 +298,29 @@ fn dogpile_two_leg_post_chain() {
     assert!(r2.json.as_ref().expect("json").contains("\"page\":3"), "pageno passes through");
     // No token -> chain stops; chain terminates after leg 2.
     assert!(e.request("q", 1, &prev(&["{}"], &[])).is_none());
+    assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
+}
+
+#[test]
+fn neosearch_xsrf_chain_last_line_json() {
+    let e = engine("neosearch");
+    assert_eq!(e.rounds(), 2);
+    let r1 = e.request("test", 1, &[]).expect("leg 1 home GET");
+    assert!(matches!(r1.method, Method::Get));
+    assert!(r1.headers.is_empty());
+    // Leg 2 carries the xsrf token (both quote styles, trimmed head OK).
+    for home in [
+        r#"<html><head><meta name="xsrf-token" content="ABC123xyz"></head>"#,
+        "<meta name='xsrf-token' content='Z9_8'>",
+    ] {
+        let r2 = e.request("some query", 1, &prev(&[home], &[])).expect("leg 2");
+        assert!(matches!(r2.method, Method::Post));
+        assert!(r2.url.ends_with("/search"));
+        assert!(r2.headers.iter().any(|(k, _)| k == "X-XSRF-TOKEN"));
+        assert!(r2.json.as_ref().expect("json").contains("\"generate\":\"auto\""));
+    }
+    // Missing token stops the chain; it terminates after leg 2.
+    assert!(e.request("q", 1, &prev(&["<html>no meta</html>"], &[])).is_none());
     assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
 }
 

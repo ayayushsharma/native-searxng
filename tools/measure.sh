@@ -14,7 +14,9 @@ BASE="${BASE:-http://127.0.0.1:8888}"
 if ! curl -sf "$BASE/healthz" >/dev/null; then
   echo "server not running at $BASE - start it first"; exit 2
 fi
-PID=$(ps -e -o pid,args 2>/dev/null | grep native-searxng | grep -v 'bash -c' | grep -v tmux | grep -v grep | awk '{print $1}' | head -1)
+# Match the server binary precisely: exclude this script's own process
+# (its args contain the binary path) and any wrapper shells.
+PID=$(ps -e -o pid,args 2>/dev/null | grep '[n]ative-searxng$\|[n]ative-searxng ' | grep -v measure.sh | grep -v tmux | awk '{print $1}' | head -1)
 if [ -z "$PID" ]; then echo "server process not found"; exit 2; fi
 echo "server pid=$PID queries=$N"
 TMP="$(mktemp)"

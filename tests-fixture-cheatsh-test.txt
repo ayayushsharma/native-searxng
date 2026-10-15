@@ -1,0 +1,73 @@
+[48;5;8m[24m cheat.sheets:python [24m[0m
+[38;5;248;03m# Python is a high-level programming language[39;00m
+[38;5;248;03m# and python is a Python interpreter.[39;00m
+
+[38;5;248;03m# Basic example of server with python[39;00m
+[38;5;248;03m# Will start a Web Server in the current directory on port 8000[39;00m
+[38;5;248;03m# go to http://127.0.0.1:8000[39;00m
+[38;5;248;03m#[39;00m
+[38;5;248;03m# Python v2.7[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mSimpleHTTPServer[39m
+[38;5;248;03m# Python 3[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mhttp.server[39m[38;5;241m [39m[38;5;75m8000[39m
+
+[38;5;248;03m# SMTP-Server for debugging, messages will be discarded, and printed on STDOUT.[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252msmtpd[39m[38;5;241m [39m[38;5;252m-n[39m[38;5;241m [39m[38;5;252m-c[39m[38;5;241m [39m[38;5;252mDebuggingServer[39m[38;5;241m [39m[38;5;252mlocalhost:1025[39m
+
+[38;5;248;03m# Pretty print a JSON[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mjson.tool[39m
+
+[38;5;248;03m# Zen of Python[39;00m
+[38;5;248;03m# or just 'import this' in python[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mthis[39m
+
+[38;5;248;03m# See also:[39;00m
+[38;5;248;03m#   Python language cheat sheets at /python/[39;00m
+[38;5;248;03m#   list of pages:      /python/:list[39;00m
+[38;5;248;03m#   learn python:       /python/:learn[39;00m
+[38;5;248;03m#   search in pages:    /python/~keyword[39;00m
+
+[48;5;8m[24m cheat:python [24m[0m
+[38;5;248;03m# Basic example of server with python[39;00m
+[38;5;248;03m# Will start a Web Server in the current directory on port 8000[39;00m
+[38;5;248;03m# go to http://127.0.0.1:8000[39;00m
+
+[38;5;248;03m# Python v2.7[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mSimpleHTTPServer[39m
+[38;5;248;03m# Python 3[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mhttp.server[39m[38;5;241m [39m[38;5;75m8000[39m
+
+[38;5;248;03m# SMTP-Server for debugging, messages will be discarded, and printed on stdout.[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252msmtpd[39m[38;5;241m [39m[38;5;252m-n[39m[38;5;241m [39m[38;5;252m-c[39m[38;5;241m [39m[38;5;252mDebuggingServer[39m[38;5;241m [39m[38;5;252mlocalhost:1025[39m
+
+[38;5;248;03m# Pretty print a json[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mjson.tool[39m[38;5;241m [39m[38;5;252mfoo.json[39m
+
+[48;5;8m[24m tldr:python [24m[0m
+[38;5;248;03m# python[39;00m
+[38;5;248;03m# Python language interpreter.[39;00m
+[38;5;248;03m# More information: <https://www.python.org>.[39;00m
+
+[38;5;248;03m# Start a REPL (interactive shell):[39;00m
+[38;5;252mpython[39m
+
+[38;5;248;03m# Execute a specific Python file:[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252mpath/to/file.py[39m
+
+[38;5;248;03m# Execute a specific Python file and start a REPL:[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-i[39m[38;5;241m [39m[38;5;252mpath/to/file.py[39m
+
+[38;5;248;03m# Execute a Python expression:[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-c[39m[38;5;241m [39m[38;5;214m"expression"[39m
+
+[38;5;248;03m# Run the script of the specified library module:[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mmodule[39m[38;5;241m [39m[38;5;252marguments[39m
+
+[38;5;248;03m# Install a package using `pip`:[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mpip[39m[38;5;241m [39m[38;5;252minstall[39m[38;5;241m [39m[38;5;252mpackage_name[39m
+
+[38;5;248;03m# Interactively debug a Python script:[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mpdb[39m[38;5;241m [39m[38;5;252mpath/to/file.py[39m
+
+[38;5;248;03m# Start the built-in HTTP server on port 8000 in the current directory:[39;00m
+[38;5;252mpython[39m[38;5;241m [39m[38;5;252m-m[39m[38;5;241m [39m[38;5;252mhttp.server[39m

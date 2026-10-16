@@ -38,6 +38,13 @@ user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
 # reference here. Empty string disables (503 for unknown instead).
 url = "http://127.0.0.1:8889"
 
+# Fan-out lanes: 0 = auto = min(cpu count, 4, engines), safe on every
+# host (today's behavior). Beefy machines: 64 (one engine per lane,
+# fully parallel, +RSS per lane). Small machines: 1-2 (sequential-ish,
+# minimal arenas, slower worst case). Clamped to [1, engines] at use.
+[perf]
+lanes = 0
+
 # Verbosity: off | error | warn | info | debug (default info).
 #   info  = one line per request + every failed engine with its reason
 #   warn  = failures only (quiet serving)

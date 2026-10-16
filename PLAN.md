@@ -263,6 +263,9 @@ diff runner + examples — the contract IS SearXNG's `/search&format=json`.
    networks) holds one `Arc<Vec<Certificate>>` (~2KB, once per process)
    + transient startup read buffer; zero new crates (ureq's own
    `from_pem`/`Specific`). Empty default adds nothing.
+   `[perf] lanes`: scoped threads exit after each search — no steady
+   RSS (flat ~13.7MB dev at lanes 1/4/64); transient peak under load
+   grows with lanes (documented tradeoff, CI release measures).
 2. **Tag `v0.2.0`** after auth merges → CI proves release RSS with the
    shipped binary (auth included). Tagging is a release act: owner's call.
 3. **MCP Inspector conformance + ~20 agent searches** ~~through the tunnel~~

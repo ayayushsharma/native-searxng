@@ -25,6 +25,8 @@ pub struct Config {
     pub require_auth: bool,
     /// Strangler fallback base URL (Python reference). Empty = disabled.
     pub proxy_to: String,
+    /// Fan-out lanes: 0 = auto (safe everywhere), N = exact.
+    pub lanes: u64,
     /// Custom CA bundle for TLS-intercepting networks (work machines).
     /// Empty = Mozilla's bundled roots. Set = trust ONLY this file.
     pub ca_file: String,
@@ -46,6 +48,7 @@ impl Default for Config {
             user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36".into(),
             require_auth: true,
             proxy_to: String::new(),
+            lanes: 0,
             ca_file: String::new(),
             log_level: "info".into(),
         }
@@ -291,6 +294,19 @@ pub fn log_level(cfg: &Config) -> crate::log::Level {
     crate::log::Level::parse(&cfg.log_level).unwrap_or(crate::log::Level::Info)
 }
 
+/// Effective lane count for a fan-out over `engines` engines.
+/// 0 (auto) = min(cpu count, 4, engines): today's behavior on every
+/// host. Explicit N clamps to [1, engines] — lanes >= engines means
+/// one engine per lane (fully parallel); lanes = 1 is sequential.
+pub fn effective_lanes(cfg: &Config, engines: usize) -> usize {
+    let n = engines.max(1);
+    if cfg.lanes == 0 {
+        let cpu = std::thread::available_parallelism().map(|p| p.get()).unwrap_or(4);
+        return cpu.min(4).min(n);
+    }
+    (cfg.lanes as usize).clamp(1, n)
+}
+
 fn apply(cfg: &mut Config, section: &str, k: &str, v: &str) -> Result<(), String> {
     match section {
         "server" => match k {
@@ -320,6 +336,13 @@ fn apply(cfg: &mut Config, section: &str, k: &str, v: &str) -> Result<(), String
         },
         "proxy" => match k {
             "url" => cfg.proxy_to = string(v)?,
+            _ => {}
+        },
+        // Lanes: 0 = auto (min(cpu count, 4, engines) — today's
+        // behavior everywhere). N>0 = exact, clamped to [1, engines]
+        // at use. Beefy: 64 -> one engine per lane. Small: 1-2.
+        "perf" => match k {
+            "lanes" => cfg.lanes = int(v, "lanes")?,
             _ => {}
         },
         "logging" => match k {
@@ -409,6 +432,9 @@ url = "http://127.0.0.1:8889"
 [logging]
 level = "debug"
 
+[perf]
+lanes = 2
+
 [engines]
 general = ["wikipedia", "ddg",]
 it = [
@@ -428,7 +454,21 @@ future_key = 1
         assert_eq!(cfg.user_agent, "UA # not-a-comment");
         assert_eq!(cfg.proxy_to, "http://127.0.0.1:8889");
         assert_eq!(cfg.log_level, "debug");
+        assert_eq!(cfg.lanes, 2);
         assert_eq!(cfg.engines, vec!["wikipedia", "ddg", "github", "flask"]);
+    }
+
+    #[test]
+    fn lanes_clamp() {
+        let mut cfg = Config::default();
+        cfg.lanes = 0;
+        let auto = effective_lanes(&cfg, 15);
+        assert!((1..=4).contains(&auto), "auto stays safe: {auto}");
+        cfg.lanes = 64;
+        assert_eq!(effective_lanes(&cfg, 5), 5); // fully parallel
+        cfg.lanes = 1;
+        assert_eq!(effective_lanes(&cfg, 5), 1); // sequential
+        assert_eq!(effective_lanes(&cfg, 0), 1); // never zero lanes
     }
 
     #[test]
@@ -446,6 +486,7 @@ future_key = 1
             "[server]\nrequire_auth = off\n",
             "[logging]\nlevel = verbose\n",
             "[logging]\nlevel = 3\n",
+            "[perf]\nlanes = soon\n",
             "[http]\ntimeout_ms = soon\n",
             "[engines]\ngeneral = [wikipedia]\n",
             "[engines]\ngeneral = [\"a\",\n",
@@ -481,5 +522,6 @@ future_key = 1
         assert_eq!(cfg.proxy_to, "http://127.0.0.1:8889");
         assert!(cfg.require_auth, "shipped file stays fail-closed");
         assert_eq!(cfg.log_level, "info");
+        assert_eq!(cfg.lanes, 0, "shipped file keeps auto lanes");
     }
 }

@@ -294,9 +294,11 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         }
         work.push(engine);
     }
-    // Lanes: 4 scoped threads (GAP-PLAN P2), each running a contiguous
+    // Lanes: scoped threads (GAP-PLAN P2), each running a contiguous
     // slice of engines sequentially. Joined in cfg order so merge
-    // weights never shift. Each lane owns its chain state (prev bodies,
+    // weights never shift. `[perf] lanes`: 0 = auto, N = exact
+    // (clamped to [1, engines] — 64 means fully parallel, 1 means
+    // sequential for small machines). Each lane owns its chain state (prev bodies,
     // cookie jar); only the thread-safe client (shared ureq pool) and
     // the read-only query are shared. Latency drops from SUM(legs) to
     // ~SUM(slowest lane): ~20s worst-case general queries become ~4s.
@@ -308,7 +310,8 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
     let qq: &str = q.q.as_str();
     let pageno: u32 = q.pageno;
     std::thread::scope(|s| {
-        let lanes = 4usize;
+        let lanes = crate::config::effective_lanes(cfg, work.len());
+        crate::debug!("fan-out {} engines over {} lanes", work.len(), lanes);
         let chunk = work.len().div_ceil(lanes);
         let mut handles = Vec::with_capacity(lanes);
         for slice in work.chunks(chunk) {
@@ -442,7 +445,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             }
         }
     });
-    let results = merge::merge(lists);
+    let results = merge::rank(merge::merge(lists), &q.q);
     if q.format == "json" {
         (200, b"application/json", render::json(&q.q, &results, &unresponsive))
     } else {

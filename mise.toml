@@ -24,6 +24,14 @@ run = "sh tools/cargo-run.sh build"
 description = "Offline suite, zero network (phone: JOBS=4)"
 run = "sh tools/cargo-run.sh test"
 
+[tasks.fmt]
+description = "Format all Rust (rustfmt only, no rustc — lock-free, safe anytime)"
+run = "cargo fmt --all"
+
+[tasks.fmt-check]
+description = "Fail if any Rust file is unformatted (CI shape check)"
+run = "cargo fmt --all -- --check"
+
 [tasks.build-release]
 description = "Host release binary. CI owns this; phone: NEVER (RAM)"
 run = "sh tools/cargo-run.sh build --locked --release"

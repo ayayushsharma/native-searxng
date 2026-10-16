@@ -1,12 +1,14 @@
-# WEB-UI — search-engine console at `/` (plan, 2026-10-16)
+# WEB-UI — search-engine console at `/` (built 2026-10-16)
 
-Yes, buildable with **zero new crates, zero build step, zero JS
-framework**: one HTML string served by `tiny_http` (like today's
-`render::html`), vanilla `fetch()` for the try-it console, token in
-`localStorage`. Server RAM line-item: one ~20KB transient string per
-`GET /` — zero steady-state, JS runs client-side.
+Zero new crates, zero build step, zero JS framework: plain files in
+`web/` (`index.html`, `app.js`, `style.css`), embedded at compile
+time via `include_str!` — authors edit HTML/JS, the binary stays one
+file (Android-safe, no runtime path lookups, no per-request disk
+I/O). Vanilla `fetch()` try-it console, token in `localStorage`.
+RAM line-item: three static `&str` (~17KB total), zero per-request
+cost beyond the response itself.
 
-## The one structural change (auth chicken-and-egg)
+## Auth chicken-and-egg (solved as planned)
 
 Today the gate exempts only `/healthz`. A token-entry page that 401s
 without a token is useless — so **`GET /` becomes unauthenticated**,
@@ -37,10 +39,16 @@ the (still-gated) APIs with a token. Changes:
    `tools/call search|fetch`): form → `fetch()` with the bearer
    header → pretty JSON + 401 hint that focuses the token box.
 
-## No-drift rule (capabilities never rot)
+## No-drift rule (as built)
 
-The page embeds one server-generated JSON blob per request, built
-from live structures — never hand-maintained:
+`/api/config` returns `{authRequired, version, engines, categories,
+topKeys, resultKeys, mcp:{search,fetch}}` built from the LIVE registry
++ conf order + MCP schema fns — the page can never rot behind the
+binary. Token box renders iff `authRequired` (server fact, never
+guessed). `cargo test` asserts the embedded markers + manifest
+shape.
+
+The page fetches `/api/config` on load — never hand-maintained:
 
 - `engines:[{name,category}]` from the `engines::find` registry +
   `searxng.toml` order (same source as merge weights),
@@ -64,7 +72,7 @@ page doesn't follow, the test fails.
   calls go out bare — page visibly badges "DEV OPEN" so a tunnelled
   host can't mistake itself for secured.
 
-## Build steps (est. 1 session)
+## Build steps (done 2026-10-16, shipped green)
 
 1. Gate exemption + `AUTH_REQUIRED` + capability blob (`server.rs`,
    `render.rs::console()`), unit test on the blob.

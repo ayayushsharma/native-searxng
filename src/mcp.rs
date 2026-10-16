@@ -97,7 +97,7 @@ pub fn handle_http(cfg: &Config, client: &fetch::Client, body: &str) -> String {
     }
 }
 
-fn search_tool() -> Value {
+pub fn search_tool() -> Value {
     json!({
         "name": "search",
         "description": "Search the web across native engines (docs, packages, Q&A, papers, news). Returns numbered title/URL/content results.",
@@ -115,7 +115,7 @@ fn search_tool() -> Value {
     })
 }
 
-fn fetch_tool() -> Value {
+pub fn fetch_tool() -> Value {
     json!({
         "name": "fetch",
         "description": "Fetch a page URL and extract title, text content and links (native scrape first, reader fallback).",

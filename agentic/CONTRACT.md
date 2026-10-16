@@ -20,7 +20,9 @@ POST behavior matches stock where applicable):
 | `categories` | `general` | comma-separated; unknown → proxied to Python reference |
 | `engines` | `duckduckgo,bing` | comma-separated; unknown → proxied to Python reference |
 
-Also served: `GET /` (tiny HTML form), `GET /healthz`, `GET /opensearch.xml`.
+Also served open (no token — static console + liveness): `GET /`
+(console), `GET /app.js`, `GET /style.css`, `GET /api/config`
+(capability manifest), `GET /healthz`, `GET /opensearch.xml`.
 
 ## Response (`format=json`, `application/json`)
 

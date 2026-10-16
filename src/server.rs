@@ -1,10 +1,19 @@
 //! Single-threaded sync server (tiny_http). One request at a time —
 //! queue depth 1 is the RAM-flatness guarantee (PLAN.md §1).
-//! Routes: / -> form, /search -> pipeline, /fetch -> page extract,
-//! /healthz, /opensearch.xml.
+//! Routes: / -> console (static web/ files via include_str!), /app.js,
+//! /style.css, /api/config (capability manifest), /search -> pipeline,
+//! /fetch -> page extract, /healthz, /opensearch.xml.
 
 use crate::{config::Config, crypto, engine::SearchResult, engines, fetch, jina, mcp, merge, query, render, scrape};
 use tiny_http::{Header, Method, Response, Server};
+
+/// Static console: real files in `web/` (`index.html`, `app.js`,
+/// `style.css`), embedded at COMPILE time — authors edit plain HTML/JS,
+/// the binary stays one file (Android-safe, no runtime path lookups,
+/// no per-request disk I/O). Only `/api/config` is dynamic JSON.
+const INDEX_HTML: &str = include_str!("../web/index.html");
+const APP_JS: &str = include_str!("../web/app.js");
+const STYLE_CSS: &str = include_str!("../web/style.css");
 
 /// Bearer gate (pure function — unit-tested below). `tokens` empty =
 /// dev-open; main only allows that with explicit `auth=off` in conf.
@@ -32,6 +41,47 @@ fn header<'a>(req: &'a tiny_http::Request, name: &str) -> Option<&'a str> {
         .map(|h| h.value.as_str())
 }
 
+/// Paths serving the static console + liveness: open WITHOUT a token
+/// (a token-entry page that 401s is a locked key-box). Public facts
+/// only — every data route stays gated.
+fn open_path(path: &str) -> bool {
+    matches!(path, "/healthz" | "/" | "/app.js" | "/style.css" | "/api/config")
+}
+
+/// Capability manifest for the console (`GET /api/config`). Built from
+/// the LIVE registry + conf order + MCP schema fns — the page can never
+/// rot behind the binary. `{:?}` on &str is valid JSON quoting here.
+fn api_config(cfg: &Config, tokens: &[String]) -> String {
+    let mut engines = Vec::new();
+    let mut cats: Vec<String> = Vec::new();
+    for name in &cfg.engines {
+        if let Some(e) = engines::find(name) {
+            let c = e.category().to_string();
+            if !cats.contains(&c) {
+                cats.push(c.clone());
+            }
+            engines.push(format!("{{\"name\":{:?},\"category\":{:?}}}", e.name(), c));
+        }
+    }
+    format!(
+        concat!(
+            "{{\"authRequired\":{},\"version\":{:?},\"engines\":[{}],",
+            "\"categories\":[{}],",
+            "\"topKeys\":[\"query\",\"results\",\"answers\",\"corrections\",",
+            "\"infoboxes\",\"suggestions\",\"unresponsive_engines\"],",
+            "\"resultKeys\":[\"title\",\"url\",\"content\",\"engine\",\"category\",",
+            "\"template\",\"publishedDate\",\"thumbnail\",\"iframe_src\",",
+            "\"img_src\",\"audio_src\"],",
+            "\"mcp\":{{\"search\":{},\"fetch\":{}}}}}"
+        ),
+        !tokens.is_empty(),
+        env!("CARGO_PKG_VERSION"),
+        engines.join(","),
+        cats.iter().map(|c| format!("{c:?}")).collect::<Vec<_>>().join(","),
+        mcp::search_tool(),
+        mcp::fetch_tool(),
+    )
+}
 /// Who to blame in the log on a 401. Prefers Cloudflare's connecting
 /// IP — trustworthy here ONLY because the documented deployment binds
 /// loopback, so the tunnel daemon is the sole possible client.
@@ -63,10 +113,10 @@ pub fn run(cfg: &Config, tokens: &[String]) {
     for mut req in server.incoming_requests() {
         let url = req.url().to_string();
         let path = url.split('?').next().unwrap_or("/");
-        // Auth gate: everything except the liveness probe. 401s are
-        // contract-shaped JSON; the log carries source + path only,
-        // never the presented credential.
-        if path != "/healthz" && !authorized(header(&req, "Authorization"), tokens) {
+        // Auth gate: everything except the static console + liveness.
+        // 401s are contract-shaped JSON; the log carries source + path
+        // only, never the presented credential.
+        if !open_path(path) && !authorized(header(&req, "Authorization"), tokens) {
             eprintln!("unauthorized {} {}", client_ip(&req), path);
             let ct = Header::from_bytes("Content-Type", b"application/json".as_slice()).unwrap();
             let wa = Header::from_bytes("WWW-Authenticate", b"Bearer".as_slice()).unwrap();
@@ -111,17 +161,20 @@ pub fn run(cfg: &Config, tokens: &[String]) {
             let _ = req.respond(resp);
             continue;
         }
-        let (status, ctype, body) = route(cfg, &client, &url);
+        let (status, ctype, body) = route(cfg, &client, tokens, &url);
         let header = Header::from_bytes("Content-Type", ctype).unwrap();
         let resp = Response::from_string(body).with_status_code(status).with_header(header);
         let _ = req.respond(resp);
     }
 }
 
-fn route(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8], String) {
+fn route(cfg: &Config, client: &fetch::Client, tokens: &[String], url: &str) -> (u16, &'static [u8], String) {
     let path = url.split('?').next().unwrap_or("/");
     match path {
-        "/" => (200, b"text/html", render::html("", &[])),
+        "/" => (200, b"text/html", INDEX_HTML.into()),
+        "/app.js" => (200, b"text/javascript", APP_JS.into()),
+        "/style.css" => (200, b"text/css", STYLE_CSS.into()),
+        "/api/config" => (200, b"application/json", api_config(cfg, tokens)),
         "/healthz" => (200, b"text/plain", "ok".into()),
         "/opensearch.xml" => (200, b"text/xml", OPENSEARCH.into()),
         "/search" => search(cfg, client, url),
@@ -378,5 +431,39 @@ mod tests {
         assert_eq!(super::guard(|| 42), Some(42));
         let r: Option<()> = super::guard(|| panic!("boom"));
         assert!(r.is_none());
+    }
+
+    #[test]
+    fn console_static_files_embedded() {
+        // Real web/ files, compiled in: authors edit HTML/JS, the
+        // binary stays one file. Markers both sides must agree on.
+        assert!(super::INDEX_HTML.contains("/app.js"));
+        assert!(super::INDEX_HTML.contains("/style.css"));
+        assert!(super::INDEX_HTML.contains("token"));
+        assert!(super::APP_JS.contains("/api/config"));
+        assert!(super::APP_JS.contains("localStorage"));
+        assert!(super::STYLE_CSS.contains(":root"));
+        for p in ["/", "/app.js", "/style.css", "/api/config", "/healthz"] {
+            assert!(super::open_path(p), "{p} must be token-free");
+        }
+        assert!(!super::open_path("/search"));
+        assert!(!super::open_path("/mcp"));
+    }
+
+    #[test]
+    fn api_config_shape() {
+        let cfg = crate::config::Config::default();
+        let authed = super::api_config(&cfg, &["t".into()]);
+        let open = super::api_config(&cfg, &[]);
+        let v: serde_json::Value = serde_json::from_str(&authed).expect("valid JSON");
+        assert_eq!(v["authRequired"], true);
+        assert_eq!(v["version"], env!("CARGO_PKG_VERSION"));
+        assert_eq!(v["engines"][0]["name"], "wikipedia");
+        assert_eq!(v["engines"][0]["category"], "general");
+        assert!(v["categories"].as_array().unwrap().contains(&serde_json::json!("general")));
+        assert!(v["mcp"]["search"]["name"] == "search");
+        assert!(v["mcp"]["fetch"]["name"] == "fetch");
+        let o: serde_json::Value = serde_json::from_str(&open).expect("valid JSON");
+        assert_eq!(o["authRequired"], false);
     }
 }

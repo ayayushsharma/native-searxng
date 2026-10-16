@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>native-searxng</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">native-searxng <small>metasearch core</small></span>
+  <span class="ver" id="ver">…</span>
+  <span class="badge" id="authbadge" style="display:none"></span>
+  <span class="spacer"></span>
+  <span id="tokenbar" style="display:none">
+    <input id="token" type="password" placeholder="Bearer token" autocomplete="off">
+    <button id="save">Save</button>
+    <button id="forget" title="Forget token">✕</button>
+  </span>
+</header>
+<nav class="tabs">
+  <button data-tab="search" class="active">Search</button>
+  <button data-tab="engines">Engines</button>
+  <button data-tab="api">API</button>
+</nav>
+
+<section class="tab active" id="tab-search">
+  <div class="hero">
+    <h1>Search everything, natively</h1>
+    <p id="herosub">SearXNG-compatible metasearch in Rust · single binary</p>
+    <form id="form">
+      <div class="searchrow">
+        <input id="q" type="text" name="q" placeholder="Ask anything — docs, packages, papers, weather…" autocomplete="off">
+        <button class="primary" type="submit">Search</button>
+      </div>
+      <div class="pills" id="pills"></div>
+      <div class="opts">engines (optional, comma-separated): <input id="engines" placeholder="e.g. github,arxiv"></div>
+    </form>
+  </div>
+  <div class="errbanner" id="err"></div>
+  <div id="meta"></div>
+  <div id="results"></div>
+</section>
+
+<section class="tab" id="tab-engines">
+  <p class="keys" id="engsummary"></p>
+  <div id="englist"></div>
+  <h3>Response keys</h3>
+  <p class="keys" id="keys"></p>
+</section>
+
+<section class="tab" id="tab-api">
+  <div class="apirow">
+    <select id="endpoint">
+      <option value="search">GET /search</option>
+      <option value="fetch">GET /fetch</option>
+      <option value="mcplist">POST /mcp · tools/list</option>
+      <option value="mcpsearch">POST /mcp · search</option>
+      <option value="mcpfetch">POST /mcp · fetch</option>
+    </select>
+    <button class="primary" id="run">Run</button>
+  </div>
+  <div class="apirow" id="apifields"></div>
+  <pre class="out" id="out">// pick an endpoint, fill the fields, Run.</pre>
+</section>
+
+<footer>SearXNG-compatible JSON · stateless · no tracking · <span id="footcat"></span></footer>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -11,6 +11,13 @@ N="${N:-50}"
 ls -la "$BIN"
 size "$BIN" 2>/dev/null || true
 BASE="${BASE:-http://127.0.0.1:8888}"
+# Bearer from env when the server runs authed (401s still exercise the
+# server, but real fan-out is the honest load — same convention as evals).
+AUTH=""
+if [ -n "${SEARXNG_API_TOKEN:-}" ]; then
+  TOK="$(printf '%s' "$SEARXNG_API_TOKEN" | cut -d, -f1)"
+  AUTH="-H Authorization: Bearer $TOK"
+fi
 if ! curl -sf "$BASE/healthz" >/dev/null; then
   echo "server not running at $BASE - start it first"; exit 2
 fi
@@ -22,7 +29,7 @@ echo "server pid=$PID queries=$N"
 TMP="$(mktemp)"
 i=0
 ( while [ $i -lt "$N" ]; do
-    curl -sf "$BASE/search?q=test&format=json" >/dev/null
+    curl -sf $AUTH "$BASE/search?q=test&format=json" >/dev/null
     i=$((i+1))
   done ) &
 LOOP=$!

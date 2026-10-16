@@ -20,6 +20,25 @@ run = "~/scripts/safe-build.sh cargo test -j4"
 description = "Serve dev binary (conf via load_default resolution)"
 run = "./target/debug/native-searxng"
 
+[tasks.build-mac-debug]
+description = "Debug binary, native target (run ON a mac: cargo builds for the host)"
+run = "cargo build --locked"
+
+[tasks.debug-mac]
+description = "Build + run dev server in foreground, ready to test (mac daily driver)"
+depends = ["build-mac-debug"]
+run = """
+if [ -z "${SEARXNG_API_TOKEN:-}" ]; then
+  export SEARXNG_API_TOKEN="dev-$(python3 -c 'import secrets;print(secrets.token_hex(8))')"
+  echo 'no token in env: generated a throwaway dev token (localhost only). To reuse it:'
+  echo "  export SEARXNG_API_TOKEN=$SEARXNG_API_TOKEN"
+fi
+echo 'ready to test:'
+echo "  curl -H 'Authorization: Bearer $SEARXNG_API_TOKEN' 'http://127.0.0.1:8888/search?q=flask+request+context&format=json&categories=it'"
+echo '  python3 agentic/evals/check.py --base http://127.0.0.1:8888'
+./target/debug/native-searxng
+"""
+
 [tasks.mcp]
 description = "MCP server on stdio (protocol 2025-06-18)"
 run = "./target/debug/native-searxng --mcp"

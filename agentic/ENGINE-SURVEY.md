@@ -67,3 +67,28 @@ this queue. Strangler proxies them meanwhile.
 
 Traffic budget if approved: ≤2 probes/engine (fixture + live verify) +
 gates, same protocol as the 14-queue.
+
+## Sphinx-index survey (2026-10-16, 15 probes, 1 GET each)
+
+Pattern: focused-library docs fit the class (index ≤400KB, cap already
+512KB covers marginals); monorepo/data-science docs don't. Ports are
+~15 min each (flask.rs clone: SITE const + fixture + gate).
+
+| site | index size | verdict |
+|---|---|---|
+| requests.readthedocs.io | 87KB | GREEN — highest agent value (HTTP lib) |
+| jinja.palletsprojects.com | 96KB | GREEN — pallets trio, flask shape |
+| click.palletsprojects.com | 92KB | GREEN — pallets trio, flask shape |
+| docs.aiohttp.org | 213KB | GREEN — async HTTP, high agent value |
+| docs.pytest.org | 447KB | MARGINAL (+12% over 400KB guide, under 512 cap) |
+| sphinx-doc.org | 493KB | MARGINAL, low value (meta docs) |
+| pandas / numpy / matplotlib | 1.9–3.3MB | RED (fat) |
+| sqlalchemy / celery | 1.0–1.4MB | RED (fat) |
+| ansible | 25MB | RED (monorepo docs) |
+| CPython | 4.1MB | RED (parked earlier) |
+| pydantic / gunicorn | 404 | DEAD (mkdocs, no searchindex) |
+| django / fastapi | 302 / 404 | DEAD (earlier) |
+
+Recommended port order: requests → jinja → click → aiohttp (all GREEN,
+all `it`), pytest iff the marginal is accepted. Rule of thumb: if the
+library's whole docs fit in one narrative, its index fits the class.

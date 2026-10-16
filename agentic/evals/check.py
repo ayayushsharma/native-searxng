@@ -7,11 +7,21 @@ Empty result lists are warnings (engines may be banned), not failures.
 """
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+
+def auth_headers():
+    """Bearer header from SEARXNG_API_TOKEN (first entry); {} when unset.
+    Unset = server runs dev-open (auth=off) or refuses to start."""
+    tok = os.environ.get("SEARXNG_API_TOKEN", "").split(",")[0].strip()
+    return {"Authorization": f"Bearer {tok}"} if tok else {}
 
 HERE = Path(__file__).resolve().parent
 
@@ -27,7 +37,7 @@ def fetch(base, q, categories, language):
         params["categories"] = categories
     url = base.rstrip("/") + "/search?" + urllib.parse.urlencode(params)
     t0 = time.monotonic()
-    with urllib.request.urlopen(url, timeout=30) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=auth_headers()), timeout=30) as r:
         body = r.read().decode("utf-8")
     dt = time.monotonic() - t0
     return json.loads(body), dt

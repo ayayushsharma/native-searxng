@@ -8,6 +8,7 @@ informational only — order may legitimately differ during the strangler phase.
 """
 import argparse
 import json
+import os
 import sys
 import urllib.parse
 import urllib.request
@@ -16,7 +17,10 @@ import urllib.request
 def search(base, q):
     url = base.rstrip("/") + "/search?" + urllib.parse.urlencode(
         {"q": q, "format": "json", "pageno": 1, "language": "en"})
-    with urllib.request.urlopen(url, timeout=30) as r:
+    # Native side may require a bearer (oracle ignores extra headers).
+    tok = os.environ.get("SEARXNG_API_TOKEN", "").split(",")[0].strip()
+    hdrs = {"Authorization": f"Bearer {tok}"} if tok else {}
+    with urllib.request.urlopen(urllib.request.Request(url, headers=hdrs), timeout=30) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

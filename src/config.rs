@@ -12,6 +12,10 @@ pub struct Config {
     pub body_cap_kb: usize,
     pub lang: String,
     pub user_agent: String,
+    /// Kill-switch for local dev only. Default true (fail closed).
+    /// `auth=off` in the conf runs open WITHOUT a token — greppable,
+    /// never the default, never for a tunnelled host.
+    pub require_auth: bool,
     /// Strangler fallback base URL (Python reference). Empty = disabled.
     pub proxy_to: String,
 }
@@ -27,6 +31,7 @@ impl Default for Config {
             body_cap_kb: 96,
             lang: "en".into(),
             user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36".into(),
+            require_auth: true,
             proxy_to: String::new(),
         }
     }
@@ -47,6 +52,21 @@ impl Config {
 pub fn api_key(engine: &str) -> Option<String> {
     let var = format!("SEARXNG_API_KEY_{}", engine.to_uppercase());
     std::env::var(&var).ok().filter(|v| !v.trim().is_empty())
+}
+
+/// Bearer token(s) for the HTTP gate. Convention: `SEARXNG_API_TOKEN`,
+/// env-only — same rationale as `api_key` (supervisors inject env,
+/// files leak via backups/git). Comma-separated = all accepted, so
+/// rotation needs no downtime: deploy `new`, roll devices, drop `old`.
+/// Empty/unset = fail closed (main refuses to start unless the conf
+/// explicitly says `auth=off` for local dev).
+pub fn api_tokens() -> Vec<String> {
+    std::env::var("SEARXNG_API_TOKEN")
+        .unwrap_or_default()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect()
 }
 
 /// Config path resolution (XDG-first, no new deps):
@@ -114,6 +134,7 @@ pub fn load(path: &str) -> Result<Config, String> {
             "lang" => cfg.lang = v.trim().to_string(),
             "user_agent" => cfg.user_agent = v.trim().to_string(),
             "proxy_to" => cfg.proxy_to = v.trim().to_string(),
+            "auth" => cfg.require_auth = v.trim() != "off",
             _ => {}
         }
     }

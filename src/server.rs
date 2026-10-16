@@ -3,16 +3,70 @@
 //! Routes: / -> form, /search -> pipeline, /fetch -> page extract,
 //! /healthz, /opensearch.xml.
 
-use crate::{config::Config, engine::SearchResult, engines, fetch, jina, mcp, merge, query, render, scrape};
+use crate::{config::Config, crypto, engine::SearchResult, engines, fetch, jina, mcp, merge, query, render, scrape};
 use tiny_http::{Header, Method, Response, Server};
-use std::io::Read;
 
-pub fn run(cfg: &Config) {
+/// Bearer gate (pure function — unit-tested below). `tokens` empty =
+/// dev-open; main only allows that with explicit `auth=off` in conf.
+/// Scheme match is case-insensitive (RFC 7235); credential compare is
+/// constant-time (`crypto::ct_eq`). Comma-loaded tokens: any entry ok.
+pub fn authorized(auth_header: Option<&str>, tokens: &[String]) -> bool {
+    if tokens.is_empty() {
+        return true;
+    }
+    let h = auth_header.unwrap_or("").trim();
+    let Some((scheme, cred)) = h.split_once(|c: char| c.is_whitespace()) else {
+        return false;
+    };
+    if !scheme.eq_ignore_ascii_case("bearer") {
+        return false;
+    }
+    let cred = cred.trim();
+    tokens.iter().any(|t| crypto::ct_eq(t.as_bytes(), cred.as_bytes()))
+}
+
+fn header<'a>(req: &'a tiny_http::Request, name: &str) -> Option<&'a str> {
+    req.headers()
+        .iter()
+        .find(|h| h.field.as_str().as_str().eq_ignore_ascii_case(name))
+        .map(|h| h.value.as_str())
+}
+
+/// Who to blame in the log on a 401. Prefers Cloudflare's connecting
+/// IP — trustworthy here ONLY because the documented deployment binds
+/// loopback, so the tunnel daemon is the sole possible client.
+/// Never logs tokens, only the source + path.
+fn client_ip(req: &tiny_http::Request) -> String {
+    if let Some(cf) = header(req, "CF-Connecting-IP") {
+        let cf = cf.trim();
+        if !cf.is_empty() {
+            return format!("cf:{cf}");
+        }
+    }
+    req.remote_addr().map(|a| a.to_string()).unwrap_or_else(|| "-".into())
+}
+
+pub fn run(cfg: &Config, tokens: &[String]) {
     let addr = format!("{}:{}", cfg.bind, cfg.port);
     let server = Server::http(&addr).expect("bind server");
     let client = fetch::Client::new(cfg);
     for mut req in server.incoming_requests() {
         let url = req.url().to_string();
+        let path = url.split('?').next().unwrap_or("/");
+        // Auth gate: everything except the liveness probe. 401s are
+        // contract-shaped JSON; the log carries source + path only,
+        // never the presented credential.
+        if path != "/healthz" && !authorized(header(&req, "Authorization"), tokens) {
+            eprintln!("unauthorized {} {}", client_ip(&req), path);
+            let ct = Header::from_bytes("Content-Type", b"application/json".as_slice()).unwrap();
+            let wa = Header::from_bytes("WWW-Authenticate", b"Bearer".as_slice()).unwrap();
+            let resp = Response::from_string(render::error_json("unauthorized"))
+                .with_status_code(401)
+                .with_header(ct)
+                .with_header(wa);
+            let _ = req.respond(resp);
+            continue;
+        }
         // Stateless Streamable HTTP: POST /mcp with a JSON-RPC body.
         // No SSE, no sessions — one body in, one JSON body out.
         // POST bodies capped at 64KB (tool args are small).
@@ -21,7 +75,7 @@ pub fn run(cfg: &Config) {
             let mut body = Vec::new();
             let mut buf = [0u8; 8192];
             let mut ok = true;
-            let mut reader = req.as_reader();
+            let reader = req.as_reader();
             loop {
                 match reader.read(&mut buf) {
                     Ok(0) => break,
@@ -273,5 +327,32 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         (200, b"application/json", render::json(&q.q, &results, &unresponsive))
     } else {
         (200, b"text/html", render::html(&q.q, &results))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::authorized;
+
+    fn toks() -> Vec<String> {
+        vec!["s3cr3t".into(), "r0tat3d".into()]
+    }
+
+    #[test]
+    fn auth_gate_shapes() {
+        let t = toks();
+        assert!(authorized(Some("Bearer s3cr3t"), &t));
+        assert!(authorized(Some("Bearer r0tat3d"), &t)); // rotation entry
+        assert!(authorized(Some("bearer s3cr3t"), &t)); // scheme case
+        assert!(authorized(Some("Bearer  s3cr3t  "), &t)); // OWS
+        assert!(!authorized(None, &t));
+        assert!(!authorized(Some(""), &t));
+        assert!(!authorized(Some("Bearer wrong"), &t));
+        assert!(!authorized(Some("Bearer s3cr3"), &t)); // prefix != equal
+        assert!(!authorized(Some("Bearer s3cr3t!"), &t));
+        assert!(!authorized(Some("Basic c2Vjcm4n"), &t)); // wrong scheme
+        assert!(!authorized(Some("s3cr3t"), &t)); // no scheme
+        // Dev-open only when main allows it (explicit auth=off).
+        assert!(authorized(None, &[]));
     }
 }

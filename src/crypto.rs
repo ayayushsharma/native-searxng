@@ -124,3 +124,17 @@ pub fn b64url_decode(s: &str) -> Option<Vec<u8>> {
     }
     Some(out)
 }
+
+/// Constant-time equality for bearer tokens. Lengths leak (unavoidable
+/// without padding); content does not. Used by the HTTP auth gate —
+/// timing attacks over a network are impractical, but this is 5 lines.
+pub fn ct_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}

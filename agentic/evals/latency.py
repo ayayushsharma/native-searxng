@@ -3,6 +3,7 @@
 oracle :8889, sequential, 2s politeness sleep. Reports per-query +
 mean/p50/max per side. Local-only, never in CI."""
 import json
+import os
 import time
 import urllib.parse
 import urllib.request
@@ -23,8 +24,10 @@ SLEEP_S = 2
 
 def timed(base, q, cat):
     url = f"{base}/search?q={urllib.parse.quote(q)}&format=json&categories={cat}"
+    tok = os.environ.get("SEARXNG_API_TOKEN", "").split(",")[0].strip()
+    hdrs = {"Authorization": f"Bearer {tok}"} if tok else {}
     t0 = time.time()
-    with urllib.request.urlopen(url, timeout=60) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=hdrs), timeout=60) as r:
         d = json.load(r)
     dt = time.time() - t0
     return dt, len(d["results"]), len(d["unresponsive_engines"])

@@ -9,11 +9,17 @@ LIVE traffic (fans out to upstreams) — local runs only, NEVER in CI.
 Be polite: SLEEP_S between queries, sequential, one pass.
 """
 import json
+import os
 import sys
 import time
 import urllib.parse
 import urllib.request
 from collections import Counter, defaultdict
+
+
+def auth_headers():
+    tok = os.environ.get("SEARXNG_API_TOKEN", "").split(",")[0].strip()
+    return {"Authorization": f"Bearer {tok}"} if tok else {}
 
 NATIVE = "http://127.0.0.1:8888"
 ORACLE = "http://127.0.0.1:8889"
@@ -68,7 +74,7 @@ def fetch(base, q, cat):
     params = urllib.parse.urlencode({"q": q, "format": "json", "categories": cat})
     t0 = time.time()
     try:
-        with urllib.request.urlopen(f"{base}/search?{params}", timeout=120) as r:
+        with urllib.request.urlopen(urllib.request.Request(f"{base}/search?{params}", headers=auth_headers()), timeout=120) as r:
             d = json.load(r)
         return d, time.time() - t0, None
     except Exception as e:  # noqa: BLE001

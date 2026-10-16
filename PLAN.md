@@ -243,3 +243,23 @@ diff runner + examples — the contract IS SearXNG's `/search&format=json`.
    40 crates) keeps this ballpark comfortable; measure to confirm.
 4. Where the Python oracle runs (strangler's :8889): PC, phone, or public
    instance as fallback? Undecided — the proxy needs a home before W1 ends.
+
+## 14. Implementation queue (agreed 2026-10-16, single consumer + cloudflared)
+
+1. **HTTP bearer auth** (building): `SEARXNG_API_TOKEN` (comma-separated,
+   rotation-safe), constant-time compare (`crypto::ct_eq`, no new crates),
+   all routes except `/healthz`, stdio MCP exempt. Unset token = refuse
+   to start unless conf says `auth=off` (local dev only). Eval scripts
+   send the header from env. RAM line-item: one string compare/request (~0).
+2. **Tag `v0.2.0`** after auth merges → CI proves release RSS with the
+   shipped binary (auth included). Tagging is a release act: owner's call.
+3. **MCP Inspector conformance + ~20 agent searches** through the tunnel
+   (proves the public path; documents the pi header config), then cut
+   pi over from the bespoke TS adapter.
+4. **New-category session** (jisho/open_meteo/sepiasearch: contract+conf+
+   gate per wave), then news-depth (native news 14.7 vs oracle 22.3/q).
+5. **Optional hardening**: per-engine panic isolation in the lane fan-out
+   (one panicking parser currently poisons its whole lane slice).
+
+Deployment (cloudflared): bind `127.0.0.1`, tunnel → localhost, bearer at
+origin, TLS at the Cloudflare edge. Full procedure in `agentic/DEPLOY.md`.

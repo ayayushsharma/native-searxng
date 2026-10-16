@@ -281,6 +281,16 @@ pub fn ddg_parse(body: &str, engine: &'static str) -> Vec<SearchResult> {
 }
 
 /// Normalize for dedup: lowercase, strip scheme noise, trailing slash.
+/// Dedup key: scheme/www/case/trailing-slash PLUS fragment and
+/// tracking params (?utm_*, fbclid, gclid, ref, si...) — the same
+/// article shared with different trackers must collapse to one row.
+/// Meaningful params (?v=, ?q=, ?id=) are kept: only a fixed tracker
+/// list is stripped, the rest of the query stays in the key.
+const TRACKERS: &[&str] = &[
+    "fbclid", "gclid", "gclsrc", "ref", "ref_src", "ref_url", "si",
+    "mc_cid", "mc_eid", "igshid", "vero_conv", "vero_id",
+];
+
 pub fn normalize_url(u: &str) -> String {
     let mut s = u.trim().to_lowercase();
     for prefix in ["https://", "http://"] {
@@ -291,6 +301,24 @@ pub fn normalize_url(u: &str) -> String {
     }
     if s.starts_with("www.") {
         s = s[4..].to_string();
+    }
+    if let Some(h) = s.find('#') {
+        s.truncate(h);
+    }
+    if let Some(q) = s.find('?') {
+        let (base, qs) = s.split_at(q);
+        let kept: Vec<&str> = qs[1..]
+            .split('&')
+            .filter(|p| {
+                let k = p.split('=').next().unwrap_or("");
+                !(k.starts_with("utm_") || TRACKERS.contains(&k))
+            })
+            .collect();
+        s = if kept.is_empty() {
+            base.to_string()
+        } else {
+            format!("{}?{}", base, kept.join("&"))
+        };
     }
     while s.ends_with('/') && s.len() > 1 {
         s.pop();

@@ -259,10 +259,14 @@ diff runner + examples — the contract IS SearXNG's `/search&format=json`.
    `8b4f990`). 3b done: `agentic/evals/agent_exam.py`, 14 useful / 5
    partial / 1 miss, patterns in `DEV-SEARCH.md`. THEN cut pi over
    from the bespoke TS adapter — owner's word needed (touches live setup).
-4. **New-category session** (jisho/open_meteo/sepiasearch: contract+conf+
-   gate per wave), then news-depth (native news 14.7 vs oracle 22.3/q).
-5. **Optional hardening**: per-engine panic isolation in the lane fan-out
-   (one panicking parser currently poisons its whole lane slice).
+4. **New-category session** ✅ DONE 2026-10-16 (localhost): sepiasearch
+   (videos, `2c1be11`), jisho (dictionaries, `751ded3`), open_meteo
+   (weather, `f6aa12c`) — each contract+conf+gate, one commit per
+   engine, check.py 26/26. Patterns: videos.html shape, CJK-safe
+   truncation, geo+forecast two-step with summary row (no answers
+   pipeline). Raw query to geo, like upstream (`berlin`, not sentences).
+5. **Lane hardening** ✅ DONE (`381c2c8`): per-engine `catch_unwind` →
+   honest `(engine, panicked)`, slice continues. Unit-tested.
 
 Deployment (cloudflared): bind `127.0.0.1`, tunnel → localhost, bearer at
 origin, TLS at the Cloudflare edge. Full procedure in `agentic/DEPLOY.md`.

@@ -359,6 +359,16 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         }
         work.push(engine);
     }
+    // Empty work (e.g. engines= names a real native of another
+    // category) is a 200 with no results, never a panic — chunks(0)
+    // would kill the process. SearXNG answers empty the same way.
+    if work.is_empty() {
+        return (
+            200,
+            b"application/json",
+            render::json(&q.q, &[], &unresponsive),
+        );
+    }
     // Lanes: scoped threads (GAP-PLAN P2), each running a contiguous
     // slice of engines sequentially. Joined in cfg order so merge
     // weights never shift. `[perf] lanes`: 0 = auto, N = exact
@@ -510,7 +520,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             }
         }
     });
-    let results = merge::rank(merge::merge(lists), &q.q);
+    let results = merge::rank(merge::merge(lists), &q.q, &q.categories);
     if q.format == "json" {
         (
             200,

@@ -46,10 +46,12 @@ pub mod sepiasearch;
 pub mod stackexchange;
 pub mod startpagina;
 pub mod swisscows;
+pub mod swisscows_news;
 pub mod tagesschau;
 pub mod terraform;
 pub mod wikinews;
 pub mod wikipedia;
+pub mod yahoo_news;
 
 use crate::engine::Engine;
 
@@ -65,6 +67,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "grokipedia" => Some(Box::new(grokipedia::Grokipedia)),
         "startpagina" => Some(Box::new(startpagina::Startpagina)),
         "swisscows" => Some(Box::new(swisscows::Swisscows)),
+        "swisscows_news" => Some(Box::new(swisscows_news::SwisscowsNews)),
         "arxiv" => Some(Box::new(arxiv::Arxiv)),
         "europepmc" => Some(Box::new(europepmc::EuropePmc)),
         "bingnews" => Some(Box::new(bingnews::BingNews)),
@@ -73,6 +76,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "chatnoir" => Some(Box::new(chatnoir::ChatNoir)),
         "dogpile" => Some(Box::new(dogpile::Dogpile)),
         "wikinews" => Some(Box::new(wikinews::Wikinews)),
+        "yahoo_news" => Some(Box::new(yahoo_news::YahooNews)),
         "ddgnews" => Some(Box::new(ddgnews::DdgNews)),
         "pubmed" => Some(Box::new(pubmed::Pubmed)),
         "npm" => Some(Box::new(npm::Npm)),
@@ -110,5 +114,66 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "gmx" => Some(Box::new(gmx::Gmx)),
         "keenable" => Some(Box::new(keenable::Keenable)),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find;
+
+    /// Every non-general engine declares its category here. The default
+    /// is `general`, so a news/science/it/packages engine WITHOUT a
+    /// `category()` override silently serves zero queries in its own
+    /// category (the server filters by it) — this map caught exactly
+    /// that for swisscows_news/yahoo_news. New non-general engine =
+    /// one line here.
+    #[test]
+    fn non_general_engines_declare_category() {
+        let want = [
+            ("stackoverflow", "it"),
+            ("superuser", "it"),
+            ("askubuntu", "it"),
+            ("github", "it"),
+            ("hackernews", "it"),
+            ("mdn", "it"),
+            ("microsoftlearn", "it"),
+            ("flask", "it"),
+            ("pipdocs", "it"),
+            ("cheatsh", "it"),
+            ("dockerhub", "it"),
+            ("gentoo", "it"),
+            ("archlinux", "it"),
+            ("nvd", "it"),
+            ("datatracker", "it"),
+            ("arxiv", "science"),
+            ("europepmc", "science"),
+            ("openalex", "science"),
+            ("crossref", "science"),
+            ("pubmed", "science"),
+            ("bingnews", "news"),
+            ("wikinews", "news"),
+            ("tagesschau", "news"),
+            ("ddgnews", "news"),
+            ("swisscows_news", "news"),
+            ("yahoo_news", "news"),
+            ("npm", "packages"),
+            ("crates", "packages"),
+            ("rubygems", "packages"),
+            ("packagist", "packages"),
+            ("hexpm", "packages"),
+            ("pubdev", "packages"),
+            ("maven", "packages"),
+            ("nuget", "packages"),
+            ("artifacthub", "packages"),
+            ("terraform", "packages"),
+            ("pkggodev", "packages"),
+            ("sepiasearch", "videos"),
+            ("jisho", "dictionaries"),
+            ("open_meteo", "weather"),
+        ];
+        for (name, cat) in want {
+            let e = find(name).unwrap_or_else(|| panic!("{name} not registered"));
+            assert_eq!(e.category(), cat, "{name} serves {cat}");
+        }
     }
 }

@@ -71,7 +71,7 @@ science = [
   "arxiv", "europepmc", "openalex", "crossref", "pubmed",
 ]
 news = [
-  "bingnews", "wikinews", "tagesschau", "ddgnews",
+  "bingnews", "wikinews", "tagesschau", "ddgnews", "swisscows_news", "yahoo_news",
 ]
 packages = [
   "npm", "crates", "rubygems", "packagist", "hexpm", "pubdev",

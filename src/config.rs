@@ -547,6 +547,8 @@ future_key = 1
             "wikinews",
             "tagesschau",
             "ddgnews",
+            "swisscows_news",
+            "yahoo_news",
             "npm",
             "crates",
             "rubygems",

@@ -165,6 +165,18 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ),
     ("ddgnews", None, Some(INLINE_DDG), 1),
     (
+        "swisscows_news",
+        Some("tests/fixtures/tests-fixture-swisscows_news-test.json"),
+        None,
+        5,
+    ),
+    (
+        "yahoo_news",
+        Some("tests/fixtures/tests-fixture-yahoo_news-test.html"),
+        None,
+        5,
+    ),
+    (
         "npm",
         Some("tests/fixtures/tests-fixture-npm-test.json"),
         None,

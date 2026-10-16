@@ -66,12 +66,39 @@ fn score(r: &SearchResult, terms: &[String]) -> u32 {
 /// Relevance re-rank over the merged list. STABLE sort (ties keep merge
 /// order = conf weights), then positions renumbered 1..n so the
 /// `positions` field matches the served order.
-pub fn rank(mut results: Vec<SearchResult>, query: &str) -> Vec<SearchResult> {
+pub fn rank(mut results: Vec<SearchResult>, query: &str, category: &str) -> Vec<SearchResult> {
     let ts = terms(query);
     if ts.is_empty() {
         return results;
     }
-    results.sort_by_key(|r| std::cmp::Reverse(score(r, &ts)));
+    // News recency: fresh articles share terms with stale ones, so age
+    // breaks the tie — but never outranks relevance (+2/+1 sits beside
+    // typical term scores of 3-15). Other categories skip it: a fresh
+    // npm version or old-but-exact doc is not worse, just newer/older.
+    let fresh = category == "news";
+    let today = if fresh {
+        crate::engine::today_days()
+    } else {
+        0
+    };
+    results.sort_by_key(|r| {
+        let mut s = score(r, &ts);
+        if fresh {
+            if let Some(d) = r
+                .published_date
+                .as_deref()
+                .and_then(crate::engine::parse_iso_date)
+            {
+                let age = (today - d).max(0);
+                if age <= 7 {
+                    s += 2;
+                } else if age <= 31 {
+                    s += 1;
+                }
+            }
+        }
+        std::cmp::Reverse(s)
+    });
     for (i, r) in results.iter_mut().enumerate() {
         r.positions = vec![i + 1];
     }
@@ -110,7 +137,7 @@ mod tests {
             ),
             row("http://a/2", "flask request context", "other words"),
         ];
-        let ranked = rank(rows, "flask request context");
+        let ranked = rank(rows, "flask request context", "it");
         assert_eq!(ranked[0].url, "http://a/2");
         assert_eq!(ranked[0].positions, vec![1]);
         assert_eq!(ranked[1].positions, vec![2]);
@@ -123,7 +150,7 @@ mod tests {
             row("http://a/2", "", ""),
             row("http://a/3", "flask guide", "flask"),
         ];
-        let ranked = rank(rows, "flask");
+        let ranked = rank(rows, "flask", "it");
         assert_eq!(ranked[0].url, "http://a/1"); // tie: merge order held
         assert_eq!(ranked[1].url, "http://a/3");
         assert_eq!(ranked[2].url, "http://a/2"); // empty sank
@@ -132,6 +159,33 @@ mod tests {
     #[test]
     fn rank_empty_query_is_identity() {
         let rows = vec![row("http://a/1", "b", "c")];
-        assert_eq!(rank(rows, "?!").len(), 1);
+        assert_eq!(rank(rows, "?!", "it").len(), 1);
+    }
+
+    #[test]
+    fn rank_news_recency_breaks_ties_only() {
+        let today = crate::engine::today_days();
+        let (y, m, d) = crate::engine::civil_from_days(today);
+        let fresh = format!("{y:04}-{m:02}-{d:02}");
+        let (oy, om, od) = crate::engine::civil_from_days(today - 100);
+        let old = format!("{oy:04}-{om:02}-{od:02}");
+        let mut new_row = row("http://n/1", "bundestag vote", "bundestag");
+        new_row.published_date = Some(fresh);
+        let mut old_row = row("http://n/2", "bundestag vote", "bundestag");
+        old_row.published_date = Some(old);
+        // Identical term scores: fresh wins in news ...
+        let ranked = rank(vec![old_row.clone(), new_row.clone()], "bundestag", "news");
+        assert_eq!(ranked[0].url, "http://n/1");
+        // ... but dates are invisible outside news (merge order holds).
+        let ranked = rank(vec![old_row, new_row], "bundestag", "it");
+        assert_eq!(ranked[0].url, "http://n/2");
+    }
+
+    #[test]
+    fn rank_news_bad_dates_are_neutral() {
+        let mut r = row("http://n/1", "bundestag vote", "bundestag");
+        r.published_date = Some("not-a-date".into());
+        let ranked = rank(vec![r], "bundestag", "news");
+        assert_eq!(ranked[0].positions, vec![1]);
     }
 }

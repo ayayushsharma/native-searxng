@@ -226,6 +226,66 @@ pub fn attr(tag: &str, name: &str) -> Option<String> {
     None
 }
 
+/// Civil-date math without deps (Howard Hinnant's algorithms):
+/// `days_from_civil` converts YYYY-MM-DD to days since 1970-01-01,
+/// `civil_from_days` converts back. `today_days` is now (UTC, via the
+/// wall clock — a day off at timezone edges is noise for ranking).
+/// All three feed recency: rank() boosts fresh news, engines convert
+/// relative dates ("2 hours ago") to absolute ones at parse time.
+pub fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = y.div_euclid(400);
+    let yoe = y - era * 400;
+    let mp = (m + 9) % 12;
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146097 + doe - 719468
+}
+
+/// Inverse of [`days_from_civil`]: days since epoch → (year, month, day).
+pub fn civil_from_days(z: i64) -> (i64, i64, i64) {
+    let z = z + 719468;
+    let era = z.div_euclid(146097);
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    (if m <= 2 { y + 1 } else { y }, m, d)
+}
+
+/// Today as days since epoch. Clock failure → 0 (recency then
+/// yields no boost rather than a wrong one).
+pub fn today_days() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| (d.as_secs() / 86400) as i64)
+        .unwrap_or(0)
+}
+
+/// Leading `YYYY-MM-DD` (or full ISO datetime) → days. Anything else
+/// → None (no boost rather than a mis-boost).
+pub fn parse_iso_date(s: &str) -> Option<i64> {
+    let s = s.trim();
+    if s.len() < 10 {
+        return None;
+    }
+    let b = s.as_bytes();
+    if b[4] != b'-' || b[7] != b'-' {
+        return None;
+    }
+    let y: i64 = s[0..4].parse().ok()?;
+    let m: i64 = s[5..7].parse().ok()?;
+    let d: i64 = s[8..10].parse().ok()?;
+    if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
+        return None;
+    }
+    Some(days_from_civil(y, m, d))
+}
+
 /// Minimal DuckDuckGo `/html` result scanner (shared by `ddg` +
 /// `ddgnews`; replaces `scraper` + `encoding_rs` for these two).
 /// DDG serves UTF-8, so no transcoding is needed. Shape (either tag):

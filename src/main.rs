@@ -1,7 +1,7 @@
 //! Thin binary wrapper — all logic lives in the library (see lib.rs)
 //! so integration tests can exercise engines offline.
 
-use native_searxng::{config, mcp, server};
+use native_searxng::{config, log, mcp, server};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -14,20 +14,24 @@ fn main() {
         return;
     }
     let cfg = config::load_default();
+    // Logging first: level comes from `[logging]`, everything below
+    // (including the refuse-to-start) is a leveled line on stderr.
+    let level = config::log_level(&cfg);
+    log::set(level);
     // Fail closed: an unset token is a refused start, not an open server
     // (a cloudflared tunnel makes even loopback publicly reachable).
     // Local dev escape hatch is explicit: `auth=off` in the conf.
     let tokens = config::api_tokens();
     if tokens.is_empty() && cfg.require_auth {
-        eprintln!("refusing to start: SEARXNG_API_TOKEN is unset and conf auth != off.");
-        eprintln!("Set SEARXNG_API_TOKEN (comma-separated OK for rotation),");
-        eprintln!("or add `auth=off` to the conf for local dev only — never on a tunnelled host.");
+        log::emit(log::Level::Error, "refusing to start: SEARXNG_API_TOKEN is unset and conf auth != off.".into());
+        log::emit(log::Level::Error, "Set SEARXNG_API_TOKEN (comma-separated OK for rotation),".into());
+        log::emit(log::Level::Error, "or add `auth=off` to the conf for local dev only — never on a tunnelled host.".into());
         std::process::exit(1);
     }
     if args.iter().any(|a| a == "--mcp") {
         mcp::run_stdio(&cfg);
         return;
     }
-    eprintln!("native-searxng on {}:{} (auth {})", cfg.bind, cfg.port, if tokens.is_empty() { "OFF (dev)" } else { "on" });
+    native_searxng::info!("native-searxng on {}:{} (auth {}) with {} engines (log {})", cfg.bind, cfg.port, if tokens.is_empty() { "OFF (dev)" } else { "on" }, cfg.engines.len(), cfg.log_level);
     server::run(&cfg, &tokens);
 }

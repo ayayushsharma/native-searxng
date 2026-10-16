@@ -31,6 +31,14 @@ user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
 # reference here. Empty string disables (503 for unknown instead).
 url = "http://127.0.0.1:8889"
 
+# Verbosity: off | error | warn | info | debug (default info).
+#   info  = one line per request + every failed engine with its reason
+#   warn  = failures only (quiet serving)
+#   debug = per-engine legs, upstream URLs, MCP calls (noisy)
+# Logs go to stderr — MCP stdio (stdout) is never touched.
+[logging]
+level = "info"
+
 [engines]
 # Merge groups by category, file order = merge weight. (2026-10-16
 # regroup: flat searxng.conf interleaved pubmed/ddgnews among news by

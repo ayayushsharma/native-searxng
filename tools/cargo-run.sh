@@ -11,16 +11,21 @@
 set -u
 LOCK="target/.cargo-lock"
 if ! mkdir "$LOCK" 2>/dev/null; then
-  echo "cargo-run: another cargo holds $LOCK (one at a time). rm it if stale." >&2
+  echo "cargo-run: another cargo holds $LOCK (one at a time). rm -rf it if stale." >&2
   exit 1
 fi
-trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
+# NOTE: no `exec` here — an EXIT trap is not guaranteed to survive it
+# in every /bin/sh, which left stale locks. Run, capture, clean up.
+trap 'rmdir "$LOCK" 2>/dev/null; exit 130' INT TERM
 if [ -n "${JOBS:-}" ]; then
   N="$JOBS"
 else
   N="$( (nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) | head -n 1)"
 fi
 case "$N" in
-  ''|*[!0-9]*) echo "cargo-run: bad JOBS '$N'" >&2; exit 1;;
+  ''|*[!0-9]*) echo "cargo-run: bad JOBS '$N'" >&2; rmdir "$LOCK" 2>/dev/null; exit 1;;
 esac
-exec cargo "$@" -j"$N"
+cargo "$@" -j"$N"
+rc=$?
+rmdir "$LOCK" 2>/dev/null
+exit $rc

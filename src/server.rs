@@ -82,6 +82,17 @@ fn api_config(cfg: &Config, tokens: &[String]) -> String {
         mcp::fetch_tool(),
     )
 }
+/// One access line per request: method, path (truncated — /fetch URLs
+/// run long), status, bytes, wall ms. The single source for "what did
+/// the server do"; per-engine WHY lives in search()/fetch warn lines.
+fn access_log(method: &tiny_http::Method, url: &str, status: u16, len: usize, t0: std::time::Instant) {
+    let mut u = url.to_string();
+    if u.len() > 160 {
+        u.truncate(160);
+        u.push('…');
+    }
+    crate::info!("{} {} -> {} {}B {:.0}ms", method.as_str(), u, status, len, t0.elapsed().as_secs_f64() * 1000.0);
+}
 /// Who to blame in the log on a 401. Prefers Cloudflare's connecting
 /// IP — trustworthy here ONLY because the documented deployment binds
 /// loopback, so the tunnel daemon is the sole possible client.
@@ -111,13 +122,14 @@ pub fn run(cfg: &Config, tokens: &[String]) {
     let server = Server::http(&addr).expect("bind server");
     let client = fetch::Client::new(cfg);
     for mut req in server.incoming_requests() {
+        let t0 = std::time::Instant::now();
         let url = req.url().to_string();
         let path = url.split('?').next().unwrap_or("/");
         // Auth gate: everything except the static console + liveness.
         // 401s are contract-shaped JSON; the log carries source + path
         // only, never the presented credential.
         if !open_path(path) && !authorized(header(&req, "Authorization"), tokens) {
-            eprintln!("unauthorized {} {}", client_ip(&req), path);
+            crate::warn!("401 {} {}", client_ip(&req), path);
             let ct = Header::from_bytes("Content-Type", b"application/json".as_slice()).unwrap();
             let wa = Header::from_bytes("WWW-Authenticate", b"Bearer".as_slice()).unwrap();
             let resp = Response::from_string(render::error_json("unauthorized"))
@@ -157,14 +169,20 @@ pub fn run(cfg: &Config, tokens: &[String]) {
                 _ => "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"parse error\"}}".into(),
             };
             let header = Header::from_bytes("Content-Type", b"application/json".as_slice()).unwrap();
+            let len = out.len();
             let resp = Response::from_string(out).with_status_code(200).with_header(header);
+            let method = req.method().clone();
             let _ = req.respond(resp);
+            access_log(&method, &url, 200, len, t0);
             continue;
         }
         let (status, ctype, body) = route(cfg, &client, tokens, &url);
         let header = Header::from_bytes("Content-Type", ctype).unwrap();
+        let len = body.len();
         let resp = Response::from_string(body).with_status_code(status).with_header(header);
+        let method = req.method().clone();
         let _ = req.respond(resp);
+        access_log(&method, &url, status, len, t0);
     }
 }
 
@@ -204,25 +222,34 @@ const OPENSEARCH: &str = r#"<?xml version="1.0"?><OpenSearchDescription xmlns="h
 fn fetch_page(client: &fetch::Client, url: &str) -> (u16, &'static [u8], String) {
     let target = query::param(url, "url");
     if target.is_empty() {
+        crate::warn!("fetch: missing url param");
         return (400, b"application/json", render::error_json("No url"));
     }
     if let Ok(r) = scrape::scrape(client, &target) {
         return (200, b"application/json", render::fetch_json(&target, &r.title, &r.content, &r.links));
     }
+    crate::debug!("fetch: native scrape failed, trying reader for {}", crate::log::host_of(&target));
     match jina::fetch(client, &target) {
-        Ok(r) if scrape::is_walled(&r.title, &r.content) => (
-            502,
-            b"application/json",
-            render::error_json("page is bot-walled (reader returned a challenge)"),
-        ),
+        Ok(r) if scrape::is_walled(&r.title, &r.content) => {
+            crate::warn!("fetch {} -> walled (reader returned a challenge)", crate::log::host_of(&target));
+            (
+                502,
+                b"application/json",
+                render::error_json("page is bot-walled (reader returned a challenge)"),
+            )
+        }
         Ok(r) => (200, b"application/json", render::fetch_json(&target, &r.title, &r.content, &r.links)),
-        Err(e) => (502, b"application/json", render::error_json(&e)),
+        Err(e) => {
+            crate::warn!("fetch {} -> {}", crate::log::host_of(&target), e);
+            (502, b"application/json", render::error_json(&e))
+        }
     }
 }
 
 fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8], String) {
     let q = query::parse(url);
     if q.q.is_empty() {
+        crate::warn!("search: missing q param");
         return (400, b"application/json", render::error_json("No query"));
     }
     // Strangler: engine override for unknown names -> Python reference.
@@ -241,7 +268,10 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         if !cfg.proxy_to.is_empty() {
             return match client.proxy(&cfg.proxy_to, url) {
                 Ok((s, b)) => (s, b"application/json", b),
-                Err(e) => (502, b"application/json", render::error_json(&e)),
+                Err(e) => {
+                    crate::warn!("proxy {} -> {}", e, "oracle unreachable");
+                    (502, b"application/json", render::error_json(&e))
+                }
             };
         }
         return (503, b"application/json", render::error_json("category not ported yet"));
@@ -252,6 +282,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
     let mut unresponsive: Vec<(String, String)> = Vec::new();
     for name in &cfg.engines {
         let Some(engine) = engines::find(name) else {
+            crate::warn!("search: conf engine {:?} has no native (unknown engine)", name);
             unresponsive.push((name.clone(), "unknown engine".into()));
             continue;
         };
@@ -302,16 +333,19 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
         let last_body: Option<String> = loop {
             let Some(req) = engine.request(qq, pageno, &prev) else {
                 break if prev.is_empty() {
+                    crate::debug!("engine {} -> no request", engine.name());
                     return (vec![], Some((engine.name().to_string(), "no request".into())));
                 } else if prev.len() < engine.rounds() {
                     // Chain stopped early on scaffolding — flow broke.
                     // (Single-step engines stop after leg 1 by design.)
+                    crate::debug!("engine {} -> session flow failed", engine.name());
                     return (vec![], Some((engine.name().to_string(), "session flow failed".into())));
                 } else {
                     prev.pop().map(|r| r.body)
                 };
             };
             if prev.len() >= 3 {
+                crate::debug!("engine {} -> chain too long", engine.name());
                 return (vec![], Some((engine.name().to_string(), "chain too long".into())));
             }
             let mut req = req;
@@ -325,13 +359,16 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
             }
             match client.execute_capped(&req, engine.body_cap_kb()) {
                 Ok(r) if r.status != 200 => {
+                    crate::debug!("engine {} -> http {}", engine.name(), r.status);
                     return (vec![], Some((engine.name().to_string(), format!("http {}", r.status))));
                 }
                 Ok(r) if r.body.trim().is_empty() => {
+                    crate::debug!("engine {} -> empty response", engine.name());
                     return (vec![], Some((engine.name().to_string(), "empty response".into())));
                 }
                 Ok(r) => {
                     if let Some(reason) = engine.challenge(&r.body) {
+                        crate::debug!("engine {} -> challenge ({})", engine.name(), reason);
                         return (vec![], Some((engine.name().to_string(), reason)));
                     }
                     for c in &r.cookies {
@@ -351,6 +388,7 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                     prev.push(r);
                 }
                 Err(e) => {
+                    crate::debug!("engine {} -> {}", engine.name(), e);
                     return (vec![], Some((engine.name().to_string(), e)));
                 }
             }
@@ -370,10 +408,22 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                 for engine in slice {
                     match guard(|| run(engine.as_ref())) {
                         Some(pair) => out.push(pair),
-                        None => out.push((
-                            vec![],
-                            Some((engine.name().to_string(), "panicked".into())),
-                        )),
+                        None => {
+                            crate::warn!("engine {} panicked (isolated, slice continues)", engine.name());
+                            out.push((
+                                vec![],
+                                Some((engine.name().to_string(), "panicked".into())),
+                            ))
+                        }
+                    }
+                }
+                // Per-engine outcomes at debug (zipped: out is pushed in
+                // slice order, so names line up without restructuring
+                // the run closure's six return points).
+                for (e, (v, u)) in slice.iter().zip(out.iter()) {
+                    match u {
+                        Some((_, reason)) => crate::debug!("engine {} -> unresponsive ({})", e.name(), reason),
+                        None => crate::debug!("engine {} -> {} results", e.name(), v.len()),
                     }
                 }
                 out

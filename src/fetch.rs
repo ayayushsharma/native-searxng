@@ -73,7 +73,26 @@ impl Client {
     }
 
     /// `execute` with a per-engine cap override (KB); None = client cap.
+    /// Transport failures warn with the HOST only (queries stay out of
+    /// the default level); the full URL rides at debug.
     pub fn execute_capped(
+        &self,
+        req: &crate::engine::OutRequest,
+        cap_kb: Option<usize>,
+    ) -> Result<crate::engine::InResponse, String> {
+        crate::debug!("upstream {:?} {}", req.method, req.url);
+        let out = self.execute_inner(req, cap_kb);
+        if let Err(e) = &out {
+            let mut short = e.clone();
+            if short.len() > 120 {
+                short.truncate(120);
+            }
+            crate::warn!("upstream {} -> {}", crate::log::host_of(&req.url), short);
+        }
+        out
+    }
+
+    fn execute_inner(
         &self,
         req: &crate::engine::OutRequest,
         cap_kb: Option<usize>,

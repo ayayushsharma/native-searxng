@@ -55,6 +55,7 @@ pub fn dispatch(cfg: &Config, client: &fetch::Client, req: &Value) -> Option<Val
     if req.get("id").is_none() {
         return None;
     }
+    crate::debug!("mcp {} {}", method, params.get("name").and_then(|n| n.as_str()).unwrap_or(""));
     let result = match method {
         "initialize" => Some(json!({
             "protocolVersion": PROTOCOL_VERSION,

@@ -25,6 +25,9 @@ pub struct Config {
     pub require_auth: bool,
     /// Strangler fallback base URL (Python reference). Empty = disabled.
     pub proxy_to: String,
+    /// Console verbosity: off|error|warn|info|debug (default info).
+    /// Validated at parse — unknown names refuse to start.
+    pub log_level: String,
 }
 
 impl Default for Config {
@@ -40,6 +43,7 @@ impl Default for Config {
             user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36".into(),
             require_auth: true,
             proxy_to: String::new(),
+            log_level: "info".into(),
         }
     }
 }
@@ -277,6 +281,12 @@ fn int(v: &str, what: &str) -> Result<u64, String> {
 /// `key = value` under `[section]`. Unknown sections/keys are ignored
 /// (forward-compat); bad values are hard errors. `[engines]` appends
 /// every category array in FILE order — conf order stays merge weight.
+/// Validated at parse time, so this cannot fail (the Info fallback
+/// is unreachable armor, never a silent default for bad input).
+pub fn log_level(cfg: &Config) -> crate::log::Level {
+    crate::log::Level::parse(&cfg.log_level).unwrap_or(crate::log::Level::Info)
+}
+
 fn apply(cfg: &mut Config, section: &str, k: &str, v: &str) -> Result<(), String> {
     match section {
         "server" => match k {
@@ -305,6 +315,16 @@ fn apply(cfg: &mut Config, section: &str, k: &str, v: &str) -> Result<(), String
         },
         "proxy" => match k {
             "url" => cfg.proxy_to = string(v)?,
+            _ => {}
+        },
+        "logging" => match k {
+            "level" => {
+                let s = string(v)?;
+                if crate::log::Level::parse(&s).is_none() {
+                    return Err(format!("bad log level {:?} (off|error|warn|info|debug)", s));
+                }
+                cfg.log_level = s;
+            }
             _ => {}
         },
         "engines" => {
@@ -381,6 +401,9 @@ user_agent = "UA # not-a-comment"
 [proxy]
 url = "http://127.0.0.1:8889"
 
+[logging]
+level = "debug"
+
 [engines]
 general = ["wikipedia", "ddg",]
 it = [
@@ -399,6 +422,7 @@ future_key = 1
         assert_eq!(cfg.lang, "de");
         assert_eq!(cfg.user_agent, "UA # not-a-comment");
         assert_eq!(cfg.proxy_to, "http://127.0.0.1:8889");
+        assert_eq!(cfg.log_level, "debug");
         assert_eq!(cfg.engines, vec!["wikipedia", "ddg", "github", "flask"]);
     }
 
@@ -415,6 +439,8 @@ future_key = 1
             "[server]\nport = 70000\n",
             "[server]\nport = \"x\"\n",
             "[server]\nrequire_auth = off\n",
+            "[logging]\nlevel = verbose\n",
+            "[logging]\nlevel = 3\n",
             "[http]\ntimeout_ms = soon\n",
             "[engines]\ngeneral = [wikipedia]\n",
             "[engines]\ngeneral = [\"a\",\n",
@@ -449,5 +475,6 @@ future_key = 1
         assert_eq!(cfg.port, 8888);
         assert_eq!(cfg.proxy_to, "http://127.0.0.1:8889");
         assert!(cfg.require_auth, "shipped file stays fail-closed");
+        assert_eq!(cfg.log_level, "info");
     }
 }

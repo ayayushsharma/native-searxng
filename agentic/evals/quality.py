@@ -95,7 +95,8 @@ def norm(u):
 def main():
     agg = defaultdict(lambda: {"n": 0, "nat_n": 0, "ref_n": 0, "overlap": 0,
                                "nat_t": 0.0, "ref_t": 0.0,
-                               "nat_un": Counter(), "ref_un": Counter()})
+                               "nat_un": Counter(), "ref_un": Counter(),
+                               "eng_hit": Counter(), "eng_seen": Counter()})
     fails = []
     for i, (q, cat) in enumerate(QUERIES):
         nd, nt, nerr = fetch(NATIVE, q, cat)
@@ -111,6 +112,17 @@ def main():
         n_urls = {norm(r["url"]) for r in nd["results"] if r.get("url")}
         r_urls = {norm(r["url"]) for r in rd["results"] if r.get("url")}
         ov = len(n_urls & r_urls)
+        # Per-engine overlap: which natives contributed ref-matching URLs.
+        url_eng = {}
+        for r in nd["results"]:
+            if r.get("url"):
+                url_eng.setdefault(norm(r["url"]), []).extend(r.get("engines", []))
+        for u in n_urls & r_urls:
+            for e in set(url_eng.get(u, [])):
+                a["eng_hit"][e] += 1
+        for r in nd["results"]:
+            for e in set(r.get("engines", [])):
+                a["eng_seen"][e] += 1
         a["nat_n"] += len(nd["results"])
         a["ref_n"] += len(rd["results"])
         a["overlap"] += ov
@@ -136,6 +148,11 @@ def main():
     print(f"\nTOTAL q={n} nat={tot['nat_n']/n:.1f}/q ref={tot['ref_n']/n:.1f}/q "
           f"overlap={tot['overlap']/n:.1f}/q t={tot['nat_t']/n:.1f}s/{tot['ref_t']/n:.1f}s")
     print("native unresponsive:", dict(sum((agg[c]["nat_un"] for c in agg), Counter())))
+    print("\n=== per-engine overlap (hit = ref-matching URLs contributed) ===")
+    for cat, a in agg.items():
+        rows = sorted(a["eng_hit"].items(), key=lambda kv: (-kv[1], kv[0]))
+        detail = ", ".join(f"{e}:{h}/{a['eng_seen'][e]}" for e, h in rows)
+        print(f"{cat:8s} {detail}")
     print("ref unresponsive:   ", dict(sum((agg[c]["ref_un"] for c in agg), Counter())))
     if fails:
         print("FAILED:", fails)

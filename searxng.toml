@@ -57,25 +57,30 @@ level = "info"
 # Merge groups by category, file order = merge weight. (2026-10-16
 # regroup: flat searxng.conf interleaved pubmed/ddgnews among news by
 # porting order; pubmed now closes science, ddgnews closes news.)
+# Merge groups by category, file order = merge weight. Order is DATA:
+# weights v1 (2026-10-16, quality 36q): score = overlap-hits -
+# 2*unresponsive, ties keep previous order. Re-run weights.py on a fresh
+# quality.log to revise; single 429-waves can demote good engines.
 general = [
-  "wikipedia", "ddg", "openlibrary", "mwmbl", "grokipedia",
-  "startpagina", "swisscows", "boardreader", "bpb", "chatnoir",
-  "dogpile", "gmx", "keenable", "neosearch",
+  "dogpile", "swisscows", "startpagina", "keenable", "mwmbl",
+  "bpb", "boardreader", "grokipedia", "openlibrary", "wikipedia",
+  "chatnoir", "neosearch", "gmx", "ddg",
 ]
 it = [
-  "stackoverflow", "superuser", "askubuntu", "github", "hackernews",
-  "mdn", "microsoftlearn", "flask", "pipdocs", "cheatsh",
-  "dockerhub", "gentoo", "archlinux", "nvd", "datatracker",
+  "mdn", "github", "dockerhub", "hackernews", "datatracker",
+  "nvd", "archlinux", "gentoo", "cheatsh", "pipdocs",
+  "flask", "microsoftlearn", "askubuntu", "superuser", "stackoverflow",
 ]
 science = [
-  "arxiv", "europepmc", "openalex", "crossref", "pubmed",
+  "europepmc", "arxiv", "crossref", "openalex", "pubmed",
 ]
 news = [
-  "bingnews", "wikinews", "tagesschau", "ddgnews", "swisscows_news", "yahoo_news",
+  "bingnews", "wikinews", "yahoo_news", "swisscows_news", "tagesschau", "ddgnews",
 ]
 packages = [
-  "npm", "crates", "rubygems", "packagist", "hexpm", "pubdev",
-  "maven", "nuget", "artifacthub", "terraform", "pkggodev",
+  "crates", "pubdev", "pkggodev", "npm", "packagist",
+  "hexpm", "terraform", "artifacthub", "nuget", "rubygems",
+  "maven",
 ]
 videos = ["sepiasearch"]
 dictionaries = ["jisho"]

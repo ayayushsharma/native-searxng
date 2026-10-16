@@ -132,3 +132,42 @@ Bonus overnight: Sphinx-index class (`src/sphinx.rs`, flask + pipdocs
 live) — pattern #2 proved on two rows; django 302→404 + fastapi 404
 (non-Sphinx) parked. `engines=` filter fixed (intersect cfg natives,
 unknown → proxy). tagesschau + pkggodev (survey P2) also ported.
+
+## Agent exam 2026-10-16 (queue 3b, localhost POST /mcp, 20 queries)
+
+Transcript: `agentic/evals/agent_exam.py` (search top-3 + fetch on 6).
+Verdicts — useful 14 / partial 5 / miss 1:
+
+| # | query | verdict | note |
+|---|-------|---------|------|
+| 01 | serde json | useful | serde_json #2; fetch hit npm #1 (agent picks, harness takes first) |
+| 02 | pytest django | partial | cross-registry noise (Rust/Hex/Dart); pytest-django absent |
+| 03 | junit mockito (maven) | useful | exact G:A coords |
+| 04 | redis python client | partial | token matches, no redis-py — same noise as 02 |
+| 05 | terraform aws vpc | useful | official module #2, 19K-char fetch |
+| 06 | go router | useful | bunrouter + std routers |
+| 07 | flask request context | useful | Quickstart/Signals, 20K-char fetch |
+| 08 | pip install requirements | useful | Commands/pip/pip cache |
+| 09 | docker compose volumes | useful | 3 on-topic SO-family Q&A |
+| 10 | wifi (archlinux) | useful | harness first queried "archlinux wifi" (0, correctly); bare term → 5 |
+| 11 | rfc9000 QUIC handshake | miss | datatracker ANDs tokens; bare `rfc9000` → exact hit. Usage pattern, see below |
+| 12 | python list (cheatsh) | useful | cheat.sh:python present (exam's "17 results" = sheet blank lines, harness artifact) |
+| 13 | python requests SSLError | useful | exact SO question #1 |
+| 14 | log4j (nvd) | partial | real CVEs, but 2008/2012/2014 — Log4Shell (2021-44228) not top; NVD keyword search has no relevance ranking |
+| 15 | crispr off-target | useful | on-topic papers |
+| 16 | james webb deep field | partial | mission paper + one noise hit |
+| 17 | bundestag | useful | on-topic tagesschau |
+| 18 | central bank rate | partial | real but stale wikinews (morgue effect) |
+| 19 | rust async runtime | useful | smol + corrode, GitHub fetch ok |
+| 20 | exynos 850 | useful | beebom + official Samsung page |
+
+Findings (no code changes — usage patterns for the pi config):
+- `packages` fans out over 9 registries; cross-ecosystem noise on
+  plain-language queries (02, 04). Steer with `engines=maven/crates/npm/…`
+  when the ecosystem is known — document in the pi MCP config, don't
+  re-rank server-side (merge weights are the oracle's).
+- datatracker wants bare identifiers (`rfc9000`, not sentences).
+- NVD keyword search is recall-without-ranking; CVE-IDs resolve, topics
+  don't. Query CVE-ID when known, else expect to dig.
+- Fetches: 5/6 clean (incl. 19-20K registry/docs pages); NVD detail
+  page timed out (nvd.nist.gov slow) — retry or Jina path.

@@ -253,9 +253,12 @@ diff runner + examples — the contract IS SearXNG's `/search&format=json`.
    send the header from env. RAM line-item: one string compare/request (~0).
 2. **Tag `v0.2.0`** after auth merges → CI proves release RSS with the
    shipped binary (auth included). Tagging is a release act: owner's call.
-3. **MCP Inspector conformance + ~20 agent searches** through the tunnel
-   (proves the public path; documents the pi header config), then cut
-   pi over from the bespoke TS adapter.
+3. **MCP Inspector conformance + ~20 agent searches** ~~through the tunnel~~
+   LOCALHOST ONLY (owner: tunnel untouched) — 3a done: `agentic/evals/mcp_check.py`
+   20/20 both transports (caught + fixed a real unknown-tool nesting bug,
+   `8b4f990`). 3b done: `agentic/evals/agent_exam.py`, 14 useful / 5
+   partial / 1 miss, patterns in `DEV-SEARCH.md`. THEN cut pi over
+   from the bespoke TS adapter — owner's word needed (touches live setup).
 4. **New-category session** (jisho/open_meteo/sepiasearch: contract+conf+
    gate per wave), then news-depth (native news 14.7 vs oracle 22.3/q).
 5. **Optional hardening**: per-engine panic isolation in the lane fan-out

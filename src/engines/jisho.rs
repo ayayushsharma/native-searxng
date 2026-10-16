@@ -8,7 +8,7 @@
 //! `pass`es the filter — no skip). Truncation is on char boundaries:
 //! byte-slicing would split CJK text. Upstream's first-result infobox
 //! is skipped (no infobox pipeline — cheatsh precedent: results only).
-//! Fixture: `tests-fixture-jisho-test.json` (HTTP 200, clean).
+//! Fixture: `tests/fixtures/tests-fixture-jisho-test.json` (HTTP 200, clean).
 
 use crate::engine::{Engine, SearchResult};
 use serde_json::Value;

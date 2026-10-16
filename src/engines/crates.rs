@@ -2,7 +2,7 @@
 //! `https://crates.io/api/v1/crates?q=..&per_page=10`
 //! Response: `{"crates": [{name, description, updated_at, downloads,
 //! homepage, repository, ...}]}`.
-//! Fixture: `tests-fixture-crates-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-crates-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

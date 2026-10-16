@@ -2,7 +2,7 @@
 //! `https://api.github.com/search/repositories?sort=stars&order=desc&q=..`
 //! Response: `{"items": [{html_url, full_name, language, description,
 //! owner{login, avatar_url}, updated_at, ...}]}`.
-//! Fixture: `tests-fixture-github-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-github-test.json` (HTTP 200, verified clean).
 //! Note: unauthenticated rate limit (60 req/h) — failures surface as
 //! `unresponsive_engines`, never silent empties.
 

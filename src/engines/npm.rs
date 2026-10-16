@@ -2,7 +2,7 @@
 //! `https://api.npms.io/v2/search?q=..&size=10`
 //! Response: `{"results": [{package: {name, version, description,
 //! links{npm, homepage, repository}, author{name}, date, keywords}}]}`.
-//! Fixture: `tests-fixture-npm-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-npm-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

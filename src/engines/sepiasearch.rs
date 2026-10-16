@@ -7,7 +7,7 @@
 //! thumbnail). `nsfw=false` pinned (== upstream default at safesearch 1;
 //! `0→both` unported — safesearch plumbing doesn't reach build_url).
 //! Language/time-range params skipped (MVP, like the rest of the fleet).
-//! Fixture: `tests-fixture-sepiasearch-test.json` (HTTP 200, clean).
+//! Fixture: `tests/fixtures/tests-fixture-sepiasearch-test.json` (HTTP 200, clean).
 
 use crate::engine::{Engine, SearchResult};
 use serde_json::Value;

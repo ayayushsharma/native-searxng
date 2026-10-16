@@ -2,7 +2,7 @@
 //! `https://grokipedia.com/api/full-text-search?query=..&limit=10&offset=..`
 //! Response: `{"results": [{slug, title, snippet, ...}]}`.
 //! URL shape (mirrors SearXNG): `https://grokipedia.com/page/<slug>`.
-//! Fixture: `tests-fixture-grokipedia-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-grokipedia-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

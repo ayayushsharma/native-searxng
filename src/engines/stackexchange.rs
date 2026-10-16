@@ -3,7 +3,7 @@
 //! superuser, askubuntu (all verified clean, HTTP 200).
 //! `.../2.3/search/advanced?q=..&site=..&pagesize=10&page=..`
 //! Response: `{"items": [{link, title, tags[], owner{}, is_answered, score}]}`.
-//! Fixture: `tests-fixture-stackexchange-test.json` (site=stackoverflow).
+//! Fixture: `tests/fixtures/tests-fixture-stackexchange-test.json` (site=stackoverflow).
 
 use crate::engine::{Engine, SearchResult, unescape};
 

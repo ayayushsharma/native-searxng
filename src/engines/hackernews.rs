@@ -5,7 +5,7 @@
 //! the HN item thread instead.
 //! Usage policy (checked 2026-10-15): public documented community
 //! endpoint, no key, no auth; upstream ships an engine against it.
-//! Fixture: `tests-fixture-hackernews-test.json` (HTTP 200, clean).
+//! Fixture: `tests/fixtures/tests-fixture-hackernews-test.json` (HTTP 200, clean).
 
 use crate::engine::{Engine, SearchResult};
 

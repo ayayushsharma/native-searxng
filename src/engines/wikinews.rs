@@ -2,7 +2,7 @@
 //! `https://en.wikinews.org/w/api.php?action=query&list=search&srsearch=..`
 //! Response: `{"query": {"search": [{title, snippet, ...}]}}` (same shape
 //! as the Gentoo wiki engine; snippets carry searchmatch markup — stripped).
-//! Fixture: `tests-fixture-wikinews-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-wikinews-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

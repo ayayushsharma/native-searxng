@@ -1,7 +1,7 @@
 //! Startpagina (`search.kompas.services`) — keyless JSON API, general web.
 //! `https://search.kompas.services/api/v2/search/web/?q=..&page_size=10&page=..`
 //! Response: `{"results": [{original_url, title, description, ...}]}`.
-//! Fixture: `tests-fixture-startpagina-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-startpagina-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

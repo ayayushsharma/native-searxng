@@ -1,7 +1,7 @@
 //! Mwmbl (`api.mwmbl.org`) — keyless JSON API, general web index.
 //! `https://api.mwmbl.org/api/v1/search/?s=..`
 //! Response: array of `{url, title: [{value, is_bold}], extract: [{value}]}`.
-//! Fixture: `tests-fixture-mwmbl-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-mwmbl-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

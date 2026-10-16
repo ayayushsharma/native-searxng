@@ -3,7 +3,7 @@
 //! Response: Atom `<feed>` with `<entry>{<title>, <id>, <summary>}`.
 //! Parsed with a minimal tag scanner (no XML crate): arXiv output is
 //! machine-generated and rigid; malformed input yields zero results.
-//! Fixture: `tests-fixture-arxiv-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-arxiv-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult, unescape};
 

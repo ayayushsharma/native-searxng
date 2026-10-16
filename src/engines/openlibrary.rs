@@ -1,6 +1,6 @@
 //! Open Library `search.json` — keyless JSON API, general/books.
 //! `https://openlibrary.org/search.json?q=..&page=..&limit=10`
-//! Fixture: `tests-fixture-openlibrary-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-openlibrary-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

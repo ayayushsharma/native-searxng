@@ -8,7 +8,7 @@
 //! Usage policy (checked 2026-10-15): robots.txt disallows `/index.php?`
 //! but NOT `api.php` — this path is robots-clean; wiki content freely
 //! licensed, 1 req/query.
-//! Fixture: `tests-fixture-archlinux-test.json` (HTTP 200, clean).
+//! Fixture: `tests/fixtures/tests-fixture-archlinux-test.json` (HTTP 200, clean).
 
 use crate::engine::{Engine, SearchResult, strip_tags};
 

@@ -24,60 +24,60 @@ const INLINE_DDG: &str = r#"<div class="result"><a class="result__a" href="https
 const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("wikipedia", None, Some(INLINE_WIKIPEDIA), 1),
     ("ddg", None, Some(INLINE_DDG), 1),
-    ("openlibrary", Some("tests-fixture-openlibrary-test.json"), None, 1),
-    ("mwmbl", Some("tests-fixture-mwmbl-test.json"), None, 1),
-    ("grokipedia", Some("tests-fixture-grokipedia-test.json"), None, 1),
-    ("startpagina", Some("tests-fixture-startpagina-test.json"), None, 1),
-    ("stackoverflow", Some("tests-fixture-stackexchange-test.json"), None, 5),
-    ("superuser", Some("tests-fixture-stackexchange-test.json"), None, 1),
-    ("askubuntu", Some("tests-fixture-stackexchange-test.json"), None, 1),
-    ("github", Some("tests-fixture-github-test.json"), None, 5),
-    ("hackernews", Some("tests-fixture-hackernews-test.json"), None, 5),
-    ("mdn", Some("tests-fixture-mdn-test.json"), None, 5),
-    ("microsoftlearn", Some("tests-fixture-microsoftlearn-test.json"), None, 5),
-    ("dockerhub", Some("tests-fixture-dockerhub-test.json"), None, 5),
-    ("gentoo", Some("tests-fixture-gentoo-test.json"), None, 1),
-    ("archlinux", Some("tests-fixture-archlinux-test.json"), None, 5),
-    ("nvd", Some("tests-fixture-nvd-test.json"), None, 3),
-    ("arxiv", Some("tests-fixture-arxiv-test.json"), None, 5),
-    ("europepmc", Some("tests-fixture-europepmc-test.json"), None, 5),
-    ("pubmed", Some("tests-fixture-pubmed-test.json"), None, 5),
-    ("openalex", Some("tests-fixture-openalex-test.json"), None, 2),
-    ("crossref", Some("tests-fixture-crossref-test.json"), None, 5),
-    ("rubygems", Some("tests-fixture-rubygems-test.json"), None, 5),
-    ("bingnews", Some("tests-fixture-bingnews-test.json"), None, 6),
-    ("wikinews", Some("tests-fixture-wikinews-test.json"), None, 5),
+    ("openlibrary", Some("tests/fixtures/tests-fixture-openlibrary-test.json"), None, 1),
+    ("mwmbl", Some("tests/fixtures/tests-fixture-mwmbl-test.json"), None, 1),
+    ("grokipedia", Some("tests/fixtures/tests-fixture-grokipedia-test.json"), None, 1),
+    ("startpagina", Some("tests/fixtures/tests-fixture-startpagina-test.json"), None, 1),
+    ("stackoverflow", Some("tests/fixtures/tests-fixture-stackexchange-test.json"), None, 5),
+    ("superuser", Some("tests/fixtures/tests-fixture-stackexchange-test.json"), None, 1),
+    ("askubuntu", Some("tests/fixtures/tests-fixture-stackexchange-test.json"), None, 1),
+    ("github", Some("tests/fixtures/tests-fixture-github-test.json"), None, 5),
+    ("hackernews", Some("tests/fixtures/tests-fixture-hackernews-test.json"), None, 5),
+    ("mdn", Some("tests/fixtures/tests-fixture-mdn-test.json"), None, 5),
+    ("microsoftlearn", Some("tests/fixtures/tests-fixture-microsoftlearn-test.json"), None, 5),
+    ("dockerhub", Some("tests/fixtures/tests-fixture-dockerhub-test.json"), None, 5),
+    ("gentoo", Some("tests/fixtures/tests-fixture-gentoo-test.json"), None, 1),
+    ("archlinux", Some("tests/fixtures/tests-fixture-archlinux-test.json"), None, 5),
+    ("nvd", Some("tests/fixtures/tests-fixture-nvd-test.json"), None, 3),
+    ("arxiv", Some("tests/fixtures/tests-fixture-arxiv-test.json"), None, 5),
+    ("europepmc", Some("tests/fixtures/tests-fixture-europepmc-test.json"), None, 5),
+    ("pubmed", Some("tests/fixtures/tests-fixture-pubmed-test.json"), None, 5),
+    ("openalex", Some("tests/fixtures/tests-fixture-openalex-test.json"), None, 2),
+    ("crossref", Some("tests/fixtures/tests-fixture-crossref-test.json"), None, 5),
+    ("rubygems", Some("tests/fixtures/tests-fixture-rubygems-test.json"), None, 5),
+    ("bingnews", Some("tests/fixtures/tests-fixture-bingnews-test.json"), None, 6),
+    ("wikinews", Some("tests/fixtures/tests-fixture-wikinews-test.json"), None, 5),
     ("ddgnews", None, Some(INLINE_DDG), 1),
-    ("npm", Some("tests-fixture-npm-test.json"), None, 5),
-    ("crates", Some("tests-fixture-crates-test.json"), None, 5),
-    ("boardreader", Some("tests-fixture-boardreader-test.json"), None, 5),
-    ("bpb", Some("tests-fixture-bpb-test.json"), None, 5),
-    ("swisscows", Some("tests-fixture-swisscows-test.json"), None, 5),
-    ("chatnoir", Some("tests-fixture-chatnoir-test.json"), None, 5),
-    ("dogpile", Some("tests-fixture-dogpile-test.json"), None, 5),
-    ("gmx", Some("tests-fixture-gmx-test.json"), None, 5),
-    ("keenable", Some("tests-fixture-keenable-test.json"), None, 5),
-    ("neosearch", Some("tests-fixture-neosearch-test.json"), None, 5),
-    ("packagist", Some("tests-fixture-packagist-test.json"), None, 3),
-    ("hexpm", Some("tests-fixture-hexpm-test.json"), None, 3),
-    ("pubdev", Some("tests-fixture-pubdev-test.json"), None, 3),
-    ("maven", Some("tests-fixture-maven-test.json"), None, 3),
-    ("nuget", Some("tests-fixture-nuget-test.json"), None, 2),
-    ("artifacthub", Some("tests-fixture-artifacthub-test.json"), None, 3),
-    ("terraform", Some("tests-fixture-terraform-test.json"), None, 3),
-    ("datatracker", Some("tests-fixture-datatracker-test.json"), None, 3),
-    ("tagesschau", Some("tests-fixture-tagesschau-test.json"), None, 2),
-    ("sepiasearch", Some("tests-fixture-sepiasearch-test.json"), None, 1),
-    ("jisho", Some("tests-fixture-jisho-test.json"), None, 2),
-    ("open_meteo", Some("tests-fixture-openmeteo-test.json"), None, 1),
-    ("pkggodev", Some("tests-fixture-pkggodev-test.html"), None, 3),
+    ("npm", Some("tests/fixtures/tests-fixture-npm-test.json"), None, 5),
+    ("crates", Some("tests/fixtures/tests-fixture-crates-test.json"), None, 5),
+    ("boardreader", Some("tests/fixtures/tests-fixture-boardreader-test.json"), None, 5),
+    ("bpb", Some("tests/fixtures/tests-fixture-bpb-test.json"), None, 5),
+    ("swisscows", Some("tests/fixtures/tests-fixture-swisscows-test.json"), None, 5),
+    ("chatnoir", Some("tests/fixtures/tests-fixture-chatnoir-test.json"), None, 5),
+    ("dogpile", Some("tests/fixtures/tests-fixture-dogpile-test.json"), None, 5),
+    ("gmx", Some("tests/fixtures/tests-fixture-gmx-test.json"), None, 5),
+    ("keenable", Some("tests/fixtures/tests-fixture-keenable-test.json"), None, 5),
+    ("neosearch", Some("tests/fixtures/tests-fixture-neosearch-test.json"), None, 5),
+    ("packagist", Some("tests/fixtures/tests-fixture-packagist-test.json"), None, 3),
+    ("hexpm", Some("tests/fixtures/tests-fixture-hexpm-test.json"), None, 3),
+    ("pubdev", Some("tests/fixtures/tests-fixture-pubdev-test.json"), None, 3),
+    ("maven", Some("tests/fixtures/tests-fixture-maven-test.json"), None, 3),
+    ("nuget", Some("tests/fixtures/tests-fixture-nuget-test.json"), None, 2),
+    ("artifacthub", Some("tests/fixtures/tests-fixture-artifacthub-test.json"), None, 3),
+    ("terraform", Some("tests/fixtures/tests-fixture-terraform-test.json"), None, 3),
+    ("datatracker", Some("tests/fixtures/tests-fixture-datatracker-test.json"), None, 3),
+    ("tagesschau", Some("tests/fixtures/tests-fixture-tagesschau-test.json"), None, 2),
+    ("sepiasearch", Some("tests/fixtures/tests-fixture-sepiasearch-test.json"), None, 1),
+    ("jisho", Some("tests/fixtures/tests-fixture-jisho-test.json"), None, 2),
+    ("open_meteo", Some("tests/fixtures/tests-fixture-openmeteo-test.json"), None, 1),
+    ("pkggodev", Some("tests/fixtures/tests-fixture-pkggodev-test.html"), None, 3),
 ];
 
 /// Engines whose response is an index, not answers: scored offline with a query.
 const SCORED: &[(&str, &str, &str, usize)] = &[
-    ("flask", "tests-fixture-flask-test.json", "request context", 1),
-    ("pipdocs", "tests-fixture-pipdocs-test.json", "requirements file", 1),
-    ("cheatsh", "tests-fixture-cheatsh-test.txt", "python", 1),
+    ("flask", "tests/fixtures/tests-fixture-flask-test.json", "request context", 1),
+    ("pipdocs", "tests/fixtures/tests-fixture-pipdocs-test.json", "requirements file", 1),
+    ("cheatsh", "tests/fixtures/tests-fixture-cheatsh-test.txt", "python", 1),
 ];
 
 #[test]
@@ -161,7 +161,7 @@ fn truncated_fixtures_parse_or_skip() {
 
 #[test]
 fn challenge_pages_report_unresponsive() {
-    let anomaly = std::fs::read_to_string("tests-fixture-ddg-anomaly.html").expect("anomaly fixture");
+    let anomaly = std::fs::read_to_string("tests/fixtures/tests-fixture-ddg-anomaly.html").expect("anomaly fixture");
     for name in ["ddg", "ddgnews"] {
         let e = engine(name);
         assert!(e.challenge(&anomaly).is_some(), "{name}: anomaly not detected");
@@ -200,7 +200,7 @@ fn boardreader_two_step_session_flow() {
     let r0 = e.request("test query", 1, &[]).expect("leg 1");
     assert_eq!(r0.url, "https://boardreader.com");
     // Step 2: session id out of real homepage bytes -> return.php URL.
-    let home = body(Some("tests-fixture-boardreader-home.html"), None);
+    let home = body(Some("tests/fixtures/tests-fixture-boardreader-home.html"), None);
     let (m, url2) = req_url(&e, "test query", 1, &prev(&[&home], &[])).expect("session flow");
     assert_eq!(m, "Get");
     assert!(url2.contains("/return.php?query=test+query&page=1&language=All&session_id="), "{url2}");
@@ -223,7 +223,7 @@ fn openmeteo_two_step_geo_then_forecast() {
     let r0 = e.request("berlin", 1, &[]).expect("leg 1");
     assert!(r0.url.contains("geocoding-api.open-meteo.com/v1/search?name=berlin"), "{}", r0.url);
     // Leg 2: lat/lon out of real geo bytes -> forecast URL.
-    let geo = body(Some("tests-fixture-openmeteo-geo-test.json"), None);
+    let geo = body(Some("tests/fixtures/tests-fixture-openmeteo-geo-test.json"), None);
     let (m, url2) = req_url(&e, "berlin", 1, &prev(&[&geo], &[])).expect("forecast leg");
     assert_eq!(m, "Get");
     assert!(url2.contains("latitude=52.52437") && url2.contains("longitude=13.41053"), "{url2}");
@@ -234,7 +234,7 @@ fn openmeteo_two_step_geo_then_forecast() {
         assert!(e.request("q", 1, &prev(&[bad], &[])).is_none(), "bad geo -> leg: {bad}");
     }
     // Forecast parses to exactly one summary row; garbage -> [].
-    let fc = body(Some("tests-fixture-openmeteo-test.json"), None);
+    let fc = body(Some("tests/fixtures/tests-fixture-openmeteo-test.json"), None);
     let out = e.parse(&fc);
     assert_eq!(out.len(), 1);
     assert!(out[0].title.starts_with("Berlin"), "{}", out[0].title);
@@ -247,7 +247,7 @@ fn gmx_two_step_page_hash() {
     let e = engine("gmx");
     assert_eq!(e.rounds(), 2);
     assert!(e.build_url("test", 1).contains("/web/result?q=test&page=1"));
-    let step1 = body(Some("tests-fixture-gmx-home.html"), None);
+    let step1 = body(Some("tests/fixtures/tests-fixture-gmx-home.html"), None);
     let (m, url2) = req_url(&e, "test query", 2, &prev(&[&step1], &[])).expect("page hash");
     assert_eq!(m, "Get");
     assert!(url2.contains("/desk?lang=en&q=test+query&page=2&h="), "{url2}");
@@ -285,7 +285,7 @@ fn chatnoir_three_leg_chain() {
     let r1 = e.request("test", 1, &[]).expect("leg 1");
     assert_eq!(r1.url, "https://www.chatnoir.eu/");
     // Leg 2: POST ?init with the csrf (real Set-Cookie shape).
-    let init = body(Some("tests-fixture-chatnoir-init.json"), None);
+    let init = body(Some("tests/fixtures/tests-fixture-chatnoir-init.json"), None);
     let r2 = e
         .request("test query", 1, &prev(&["<html>home</html>"], &["csrftoken=abc123; Path=/"]))
         .expect("leg 2");
@@ -305,7 +305,7 @@ fn chatnoir_three_leg_chain() {
     let done = prev(&["a", "b", "c"], &[]);
     assert!(e.request("q", 1, &done).is_none());
     // Parse the real results shape (offline fixture, token pre-scrubbed).
-    let parsed = e.parse(&body(Some("tests-fixture-chatnoir-test.json"), None));
+    let parsed = e.parse(&body(Some("tests/fixtures/tests-fixture-chatnoir-test.json"), None));
     assert_eq!(parsed.len(), 10, "expected 10, got {}", parsed.len());
     assert!(parsed[0].url.starts_with("https://"));
     // cookie() picks name=value out of Set-Cookie values.
@@ -363,7 +363,7 @@ fn dogpile_two_leg_post_chain() {
     assert!(r1.url.ends_with("/api/token/refresh"));
     assert!(r1.headers.iter().any(|(k, v)| k == "Cookie" && v == "dp_api_token=1"));
     // Leg 2: search POST with the minted token (real shape, scrubbed).
-    let refresh = body(Some("tests-fixture-dogpile-refresh.json"), None);
+    let refresh = body(Some("tests/fixtures/tests-fixture-dogpile-refresh.json"), None);
     let r2 = e.request("test query", 3, &prev(&[&refresh], &[])).expect("leg 2");
     assert!(r2.url.ends_with("/api/search"));
     assert!(r2.headers.iter().any(|(k, v)| k == "x-dogpile-token" && v == "v1.REDACTED"));

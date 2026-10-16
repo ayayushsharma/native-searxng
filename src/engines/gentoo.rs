@@ -2,7 +2,7 @@
 //! `https://wiki.gentoo.org/api.php?action=query&list=search&srsearch=..`
 //! Response: `{"query": {"search": [{title, snippet, ...}]}}`.
 //! Snippets carry `<span class='searchmatch'>` markup — stripped.
-//! Fixture: `tests-fixture-gentoo-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-gentoo-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

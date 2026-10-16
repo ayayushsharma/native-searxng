@@ -5,7 +5,7 @@
 //! Usage policy (checked 2026-10-15): no robots.txt on the API host;
 //! etiquette asks an optional `mailto=` for the polite pool — none
 //! invented (no credentials on box), so descriptive UA only, 1 req/query.
-//! Fixture: `tests-fixture-crossref-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-crossref-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

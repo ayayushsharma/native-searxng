@@ -2,7 +2,7 @@
 //! `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=..&format=json`
 //! Response: `{"resultList": {"result": [{source, id, title, abstractText,
 //! firstPublicationDate, ...}]}}`. Page-1 needs no cursorMark.
-//! Fixture: `tests-fixture-europepmc-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-europepmc-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult, unescape};
 

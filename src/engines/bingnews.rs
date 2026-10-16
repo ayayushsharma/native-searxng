@@ -5,7 +5,7 @@
 //! metadata and `<a class="imagelink"><img>` thumbnails.
 //! Hand scanner over card substrings (no scraper); truncated bodies
 //! (96KB cap) parse as far as they go, never panic.
-//! Fixture: `tests-fixture-bingnews-test.json` (HTTP 200, 6 cards, clean).
+//! Fixture: `tests/fixtures/tests-fixture-bingnews-test.json` (HTTP 200, 6 cards, clean).
 
 use crate::engine::{Engine, SearchResult};
 

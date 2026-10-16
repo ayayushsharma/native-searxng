@@ -10,7 +10,7 @@
 //! spaces) because `parse` only sees the last body. Condition words are
 //! upstream's `WMO_TO_CONDITION` table; wind is an 8-point compass.
 //! Unknown place → leg 2 never derives → honest `session flow failed`.
-//! Fixtures: `tests-fixture-openmeteo-{geo,test}.json` (HTTP 200, clean).
+//! Fixtures: `tests/fixtures/tests-fixture-openmeteo-{geo,test}.json` (HTTP 200, clean).
 
 use crate::engine::{Engine, InResponse, OutRequest, SearchResult};
 use serde_json::Value;

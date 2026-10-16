@@ -6,7 +6,7 @@
 //! authors[{name}], ...}}}`.
 //! First two-step engine: the trait's `follow_up` hook performs at most
 //! one extra fetch; either leg failing surfaces as `unresponsive_engines`.
-//! Fixture: `tests-fixture-pubmed-test.json` (leg-2 esummary body,
+//! Fixture: `tests/fixtures/tests-fixture-pubmed-test.json` (leg-2 esummary body,
 //! HTTP 200, verified clean; leg-1 esearch shape asserted live).
 
 use crate::engine::{Engine, SearchResult};

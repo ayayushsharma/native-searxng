@@ -1,7 +1,7 @@
 //! MDN Web Docs (`developer.mozilla.org`) — keyless JSON API, it.
 //! `https://developer.mozilla.org/api/v1/search?q=..&page=..`
 //! Response: `{"documents": [{mdn_url, title, summary, ...}]}`.
-//! Fixture: `tests-fixture-mdn-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-mdn-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

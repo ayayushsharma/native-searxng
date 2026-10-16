@@ -6,7 +6,7 @@
 //! lastUpdatedDate}]}`. Covers Azure + Microsoft 365 + .NET docs —
 //! the official-docs slice community engines never surface.
 //! Usage policy: public site search API, no key, no auth, 1 req/query.
-//! Fixture: `tests-fixture-microsoftlearn-test.json` (HTTP 200, clean).
+//! Fixture: `tests/fixtures/tests-fixture-microsoftlearn-test.json` (HTTP 200, clean).
 
 use crate::engine::{Engine, SearchResult};
 

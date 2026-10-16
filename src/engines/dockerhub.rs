@@ -3,7 +3,7 @@
 //! Response: `{"results": [{slug, name, short_description, source,
 //! logo_url{large,small}, publisher{name}, updated_at, ...}]}`.
 //! Official images (`source` store/official) live under `/_/`, rest under `/r/`.
-//! Fixture: `tests-fixture-dockerhub-test.json` (HTTP 200, verified clean).
+//! Fixture: `tests/fixtures/tests-fixture-dockerhub-test.json` (HTTP 200, verified clean).
 
 use crate::engine::{Engine, SearchResult};
 

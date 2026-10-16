@@ -5,7 +5,7 @@
 //! Usage policy (checked 2026-10-15): US federal public data; keyless
 //! tier (5 req/30s) comfortably fits 1 req/query sequential+SLEEP_S=2.
 //! Uses the official REST API, not the reference's nudp endpoint.
-//! Fixture: `tests-fixture-nvd-test.json` (HTTP 200, clean).
+//! Fixture: `tests/fixtures/tests-fixture-nvd-test.json` (HTTP 200, clean).
 
 use crate::engine::{Engine, SearchResult};
 

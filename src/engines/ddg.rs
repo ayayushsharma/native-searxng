@@ -16,7 +16,7 @@ impl Engine for Ddg {
 
     fn challenge(&self, body: &str) -> Option<String> {
         // DDG serves `anomaly.js?cc=botnet` + a challenge-form to flagged
-        // egress IPs (see tests-fixture-ddg-anomaly.html). Never surface it
+        // egress IPs (see tests/fixtures/tests-fixture-ddg-anomaly.html). Never surface it
         // as results — report unresponsive instead (iron rule 5).
         if body.contains("anomaly.js") || body.contains("challenge-form") {
             return Some("bot challenge (anomaly.js)".into());

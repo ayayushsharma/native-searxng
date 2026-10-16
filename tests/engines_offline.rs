@@ -532,11 +532,11 @@ fn config_xdg_resolution_order() {
     std::env::set_var("HOME", "/tmp/home");
     assert_eq!(config::default_path(), "/tmp/x.conf");
     std::env::remove_var("SEARXNG_CONF");
-    assert_eq!(config::default_path(), "/tmp/xdg/native-searxng/searxng.conf");
+    assert_eq!(config::default_path(), "/tmp/xdg/native-searxng/searxng.toml");
     std::env::remove_var("XDG_CONFIG_HOME");
-    assert_eq!(config::default_path(), "/tmp/home/.config/native-searxng/searxng.conf");
+    assert_eq!(config::default_path(), "/tmp/home/.config/native-searxng/searxng.toml");
     std::env::remove_var("HOME");
-    assert_eq!(config::default_path(), "searxng.conf");
+    assert_eq!(config::default_path(), "searxng.toml");
     // Missing everywhere -> defaults, never an error.
     let cfg = config::load_default();
     assert_eq!(cfg.port, config::Config::default().port);

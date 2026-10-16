@@ -43,7 +43,7 @@ The page embeds one server-generated JSON blob per request, built
 from live structures — never hand-maintained:
 
 - `engines:[{name,category}]` from the `engines::find` registry +
-  `searxng.conf` order (same source as merge weights),
+  `searxng.toml` order (same source as merge weights),
 - `categories` from the server gate list,
 - MCP `search`/`fetch` input schemas by calling the existing
   `mcp::search_tool()` / `fetch_tool()` fns (single source of truth),

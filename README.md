@@ -24,8 +24,8 @@ codegen at -j4+ risks the LMK whole-app kill — never `-j8`. First build compil
 ## Run
 
 ```sh
-cp searxng.conf my.conf   # edit port/engines/proxy_to
-./target/debug/native-searxng          # reads ./searxng.conf
+cp searxng.toml my.toml   # edit port/engines/proxy_to
+./target/debug/native-searxng          # reads ./searxng.toml
 curl '127.0.0.1:8888/search?q=test&format=json' | python3 -m json.tool
 ```
 

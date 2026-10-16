@@ -1,0 +1,60 @@
+# native-searxng — SearXNG-compatible metasearch core (native Rust).
+#
+# Sections: [server] identity + auth switch, [http] fetch budgets,
+# [proxy] strangler fallback, [engines] who answers (merge order =
+# file order: earlier engines win ties in the round-robin merge).
+#
+# Secrets NEVER live here. Conventions (env-only, unset = dormant):
+#   SEARXNG_API_TOKEN      bearer for the HTTP gate (comma-separated,
+#                          rotation without downtime)
+#   SEARXNG_API_KEY_JINA   /fetch extraction (optional — keyless works)
+#   SEARXNG_API_KEY_<ENGINE>  uppercased engine name, same rule
+
+[server]
+port = 8888
+bind = "127.0.0.1"      # loopback: cloudflared tunnel is the sole client
+
+# Kill-switch for local dev ONLY. Default true (fail closed: main
+# refuses to start with no token). `false` runs open WITHOUT a token —
+# greppable, never the default, never for a tunnelled host.
+require_auth = true
+
+[http]
+timeout_ms = 3000       # per-engine fetch deadline (honest 503 past it)
+proxy_timeout_ms = 30000 # strangler proxy: full oracle fan-out needs room
+body_cap_kb = 96        # per-fetch buffer (fat JSON overrides per engine)
+language = "en"
+user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+
+[proxy]
+# Strangler fallback: unknown categories/engines proxy to the Python
+# reference here. Empty string disables (503 for unknown instead).
+url = "http://127.0.0.1:8889"
+
+[engines]
+# Merge groups by category, file order = merge weight. (2026-10-16
+# regroup: flat searxng.conf interleaved pubmed/ddgnews among news by
+# porting order; pubmed now closes science, ddgnews closes news.)
+general = [
+  "wikipedia", "ddg", "openlibrary", "mwmbl", "grokipedia",
+  "startpagina", "swisscows", "boardreader", "bpb", "chatnoir",
+  "dogpile", "gmx", "keenable", "neosearch",
+]
+it = [
+  "stackoverflow", "superuser", "askubuntu", "github", "hackernews",
+  "mdn", "microsoftlearn", "flask", "pipdocs", "cheatsh",
+  "dockerhub", "gentoo", "archlinux", "nvd", "datatracker",
+]
+science = [
+  "arxiv", "europepmc", "openalex", "crossref", "pubmed",
+]
+news = [
+  "bingnews", "wikinews", "tagesschau", "ddgnews",
+]
+packages = [
+  "npm", "crates", "rubygems", "packagist", "hexpm", "pubdev",
+  "maven", "nuget", "artifacthub", "terraform", "pkggodev",
+]
+videos = ["sepiasearch"]
+dictionaries = ["jisho"]
+weather = ["open_meteo"]

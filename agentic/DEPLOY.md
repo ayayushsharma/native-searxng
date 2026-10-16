@@ -5,11 +5,11 @@ is the tunnel; the tunnel's callers still need the app token.
 
 ## Origin (your box)
 
-`searxng.conf` (relevant lines — auth stays ON, no `auth=off` here):
+`searxng.toml` (relevant lines — auth stays ON, no `require_auth = false` here):
 
-```ini
-bind=127.0.0.1
-port=8888
+```toml
+bind = "127.0.0.1"
+port = 8888
 ```
 
 Environment (supervisor/runit/Termux:Boot/systemd — never the conf file,

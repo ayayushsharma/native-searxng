@@ -1,4 +1,4 @@
-//! Optional in-RAM LRU cache. Default OFF (no `cache_size` in searxng.conf
+//! Optional in-RAM LRU cache. Default OFF (no `cache_size` in searxng.toml
 //! means disabled). Fixed slot count, LRU evict — never grows unbounded.
 
 use std::collections::{HashMap, VecDeque};

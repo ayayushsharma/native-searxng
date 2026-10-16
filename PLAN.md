@@ -143,17 +143,25 @@ native-searxng/
   tests-fixture-ddg-anomaly.html (real bot-challenge sample — parser must skip it)
 ```
 
-## 5. Config (actual `searxng.conf`)
-```ini
-port=8888
-bind=127.0.0.1
-engines=wikipedia,ddg
-timeout_ms=3000
-body_cap_kb=96
-max_results=20
-lang=en
-user_agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36
-proxy_to=http://127.0.0.1:8889   # Python reference; empty = 503 for unported
+## 5. Config (actual `searxng.toml`)
+```toml
+[server]
+port = 8888
+bind = "127.0.0.1"
+require_auth = true
+
+[http]
+timeout_ms = 3000
+body_cap_kb = 96
+language = "en"
+user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+
+[proxy]
+url = "http://127.0.0.1:8889"   # Python reference; empty = 503 for unported
+
+[engines]
+general = ["wikipedia", "ddg"]  # shipped file adds it/science/news/
+                            # packages/videos/dictionaries/weather groups
 ```
 
 ## 6. Build & verify

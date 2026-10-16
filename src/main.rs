@@ -7,7 +7,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--help" || a == "-h") {
         eprintln!("native-searxng [--mcp]");
-        eprintln!("  default: serve HTTP (SEARXNG_CONF, XDG, or ./searxng.conf)");
+        eprintln!("  default: serve HTTP (SEARXNG_CONF, XDG, or ./searxng.toml)");
         eprintln!("  --mcp:   MCP server on stdio (protocol 2025-06-18: search, fetch)");
         eprintln!("  auth:     SEARXNG_API_TOKEN (comma-separated OK); no token +");
         eprintln!("            conf auth != off -> refuse to start (fail closed).");

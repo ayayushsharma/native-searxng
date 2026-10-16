@@ -174,13 +174,13 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
     }
     // Strangler: engine override for unknown names -> Python reference.
     // Native categories: general, it, science, news, packages, videos,
-    // dictionaries.
+    // dictionaries, weather.
     let want = if q.categories.is_empty() {
         "general"
     } else {
         q.categories.as_str()
     };
-    let native = matches!(want, "general" | "it" | "science" | "news" | "packages" | "videos" | "dictionaries");
+    let native = matches!(want, "general" | "it" | "science" | "news" | "packages" | "videos" | "dictionaries" | "weather");
     // engines= filter (SearXNG compat): comma list restricts natives.
     // Unknown names -> whole query proxies (strangler owns the unknown).
     let filter: Vec<&str> = q.engines.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();

@@ -41,6 +41,7 @@ pub mod pubmed;
 pub mod pubdev;
 pub mod rubygems;
 pub mod jisho;
+pub mod open_meteo;
 pub mod sepiasearch;
 pub mod stackexchange;
 pub mod startpagina;
@@ -85,6 +86,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "tagesschau" => Some(Box::new(tagesschau::Tagesschau)),
         "sepiasearch" => Some(Box::new(sepiasearch::SepiaSearch)),
         "jisho" => Some(Box::new(jisho::Jisho)),
+        "open_meteo" => Some(Box::new(open_meteo::OpenMeteo)),
         "pkggodev" => Some(Box::new(pkggodev::PkgGoDev)),
         "pubdev" => Some(Box::new(pubdev::Pubdev)),
         "terraform" => Some(Box::new(terraform::Terraform)),

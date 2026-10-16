@@ -101,6 +101,10 @@
   {
    "q": "ねこ",
    "categories": "dictionaries"
+  },
+  {
+   "q": "berlin",
+   "categories": "weather"
   }
  ]
 }

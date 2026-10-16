@@ -69,6 +69,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("tagesschau", Some("tests-fixture-tagesschau-test.json"), None, 2),
     ("sepiasearch", Some("tests-fixture-sepiasearch-test.json"), None, 1),
     ("jisho", Some("tests-fixture-jisho-test.json"), None, 2),
+    ("open_meteo", Some("tests-fixture-openmeteo-test.json"), None, 1),
     ("pkggodev", Some("tests-fixture-pkggodev-test.html"), None, 3),
 ];
 
@@ -211,6 +212,34 @@ fn boardreader_two_step_session_flow() {
     assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
     assert!(engine("gmx").request("q", 1, &prev(&["a", "b"], &[])).is_none());
     assert!(engine("pubmed").request("q", 1, &prev(&["a", "b"], &[])).is_none());
+}
+
+#[test]
+fn openmeteo_two_step_geo_then_forecast() {
+    let e = engine("open_meteo");
+    assert_eq!(e.rounds(), 2);
+    assert_eq!(e.category(), "weather");
+    // Leg 1: geocoding for the raw query.
+    let r0 = e.request("berlin", 1, &[]).expect("leg 1");
+    assert!(r0.url.contains("geocoding-api.open-meteo.com/v1/search?name=berlin"), "{}", r0.url);
+    // Leg 2: lat/lon out of real geo bytes -> forecast URL.
+    let geo = body(Some("tests-fixture-openmeteo-geo-test.json"), None);
+    let (m, url2) = req_url(&e, "berlin", 1, &prev(&[&geo], &[])).expect("forecast leg");
+    assert_eq!(m, "Get");
+    assert!(url2.contains("latitude=52.52437") && url2.contains("longitude=13.41053"), "{url2}");
+    // Chain terminates: no third leg.
+    assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
+    // Empty/unknown geo -> None (chain stops -> session flow failed).
+    for bad in ["", "{}", "{\"results\":[]}", "{\"results\":[{\"latitude\":1}]}"] {
+        assert!(e.request("q", 1, &prev(&[bad], &[])).is_none(), "bad geo -> leg: {bad}");
+    }
+    // Forecast parses to exactly one summary row; garbage -> [].
+    let fc = body(Some("tests-fixture-openmeteo-test.json"), None);
+    let out = e.parse(&fc);
+    assert_eq!(out.len(), 1);
+    assert!(out[0].title.starts_with("Berlin"), "{}", out[0].title);
+    assert!(out[0].content.contains("7.4°C") && out[0].content.contains("fog"), "{}", out[0].content);
+    assert!(e.parse("{}").is_empty());
 }
 
 #[test]

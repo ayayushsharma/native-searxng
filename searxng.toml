@@ -26,6 +26,13 @@ body_cap_kb = 96        # per-fetch buffer (fat JSON overrides per engine)
 language = "en"
 user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
 
+# Custom CA bundle for TLS-intercepting networks (work machines with a
+# corporate proxy): set this to your corp CA's PEM file and the server
+# trusts ONLY it instead of Mozilla's bundled roots (the proxy re-signs
+# everything, so its CA is the only root needed). Empty = bundled roots.
+# A missing/unparseable file refuses to start — never silent fallback.
+# ca_file = "/path/to/corp-ca.pem"
+
 [proxy]
 # Strangler fallback: unknown categories/engines proxy to the Python
 # reference here. Empty string disables (503 for unknown instead).

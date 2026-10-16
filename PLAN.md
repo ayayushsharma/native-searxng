@@ -259,6 +259,10 @@ diff runner + examples — the contract IS SearXNG's `/search&format=json`.
    all routes except `/healthz`, stdio MCP exempt. Unset token = refuse
    to start unless conf says `auth=off` (local dev only). Eval scripts
    send the header from env. RAM line-item: one string compare/request (~0).
+   TLS roots note: `[http] ca_file` (custom CA for intercepting work
+   networks) holds one `Arc<Vec<Certificate>>` (~2KB, once per process)
+   + transient startup read buffer; zero new crates (ureq's own
+   `from_pem`/`Specific`). Empty default adds nothing.
 2. **Tag `v0.2.0`** after auth merges → CI proves release RSS with the
    shipped binary (auth included). Tagging is a release act: owner's call.
 3. **MCP Inspector conformance + ~20 agent searches** ~~through the tunnel~~

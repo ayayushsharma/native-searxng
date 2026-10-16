@@ -74,3 +74,23 @@ var and attach the header automatically — export it before gating:
 export SEARXNG_API_TOKEN="<token>"
 python3 agentic/evals/check.py --base http://127.0.0.1:8888
 ```
+
+## Work machine behind a TLS-intercepting proxy
+
+Symptom: every engine fails with `invalid peer certificate` (the binary
+trusts Mozilla's bundled roots, not your OS store, so the proxy's
+re-signed certificates don't verify). Fix — point the server at your
+corp CA file; nothing else changes:
+
+```toml
+[http]
+ca_file = "/path/to/corp-ca.pem"
+```
+
+Rules: the file REPLACES the bundled roots (on an intercepting network
+the proxy re-signs everything, so the corp CA is the only root needed);
+unset it when off the corp network. Missing/unparseable file = refuse
+to start (loud, never silent fallback). Startup logs `custom CA active`
+as a reminder. Get the file from IT (or export it from the OS store
+where the browser finds it). Never `disable_verification` — that turns
+TLS into theater for all traffic, not just yours.

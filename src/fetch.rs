@@ -4,6 +4,41 @@
 
 use crate::config::Config;
 use std::time::Duration;
+use ureq::tls::{Certificate, RootCerts, TlsConfig};
+
+/// Custom CA bundle (`[http] ca_file`, work-machine MITM networks).
+/// Reads every `-----BEGIN CERTIFICATE-----` block and trusts exactly
+/// that set INSTEAD of Mozilla's bundled roots (on an intercepting
+/// network the proxy re-signs everything, so the corp CA is the only
+/// root needed). Empty path = bundled roots (current default).
+/// Errors are loud — a bad file refuses to start, never silently
+/// falls back to other roots. Validated in main before any client
+/// is built; `Client::new` re-loads and expects success.
+pub fn load_ca(path: &str) -> Result<Option<RootCerts>, String> {
+    if path.trim().is_empty() {
+        return Ok(None);
+    }
+    let bytes = std::fs::read(path).map_err(|e| format!("ca_file {path:?}: {e}"))?;
+    let text = String::from_utf8(bytes).map_err(|_| format!("ca_file {path:?}: not UTF-8 PEM"))?;
+    let mut certs: Vec<Certificate<'static>> = Vec::new();
+    let mut rest = text.as_str();
+    while let Some(b) = rest.find("-----BEGIN CERTIFICATE-----") {
+        rest = &rest[b..];
+        let Some(e) = rest.find("-----END CERTIFICATE-----") else {
+            break;
+        };
+        let block = &rest[..e + "-----END CERTIFICATE-----".len()];
+        match Certificate::from_pem(block.as_bytes()) {
+            Ok(c) => certs.push(c),
+            Err(e) => return Err(format!("ca_file {path:?}: bad PEM block: {e}")),
+        }
+        rest = &rest[e + "-----END CERTIFICATE-----".len()..];
+    }
+    if certs.is_empty() {
+        return Err(format!("ca_file {path:?}: no certificates found"));
+    }
+    Ok(Some(RootCerts::new_with_certs(&certs)))
+}
 
 pub struct Client {
     agent: ureq::Agent,
@@ -13,12 +48,22 @@ pub struct Client {
 
 impl Client {
     pub fn new(cfg: &Config) -> Self {
-        let agent: ureq::Agent = ureq::Agent::config_builder()
+        // Custom roots replace the bundle on BOTH agents (engines and
+        // the strangler ride different deadlines, same trust).
+        let roots = load_ca(&cfg.ca_file).expect("ca_file validated at startup");
+        let base = || {
+            let mut b = ureq::Agent::config_builder();
+            if let Some(r) = roots.clone() {
+                b = b.tls_config(TlsConfig::builder().root_certs(r).build());
+            }
+            b
+        };
+        let agent: ureq::Agent = base()
             .timeout_global(Some(Duration::from_millis(cfg.timeout_ms)))
             .user_agent(cfg.user_agent.clone())
             .build()
             .into();
-        let proxy_agent: ureq::Agent = ureq::Agent::config_builder()
+        let proxy_agent: ureq::Agent = base()
             .timeout_global(Some(Duration::from_millis(cfg.proxy_timeout_ms)))
             .user_agent(cfg.user_agent.clone())
             .build()

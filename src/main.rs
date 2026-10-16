@@ -18,6 +18,15 @@ fn main() {
     // (including the refuse-to-start) is a leveled line on stderr.
     let level = config::log_level(&cfg);
     log::set(level);
+    // Custom CA: fail the start on a bad file (no silent fallback),
+    // warn when active (verification roots are replaced, not added).
+    if let Err(e) = native_searxng::fetch::load_ca(&cfg.ca_file) {
+        log::emit(log::Level::Error, format!("refusing to start: {e}"));
+        std::process::exit(1);
+    }
+    if !cfg.ca_file.trim().is_empty() {
+        native_searxng::info!("custom CA active ({}): system/bundled roots replaced", cfg.ca_file);
+    }
     // Fail closed: an unset token is a refused start, not an open server
     // (a cloudflared tunnel makes even loopback publicly reachable).
     // Local dev escape hatch is explicit: `auth=off` in the conf.

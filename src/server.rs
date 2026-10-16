@@ -477,6 +477,23 @@ mod tests {
     }
 
     #[test]
+    fn ca_file_loads() {
+        // Empty = bundled roots (default path, no file touched).
+        assert!(crate::fetch::load_ca("").unwrap().is_none());
+        assert!(crate::fetch::load_ca("   ").unwrap().is_none());
+        // Missing / garbage / certless files are loud errors.
+        assert!(crate::fetch::load_ca("/nonexistent/ca.pem").is_err());
+        let d = std::env::temp_dir();
+        let bad = d.join("ca-bad.pem");
+        std::fs::write(&bad, "not a cert").unwrap();
+        assert!(crate::fetch::load_ca(bad.to_str().unwrap()).is_err());
+        // A real-world PEM bundle parses to a Specific root set.
+        let roots = crate::fetch::load_ca("tests/fixtures/tests-fixture-ca-bundle.pem")
+            .expect("fixture bundle");
+        assert!(roots.is_some(), "fixture must yield roots");
+    }
+
+    #[test]
     fn guard_isolates_panics() {
         assert_eq!(super::guard(|| 42), Some(42));
         let r: Option<()> = super::guard(|| panic!("boom"));

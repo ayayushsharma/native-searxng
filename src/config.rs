@@ -25,6 +25,9 @@ pub struct Config {
     pub require_auth: bool,
     /// Strangler fallback base URL (Python reference). Empty = disabled.
     pub proxy_to: String,
+    /// Custom CA bundle for TLS-intercepting networks (work machines).
+    /// Empty = Mozilla's bundled roots. Set = trust ONLY this file.
+    pub ca_file: String,
     /// Console verbosity: off|error|warn|info|debug (default info).
     /// Validated at parse — unknown names refuse to start.
     pub log_level: String,
@@ -43,6 +46,7 @@ impl Default for Config {
             user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36".into(),
             require_auth: true,
             proxy_to: String::new(),
+            ca_file: String::new(),
             log_level: "info".into(),
         }
     }
@@ -307,6 +311,7 @@ fn apply(cfg: &mut Config, section: &str, k: &str, v: &str) -> Result<(), String
         },
         "http" => match k {
             "timeout_ms" => cfg.timeout_ms = int(v, "timeout_ms")?,
+            "ca_file" => cfg.ca_file = string(v)?,
             "proxy_timeout_ms" => cfg.proxy_timeout_ms = int(v, "proxy_timeout_ms")?,
             "body_cap_kb" => cfg.body_cap_kb = int(v, "body_cap_kb")? as usize,
             "language" => cfg.lang = string(v)?,

@@ -46,6 +46,16 @@ fn client_ip(req: &tiny_http::Request) -> String {
     req.remote_addr().map(|a| a.to_string()).unwrap_or_else(|| "-".into())
 }
 
+/// Panic isolation (item 5): one engine blowing up must not abort its
+/// whole lane (pkggodev's byte-index panic once poisoned 4 engines).
+/// The lane loop wraps each engine's fetch+parse in this; a panic
+/// becomes an honest `unresponsive` entry and the slice continues.
+/// `AssertUnwindSafe` because the lane closure borrows the shared
+/// client — a panic here is a parser bug, not unwind-sensitive state.
+fn guard<T>(f: impl FnOnce() -> T) -> Option<T> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).ok()
+}
+
 pub fn run(cfg: &Config, tokens: &[String]) {
     let addr = format!("{}:{}", cfg.bind, cfg.port);
     let server = Server::http(&addr).expect("bind server");
@@ -304,7 +314,13 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                 }
                 }; // end run
                 for engine in slice {
-                    out.push(run(engine.as_ref()));
+                    match guard(|| run(engine.as_ref())) {
+                        Some(pair) => out.push(pair),
+                        None => out.push((
+                            vec![],
+                            Some((engine.name().to_string(), "panicked".into())),
+                        )),
+                    }
                 }
                 out
             })) // end lane (close closure, spawn, push)
@@ -354,5 +370,12 @@ mod tests {
         assert!(!authorized(Some("s3cr3t"), &t)); // no scheme
         // Dev-open only when main allows it (explicit auth=off).
         assert!(authorized(None, &[]));
+    }
+
+    #[test]
+    fn guard_isolates_panics() {
+        assert_eq!(super::guard(|| 42), Some(42));
+        let r: Option<()> = super::guard(|| panic!("boom"));
+        assert!(r.is_none());
     }
 }

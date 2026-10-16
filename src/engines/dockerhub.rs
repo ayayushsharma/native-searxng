@@ -73,7 +73,9 @@ impl Engine for DockerHub {
                     .and_then(|x| x.as_str())
                     .filter(|s| !s.is_empty())
                     .or_else(|| {
-                        logo.get("small").and_then(|x| x.as_str()).filter(|s| !s.is_empty())
+                        logo.get("small")
+                            .and_then(|x| x.as_str())
+                            .filter(|s| !s.is_empty())
                     })
                 {
                     res.thumbnail = large.into();

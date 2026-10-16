@@ -19,7 +19,10 @@ impl Engine for Hex {
     }
 
     fn build_url(&self, q: &str, _pageno: u32) -> String {
-        format!("https://hex.pm/api/packages?search={}&per_page=10", encode(q))
+        format!(
+            "https://hex.pm/api/packages?search={}&per_page=10",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

@@ -43,10 +43,7 @@ impl Engine for Mwmbl {
 
 /// `[{value, is_bold}]` → concatenated text (bold markers are presentation).
 fn join_parts(v: Option<&serde_json::Value>) -> String {
-    let parts = v
-        .and_then(|x| x.as_array())
-        .cloned()
-        .unwrap_or_default();
+    let parts = v.and_then(|x| x.as_array()).cloned().unwrap_or_default();
     let s: String = parts
         .iter()
         .filter_map(|p| p.get("value").and_then(|x| x.as_str()))

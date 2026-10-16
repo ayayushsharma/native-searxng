@@ -39,7 +39,9 @@ impl Engine for Npm {
             };
             let (Some(name), Some(npm_url)) = (
                 pkg.get("name").and_then(|x| x.as_str()),
-                pkg.get("links").and_then(|l| l.get("npm")).and_then(|x| x.as_str()),
+                pkg.get("links")
+                    .and_then(|l| l.get("npm"))
+                    .and_then(|x| x.as_str()),
             ) else {
                 continue;
             };

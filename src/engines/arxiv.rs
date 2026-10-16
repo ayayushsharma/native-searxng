@@ -5,7 +5,7 @@
 //! machine-generated and rigid; malformed input yields zero results.
 //! Fixture: `tests/fixtures/tests-fixture-arxiv-test.json` (HTTP 200, verified clean).
 
-use crate::engine::{Engine, SearchResult, unescape};
+use crate::engine::{unescape, Engine, SearchResult};
 
 pub struct Arxiv;
 
@@ -42,7 +42,9 @@ impl Engine for Arxiv {
             if title.is_empty() || url.is_empty() {
                 continue;
             }
-            let summary = tag(entry, "summary").map(|s| norm(&unescape(&s))).unwrap_or_default();
+            let summary = tag(entry, "summary")
+                .map(|s| norm(&unescape(&s)))
+                .unwrap_or_default();
             out.push(SearchResult::basic("arxiv", url, title, summary));
         }
         out

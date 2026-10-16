@@ -36,8 +36,12 @@ impl Engine for BingNews {
         let mut out = Vec::new();
         for card in body.split("newsitem").skip(1).take(10) {
             // Title anchor: the `<a>` tag carrying `class="title"`.
-            let Some(ti) = card.find("class=\"title\"") else { continue };
-            let Some(a_start) = card[..ti].rfind("<a") else { continue };
+            let Some(ti) = card.find("class=\"title\"") else {
+                continue;
+            };
+            let Some(a_start) = card[..ti].rfind("<a") else {
+                continue;
+            };
             let a_end = card[ti..].find('>').map(|g| ti + g).unwrap_or(card.len());
             let tag = &card[a_start..a_end];
             let url = crate::engine::attr(tag, "href").unwrap_or_default();
@@ -47,7 +51,10 @@ impl Engine for BingNews {
                 Some(h) => match rest_a[h..].find('>') {
                     Some(g) => {
                         let ts = h + g + 1;
-                        let te = rest_a[ts..].find("</h2>").map(|e| ts + e).unwrap_or(rest_a.len());
+                        let te = rest_a[ts..]
+                            .find("</h2>")
+                            .map(|e| ts + e)
+                            .unwrap_or(rest_a.len());
                         norm(&crate::engine::strip_tags(&rest_a[ts..te]))
                     }
                     None => String::new(),
@@ -65,7 +72,10 @@ impl Engine for BingNews {
                 Some(si) => match card[si..].find('>') {
                     Some(g) => {
                         let cs = si + g + 1;
-                        let ce = card[cs..].find("</div>").map(|e| cs + e).unwrap_or(card.len());
+                        let ce = card[cs..]
+                            .find("</div>")
+                            .map(|e| cs + e)
+                            .unwrap_or(card.len());
                         norm(&crate::engine::strip_tags(&card[cs..ce]))
                     }
                     None => String::new(),

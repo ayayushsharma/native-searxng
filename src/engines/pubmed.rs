@@ -34,18 +34,22 @@ impl Engine for Pubmed {
         2
     }
 
-    fn request(&self, _query: &str, _pageno: u32, prev: &[crate::engine::InResponse]) -> Option<crate::engine::OutRequest> {
+    fn request(
+        &self,
+        _query: &str,
+        _pageno: u32,
+        prev: &[crate::engine::InResponse],
+    ) -> Option<crate::engine::OutRequest> {
         if prev.is_empty() {
-            return Some(crate::engine::OutRequest::get(self.build_url(_query, _pageno)));
+            return Some(crate::engine::OutRequest::get(
+                self.build_url(_query, _pageno),
+            ));
         }
         if prev.len() > 1 {
             return None;
         }
         let v: serde_json::Value = serde_json::from_str(&prev[0].body).ok()?;
-        let ids = v
-            .get("esearchresult")?
-            .get("idlist")?
-            .as_array()?;
+        let ids = v.get("esearchresult")?.get("idlist")?.as_array()?;
         if ids.is_empty() {
             return None;
         }
@@ -77,10 +81,7 @@ impl Engine for Pubmed {
         for uid in uids.iter().take(10) {
             let Some(id) = uid.as_str() else { continue };
             let Some(r) = result.get(id) else { continue };
-            let title = r
-                .get("title")
-                .and_then(|x| x.as_str())
-                .unwrap_or_default();
+            let title = r.get("title").and_then(|x| x.as_str()).unwrap_or_default();
             if title.is_empty() {
                 continue;
             }

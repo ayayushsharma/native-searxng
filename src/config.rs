@@ -301,7 +301,9 @@ pub fn log_level(cfg: &Config) -> crate::log::Level {
 pub fn effective_lanes(cfg: &Config, engines: usize) -> usize {
     let n = engines.max(1);
     if cfg.lanes == 0 {
-        let cpu = std::thread::available_parallelism().map(|p| p.get()).unwrap_or(4);
+        let cpu = std::thread::available_parallelism()
+            .map(|p| p.get())
+            .unwrap_or(4);
         return cpu.min(4).min(n);
     }
     (cfg.lanes as usize).clamp(1, n)
@@ -507,15 +509,58 @@ future_key = 1
         // regroup order is canonical since the 2026-10-16 TOML migration.
         let cfg = load("searxng.toml").expect("shipped searxng.toml");
         let want = [
-            "wikipedia", "ddg", "openlibrary", "mwmbl", "grokipedia", "startpagina",
-            "swisscows", "boardreader", "bpb", "chatnoir", "dogpile", "gmx",
-            "keenable", "neosearch", "stackoverflow", "superuser", "askubuntu",
-            "github", "hackernews", "mdn", "microsoftlearn", "flask", "pipdocs",
-            "cheatsh", "dockerhub", "gentoo", "archlinux", "nvd", "datatracker",
-            "arxiv", "europepmc", "openalex", "crossref", "pubmed", "bingnews",
-            "wikinews", "tagesschau", "ddgnews", "npm", "crates", "rubygems",
-            "packagist", "hexpm", "pubdev", "maven", "nuget", "artifacthub",
-            "terraform", "pkggodev", "sepiasearch", "jisho", "open_meteo",
+            "wikipedia",
+            "ddg",
+            "openlibrary",
+            "mwmbl",
+            "grokipedia",
+            "startpagina",
+            "swisscows",
+            "boardreader",
+            "bpb",
+            "chatnoir",
+            "dogpile",
+            "gmx",
+            "keenable",
+            "neosearch",
+            "stackoverflow",
+            "superuser",
+            "askubuntu",
+            "github",
+            "hackernews",
+            "mdn",
+            "microsoftlearn",
+            "flask",
+            "pipdocs",
+            "cheatsh",
+            "dockerhub",
+            "gentoo",
+            "archlinux",
+            "nvd",
+            "datatracker",
+            "arxiv",
+            "europepmc",
+            "openalex",
+            "crossref",
+            "pubmed",
+            "bingnews",
+            "wikinews",
+            "tagesschau",
+            "ddgnews",
+            "npm",
+            "crates",
+            "rubygems",
+            "packagist",
+            "hexpm",
+            "pubdev",
+            "maven",
+            "nuget",
+            "artifacthub",
+            "terraform",
+            "pkggodev",
+            "sepiasearch",
+            "jisho",
+            "open_meteo",
         ];
         assert_eq!(cfg.engines, want);
         assert_eq!(cfg.port, 8888);

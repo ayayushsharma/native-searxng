@@ -77,7 +77,12 @@ pub fn parse(body: &str) -> Option<FetchResult> {
     if text.len() < 20 {
         return None;
     }
-    let title = text.lines().next().unwrap_or_default().trim_start_matches("# ").to_string();
+    let title = text
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim_start_matches("# ")
+        .to_string();
     Some(FetchResult {
         title,
         content: text,

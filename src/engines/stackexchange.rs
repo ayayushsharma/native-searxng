@@ -5,7 +5,7 @@
 //! Response: `{"items": [{link, title, tags[], owner{}, is_answered, score}]}`.
 //! Fixture: `tests/fixtures/tests-fixture-stackexchange-test.json` (site=stackoverflow).
 
-use crate::engine::{Engine, SearchResult, unescape};
+use crate::engine::{unescape, Engine, SearchResult};
 
 pub struct StackExchange {
     site: &'static str,
@@ -75,7 +75,10 @@ impl Engine for StackExchange {
                 content.push(' ');
                 content.push_str(owner);
             }
-            if r.get("is_answered").and_then(|x| x.as_bool()).unwrap_or(false) {
+            if r.get("is_answered")
+                .and_then(|x| x.as_bool())
+                .unwrap_or(false)
+            {
                 content.push_str(" // is answered");
             }
             if let Some(score) = r.get("score").and_then(|x| x.as_i64()) {

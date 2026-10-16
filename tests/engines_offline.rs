@@ -9,7 +9,7 @@
 //! follow-up, query parsing, JSON contract keys, merge dedup.
 
 use native_searxng::{
-    engine::{Engine, InResponse, Method, SearchResult, cookie},
+    engine::{cookie, Engine, InResponse, Method, SearchResult},
     engines, merge, query, render,
 };
 
@@ -18,84 +18,342 @@ fn engine(name: &str) -> Box<dyn Engine> {
 }
 
 /// (engine name, fixture file under repo root or inline body, min results)
-const INLINE_WIKIPEDIA: &str = r#"["t",["Title T"],["Desc D"],["https://en.wikipedia.org/wiki/T"]]"#;
+const INLINE_WIKIPEDIA: &str =
+    r#"["t",["Title T"],["Desc D"],["https://en.wikipedia.org/wiki/T"]]"#;
 const INLINE_DDG: &str = r#"<div class="result"><a class="result__a" href="https://example.com/x">Example Title</a><div class="result__snippet">Some snippet here</div></div>"#;
 
 const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("wikipedia", None, Some(INLINE_WIKIPEDIA), 1),
     ("ddg", None, Some(INLINE_DDG), 1),
-    ("openlibrary", Some("tests/fixtures/tests-fixture-openlibrary-test.json"), None, 1),
-    ("mwmbl", Some("tests/fixtures/tests-fixture-mwmbl-test.json"), None, 1),
-    ("grokipedia", Some("tests/fixtures/tests-fixture-grokipedia-test.json"), None, 1),
-    ("startpagina", Some("tests/fixtures/tests-fixture-startpagina-test.json"), None, 1),
-    ("stackoverflow", Some("tests/fixtures/tests-fixture-stackexchange-test.json"), None, 5),
-    ("superuser", Some("tests/fixtures/tests-fixture-stackexchange-test.json"), None, 1),
-    ("askubuntu", Some("tests/fixtures/tests-fixture-stackexchange-test.json"), None, 1),
-    ("github", Some("tests/fixtures/tests-fixture-github-test.json"), None, 5),
-    ("hackernews", Some("tests/fixtures/tests-fixture-hackernews-test.json"), None, 5),
-    ("mdn", Some("tests/fixtures/tests-fixture-mdn-test.json"), None, 5),
-    ("microsoftlearn", Some("tests/fixtures/tests-fixture-microsoftlearn-test.json"), None, 5),
-    ("dockerhub", Some("tests/fixtures/tests-fixture-dockerhub-test.json"), None, 5),
-    ("gentoo", Some("tests/fixtures/tests-fixture-gentoo-test.json"), None, 1),
-    ("archlinux", Some("tests/fixtures/tests-fixture-archlinux-test.json"), None, 5),
-    ("nvd", Some("tests/fixtures/tests-fixture-nvd-test.json"), None, 3),
-    ("arxiv", Some("tests/fixtures/tests-fixture-arxiv-test.json"), None, 5),
-    ("europepmc", Some("tests/fixtures/tests-fixture-europepmc-test.json"), None, 5),
-    ("pubmed", Some("tests/fixtures/tests-fixture-pubmed-test.json"), None, 5),
-    ("openalex", Some("tests/fixtures/tests-fixture-openalex-test.json"), None, 2),
-    ("crossref", Some("tests/fixtures/tests-fixture-crossref-test.json"), None, 5),
-    ("rubygems", Some("tests/fixtures/tests-fixture-rubygems-test.json"), None, 5),
-    ("bingnews", Some("tests/fixtures/tests-fixture-bingnews-test.json"), None, 6),
-    ("wikinews", Some("tests/fixtures/tests-fixture-wikinews-test.json"), None, 5),
+    (
+        "openlibrary",
+        Some("tests/fixtures/tests-fixture-openlibrary-test.json"),
+        None,
+        1,
+    ),
+    (
+        "mwmbl",
+        Some("tests/fixtures/tests-fixture-mwmbl-test.json"),
+        None,
+        1,
+    ),
+    (
+        "grokipedia",
+        Some("tests/fixtures/tests-fixture-grokipedia-test.json"),
+        None,
+        1,
+    ),
+    (
+        "startpagina",
+        Some("tests/fixtures/tests-fixture-startpagina-test.json"),
+        None,
+        1,
+    ),
+    (
+        "stackoverflow",
+        Some("tests/fixtures/tests-fixture-stackexchange-test.json"),
+        None,
+        5,
+    ),
+    (
+        "superuser",
+        Some("tests/fixtures/tests-fixture-stackexchange-test.json"),
+        None,
+        1,
+    ),
+    (
+        "askubuntu",
+        Some("tests/fixtures/tests-fixture-stackexchange-test.json"),
+        None,
+        1,
+    ),
+    (
+        "github",
+        Some("tests/fixtures/tests-fixture-github-test.json"),
+        None,
+        5,
+    ),
+    (
+        "hackernews",
+        Some("tests/fixtures/tests-fixture-hackernews-test.json"),
+        None,
+        5,
+    ),
+    (
+        "mdn",
+        Some("tests/fixtures/tests-fixture-mdn-test.json"),
+        None,
+        5,
+    ),
+    (
+        "microsoftlearn",
+        Some("tests/fixtures/tests-fixture-microsoftlearn-test.json"),
+        None,
+        5,
+    ),
+    (
+        "dockerhub",
+        Some("tests/fixtures/tests-fixture-dockerhub-test.json"),
+        None,
+        5,
+    ),
+    (
+        "gentoo",
+        Some("tests/fixtures/tests-fixture-gentoo-test.json"),
+        None,
+        1,
+    ),
+    (
+        "archlinux",
+        Some("tests/fixtures/tests-fixture-archlinux-test.json"),
+        None,
+        5,
+    ),
+    (
+        "nvd",
+        Some("tests/fixtures/tests-fixture-nvd-test.json"),
+        None,
+        3,
+    ),
+    (
+        "arxiv",
+        Some("tests/fixtures/tests-fixture-arxiv-test.json"),
+        None,
+        5,
+    ),
+    (
+        "europepmc",
+        Some("tests/fixtures/tests-fixture-europepmc-test.json"),
+        None,
+        5,
+    ),
+    (
+        "pubmed",
+        Some("tests/fixtures/tests-fixture-pubmed-test.json"),
+        None,
+        5,
+    ),
+    (
+        "openalex",
+        Some("tests/fixtures/tests-fixture-openalex-test.json"),
+        None,
+        2,
+    ),
+    (
+        "crossref",
+        Some("tests/fixtures/tests-fixture-crossref-test.json"),
+        None,
+        5,
+    ),
+    (
+        "rubygems",
+        Some("tests/fixtures/tests-fixture-rubygems-test.json"),
+        None,
+        5,
+    ),
+    (
+        "bingnews",
+        Some("tests/fixtures/tests-fixture-bingnews-test.json"),
+        None,
+        6,
+    ),
+    (
+        "wikinews",
+        Some("tests/fixtures/tests-fixture-wikinews-test.json"),
+        None,
+        5,
+    ),
     ("ddgnews", None, Some(INLINE_DDG), 1),
-    ("npm", Some("tests/fixtures/tests-fixture-npm-test.json"), None, 5),
-    ("crates", Some("tests/fixtures/tests-fixture-crates-test.json"), None, 5),
-    ("boardreader", Some("tests/fixtures/tests-fixture-boardreader-test.json"), None, 5),
-    ("bpb", Some("tests/fixtures/tests-fixture-bpb-test.json"), None, 5),
-    ("swisscows", Some("tests/fixtures/tests-fixture-swisscows-test.json"), None, 5),
-    ("chatnoir", Some("tests/fixtures/tests-fixture-chatnoir-test.json"), None, 5),
-    ("dogpile", Some("tests/fixtures/tests-fixture-dogpile-test.json"), None, 5),
-    ("gmx", Some("tests/fixtures/tests-fixture-gmx-test.json"), None, 5),
-    ("keenable", Some("tests/fixtures/tests-fixture-keenable-test.json"), None, 5),
-    ("neosearch", Some("tests/fixtures/tests-fixture-neosearch-test.json"), None, 5),
-    ("packagist", Some("tests/fixtures/tests-fixture-packagist-test.json"), None, 3),
-    ("hexpm", Some("tests/fixtures/tests-fixture-hexpm-test.json"), None, 3),
-    ("pubdev", Some("tests/fixtures/tests-fixture-pubdev-test.json"), None, 3),
-    ("maven", Some("tests/fixtures/tests-fixture-maven-test.json"), None, 3),
-    ("nuget", Some("tests/fixtures/tests-fixture-nuget-test.json"), None, 2),
-    ("artifacthub", Some("tests/fixtures/tests-fixture-artifacthub-test.json"), None, 3),
-    ("terraform", Some("tests/fixtures/tests-fixture-terraform-test.json"), None, 3),
-    ("datatracker", Some("tests/fixtures/tests-fixture-datatracker-test.json"), None, 3),
-    ("tagesschau", Some("tests/fixtures/tests-fixture-tagesschau-test.json"), None, 2),
-    ("sepiasearch", Some("tests/fixtures/tests-fixture-sepiasearch-test.json"), None, 1),
-    ("jisho", Some("tests/fixtures/tests-fixture-jisho-test.json"), None, 2),
-    ("open_meteo", Some("tests/fixtures/tests-fixture-openmeteo-test.json"), None, 1),
-    ("pkggodev", Some("tests/fixtures/tests-fixture-pkggodev-test.html"), None, 3),
+    (
+        "npm",
+        Some("tests/fixtures/tests-fixture-npm-test.json"),
+        None,
+        5,
+    ),
+    (
+        "crates",
+        Some("tests/fixtures/tests-fixture-crates-test.json"),
+        None,
+        5,
+    ),
+    (
+        "boardreader",
+        Some("tests/fixtures/tests-fixture-boardreader-test.json"),
+        None,
+        5,
+    ),
+    (
+        "bpb",
+        Some("tests/fixtures/tests-fixture-bpb-test.json"),
+        None,
+        5,
+    ),
+    (
+        "swisscows",
+        Some("tests/fixtures/tests-fixture-swisscows-test.json"),
+        None,
+        5,
+    ),
+    (
+        "chatnoir",
+        Some("tests/fixtures/tests-fixture-chatnoir-test.json"),
+        None,
+        5,
+    ),
+    (
+        "dogpile",
+        Some("tests/fixtures/tests-fixture-dogpile-test.json"),
+        None,
+        5,
+    ),
+    (
+        "gmx",
+        Some("tests/fixtures/tests-fixture-gmx-test.json"),
+        None,
+        5,
+    ),
+    (
+        "keenable",
+        Some("tests/fixtures/tests-fixture-keenable-test.json"),
+        None,
+        5,
+    ),
+    (
+        "neosearch",
+        Some("tests/fixtures/tests-fixture-neosearch-test.json"),
+        None,
+        5,
+    ),
+    (
+        "packagist",
+        Some("tests/fixtures/tests-fixture-packagist-test.json"),
+        None,
+        3,
+    ),
+    (
+        "hexpm",
+        Some("tests/fixtures/tests-fixture-hexpm-test.json"),
+        None,
+        3,
+    ),
+    (
+        "pubdev",
+        Some("tests/fixtures/tests-fixture-pubdev-test.json"),
+        None,
+        3,
+    ),
+    (
+        "maven",
+        Some("tests/fixtures/tests-fixture-maven-test.json"),
+        None,
+        3,
+    ),
+    (
+        "nuget",
+        Some("tests/fixtures/tests-fixture-nuget-test.json"),
+        None,
+        2,
+    ),
+    (
+        "artifacthub",
+        Some("tests/fixtures/tests-fixture-artifacthub-test.json"),
+        None,
+        3,
+    ),
+    (
+        "terraform",
+        Some("tests/fixtures/tests-fixture-terraform-test.json"),
+        None,
+        3,
+    ),
+    (
+        "datatracker",
+        Some("tests/fixtures/tests-fixture-datatracker-test.json"),
+        None,
+        3,
+    ),
+    (
+        "tagesschau",
+        Some("tests/fixtures/tests-fixture-tagesschau-test.json"),
+        None,
+        2,
+    ),
+    (
+        "sepiasearch",
+        Some("tests/fixtures/tests-fixture-sepiasearch-test.json"),
+        None,
+        1,
+    ),
+    (
+        "jisho",
+        Some("tests/fixtures/tests-fixture-jisho-test.json"),
+        None,
+        2,
+    ),
+    (
+        "open_meteo",
+        Some("tests/fixtures/tests-fixture-openmeteo-test.json"),
+        None,
+        1,
+    ),
+    (
+        "pkggodev",
+        Some("tests/fixtures/tests-fixture-pkggodev-test.html"),
+        None,
+        3,
+    ),
 ];
 
 /// Engines whose response is an index, not answers: scored offline with a query.
 const SCORED: &[(&str, &str, &str, usize)] = &[
-    ("flask", "tests/fixtures/tests-fixture-flask-test.json", "request context", 1),
-    ("pipdocs", "tests/fixtures/tests-fixture-pipdocs-test.json", "requirements file", 1),
-    ("cheatsh", "tests/fixtures/tests-fixture-cheatsh-test.txt", "python", 1),
+    (
+        "flask",
+        "tests/fixtures/tests-fixture-flask-test.json",
+        "request context",
+        1,
+    ),
+    (
+        "pipdocs",
+        "tests/fixtures/tests-fixture-pipdocs-test.json",
+        "requirements file",
+        1,
+    ),
+    (
+        "cheatsh",
+        "tests/fixtures/tests-fixture-cheatsh-test.txt",
+        "python",
+        1,
+    ),
 ];
 
 #[test]
 fn scored_engines_parse_with_query() {
     for (name, file, query, min) in SCORED {
         let e = engine(name);
-        let b = std::fs::read_to_string(file)
-            .unwrap_or_else(|_| panic!("missing fixture {file}"));
+        let b = std::fs::read_to_string(file).unwrap_or_else(|_| panic!("missing fixture {file}"));
         let out = e.parse_scored(&b, query);
-        assert!(out.len() >= *min, "{name}: only {} results (min {min})", out.len());
+        assert!(
+            out.len() >= *min,
+            "{name}: only {} results (min {min})",
+            out.len()
+        );
         for r in &out {
             assert!(!r.url.is_empty(), "{name}: empty url");
             assert!(!r.title.is_empty(), "{name}: empty title");
             assert_eq!(r.engine, *name, "{name}: wrong engine tag");
         }
         // Malformed index never panics, never yields results.
-        for bad in ["", "{}", "[]", "Search.setIndex({});", "Search.setIndex({bad"] {
-            assert!(e.parse_scored(bad, query).is_empty(), "{name}: garbage in -> results out");
+        for bad in [
+            "",
+            "{}",
+            "[]",
+            "Search.setIndex({});",
+            "Search.setIndex({bad",
+        ] {
+            assert!(
+                e.parse_scored(bad, query).is_empty(),
+                "{name}: garbage in -> results out"
+            );
         }
     }
 }
@@ -129,7 +387,15 @@ fn every_engine_parses_its_fixture() {
 
 #[test]
 fn malformed_input_never_panics_never_garbage() {
-    let bad = ["", "{}", "[]", "null", "<html><body>nope", "{{{{", "\u{0}\u{1}\u{2}"];
+    let bad = [
+        "",
+        "{}",
+        "[]",
+        "null",
+        "<html><body>nope",
+        "{{{{",
+        "\u{0}\u{1}\u{2}",
+    ];
     for (name, _, _, _) in CASES {
         let e = engine(name);
         for b in bad {
@@ -154,17 +420,24 @@ fn truncated_fixtures_parse_or_skip() {
         let half = &full[..full.len() / 2];
         let out = e.parse(half);
         for r in &out {
-            assert!(!r.url.is_empty() && !r.title.is_empty(), "{name}: bad row from truncation");
+            assert!(
+                !r.url.is_empty() && !r.title.is_empty(),
+                "{name}: bad row from truncation"
+            );
         }
     }
 }
 
 #[test]
 fn challenge_pages_report_unresponsive() {
-    let anomaly = std::fs::read_to_string("tests/fixtures/tests-fixture-ddg-anomaly.html").expect("anomaly fixture");
+    let anomaly = std::fs::read_to_string("tests/fixtures/tests-fixture-ddg-anomaly.html")
+        .expect("anomaly fixture");
     for name in ["ddg", "ddgnews"] {
         let e = engine(name);
-        assert!(e.challenge(&anomaly).is_some(), "{name}: anomaly not detected");
+        assert!(
+            e.challenge(&anomaly).is_some(),
+            "{name}: anomaly not detected"
+        );
         // Clean bodies must NOT trip the detector.
         assert!(e.challenge(INLINE_DDG).is_none(), "{name}: false positive");
     }
@@ -188,7 +461,8 @@ fn prev(bodies: &[&str], cookies: &[&str]) -> Vec<InResponse> {
 }
 
 fn req_url(e: &Box<dyn Engine>, q: &str, p: u32, pr: &[InResponse]) -> Option<(String, String)> {
-    e.request(q, p, pr).map(|r| (format!("{:?}", r.method), r.url))
+    e.request(q, p, pr)
+        .map(|r| (format!("{:?}", r.method), r.url))
 }
 
 #[test]
@@ -200,18 +474,28 @@ fn boardreader_two_step_session_flow() {
     let r0 = e.request("test query", 1, &[]).expect("leg 1");
     assert_eq!(r0.url, "https://boardreader.com");
     // Step 2: session id out of real homepage bytes -> return.php URL.
-    let home = body(Some("tests/fixtures/tests-fixture-boardreader-home.html"), None);
+    let home = body(
+        Some("tests/fixtures/tests-fixture-boardreader-home.html"),
+        None,
+    );
     let (m, url2) = req_url(&e, "test query", 1, &prev(&[&home], &[])).expect("session flow");
     assert_eq!(m, "Get");
-    assert!(url2.contains("/return.php?query=test+query&page=1&language=All&session_id="), "{url2}");
+    assert!(
+        url2.contains("/return.php?query=test+query&page=1&language=All&session_id="),
+        "{url2}"
+    );
     // Malformed homepages -> None (chain stops -> session flow failed).
     for bad in ["", "<html>no marker</html>", "'currentSessionId', ''"] {
         assert!(e.request("q", 1, &prev(&[bad], &[])).is_none());
     }
     // Chain terminates: no third leg (protocol invariant).
     assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
-    assert!(engine("gmx").request("q", 1, &prev(&["a", "b"], &[])).is_none());
-    assert!(engine("pubmed").request("q", 1, &prev(&["a", "b"], &[])).is_none());
+    assert!(engine("gmx")
+        .request("q", 1, &prev(&["a", "b"], &[]))
+        .is_none());
+    assert!(engine("pubmed")
+        .request("q", 1, &prev(&["a", "b"], &[]))
+        .is_none());
 }
 
 #[test]
@@ -221,24 +505,50 @@ fn openmeteo_two_step_geo_then_forecast() {
     assert_eq!(e.category(), "weather");
     // Leg 1: geocoding for the raw query.
     let r0 = e.request("berlin", 1, &[]).expect("leg 1");
-    assert!(r0.url.contains("geocoding-api.open-meteo.com/v1/search?name=berlin"), "{}", r0.url);
+    assert!(
+        r0.url
+            .contains("geocoding-api.open-meteo.com/v1/search?name=berlin"),
+        "{}",
+        r0.url
+    );
     // Leg 2: lat/lon out of real geo bytes -> forecast URL.
-    let geo = body(Some("tests/fixtures/tests-fixture-openmeteo-geo-test.json"), None);
+    let geo = body(
+        Some("tests/fixtures/tests-fixture-openmeteo-geo-test.json"),
+        None,
+    );
     let (m, url2) = req_url(&e, "berlin", 1, &prev(&[&geo], &[])).expect("forecast leg");
     assert_eq!(m, "Get");
-    assert!(url2.contains("latitude=52.52437") && url2.contains("longitude=13.41053"), "{url2}");
+    assert!(
+        url2.contains("latitude=52.52437") && url2.contains("longitude=13.41053"),
+        "{url2}"
+    );
     // Chain terminates: no third leg.
     assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
     // Empty/unknown geo -> None (chain stops -> session flow failed).
-    for bad in ["", "{}", "{\"results\":[]}", "{\"results\":[{\"latitude\":1}]}"] {
-        assert!(e.request("q", 1, &prev(&[bad], &[])).is_none(), "bad geo -> leg: {bad}");
+    for bad in [
+        "",
+        "{}",
+        "{\"results\":[]}",
+        "{\"results\":[{\"latitude\":1}]}",
+    ] {
+        assert!(
+            e.request("q", 1, &prev(&[bad], &[])).is_none(),
+            "bad geo -> leg: {bad}"
+        );
     }
     // Forecast parses to exactly one summary row; garbage -> [].
-    let fc = body(Some("tests/fixtures/tests-fixture-openmeteo-test.json"), None);
+    let fc = body(
+        Some("tests/fixtures/tests-fixture-openmeteo-test.json"),
+        None,
+    );
     let out = e.parse(&fc);
     assert_eq!(out.len(), 1);
     assert!(out[0].title.starts_with("Berlin"), "{}", out[0].title);
-    assert!(out[0].content.contains("7.4°C") && out[0].content.contains("fog"), "{}", out[0].content);
+    assert!(
+        out[0].content.contains("7.4°C") && out[0].content.contains("fog"),
+        "{}",
+        out[0].content
+    );
     assert!(e.parse("{}").is_empty());
 }
 
@@ -250,10 +560,16 @@ fn gmx_two_step_page_hash() {
     let step1 = body(Some("tests/fixtures/tests-fixture-gmx-home.html"), None);
     let (m, url2) = req_url(&e, "test query", 2, &prev(&[&step1], &[])).expect("page hash");
     assert_eq!(m, "Get");
-    assert!(url2.contains("/desk?lang=en&q=test+query&page=2&h="), "{url2}");
+    assert!(
+        url2.contains("/desk?lang=en&q=test+query&page=2&h="),
+        "{url2}"
+    );
     // Captcha element -> challenge, not results.
     assert!(e.challenge("<div id='spam-messages'>x</div>").is_some());
-    assert!(e.challenge(&step1).is_none(), "JS string mentions are not the element");
+    assert!(
+        e.challenge(&step1).is_none(),
+        "JS string mentions are not the element"
+    );
     for bad in ["", "<html>no hash</html>", "&h=&t="] {
         assert!(e.request("q", 1, &prev(&[bad], &[])).is_none());
     }
@@ -270,11 +586,19 @@ fn pubmed_two_step_follow_up() {
     assert!(url.contains("esummary.fcgi"), "wrong leg-2 url: {url}");
     assert!(url.contains("id=1,2"), "IDs missing: {url}");
     // Empty ID list -> no follow-up (chain stops -> session flow failed).
-    assert!(e.request("test", 1, &prev(&[r#"{"esearchresult": {"idlist": []}}"#], &[])).is_none());
+    assert!(e
+        .request(
+            "test",
+            1,
+            &prev(&[r#"{"esearchresult": {"idlist": []}}"#], &[])
+        )
+        .is_none());
     assert!(e.parse(leg1).is_empty());
     // Single-step engines stop after leg 1.
     assert_eq!(engine("arxiv").rounds(), 1);
-    assert!(engine("arxiv").request("test", 1, &prev(&[leg1], &[])).is_none());
+    assert!(engine("arxiv")
+        .request("test", 1, &prev(&[leg1], &[]))
+        .is_none());
 }
 
 #[test]
@@ -285,31 +609,58 @@ fn chatnoir_three_leg_chain() {
     let r1 = e.request("test", 1, &[]).expect("leg 1");
     assert_eq!(r1.url, "https://www.chatnoir.eu/");
     // Leg 2: POST ?init with the csrf (real Set-Cookie shape).
-    let init = body(Some("tests/fixtures/tests-fixture-chatnoir-init.json"), None);
+    let init = body(
+        Some("tests/fixtures/tests-fixture-chatnoir-init.json"),
+        None,
+    );
     let r2 = e
-        .request("test query", 1, &prev(&["<html>home</html>"], &["csrftoken=abc123; Path=/"]))
+        .request(
+            "test query",
+            1,
+            &prev(&["<html>home</html>"], &["csrftoken=abc123; Path=/"]),
+        )
         .expect("leg 2");
     assert!(matches!(r2.method, Method::Post));
     assert!(r2.url.ends_with("/?init"));
-    assert!(r2.headers.iter().any(|(k, v)| k == "X-Csrf-Token" && v == "abc123"));
+    assert!(r2
+        .headers
+        .iter()
+        .any(|(k, v)| k == "X-Csrf-Token" && v == "abc123"));
     // No csrf cookie -> chain stops (session flow failed).
-    assert!(e.request("q", 1, &prev(&["<html>home</html>"], &[])).is_none());
+    assert!(e
+        .request("q", 1, &prev(&["<html>home</html>"], &[]))
+        .is_none());
     // Leg 3: POST _search with token from leg 2 + csrf from leg 1.
     let home_prev = prev(&["<html>home</html>", &init], &["csrftoken=abc123; Path=/"]);
     let r3 = e.request("test query", 2, &home_prev).expect("leg 3");
     assert!(r3.url.ends_with("/api/v1/_search"));
-    assert!(r3.headers.iter().any(|(k, v)| k == "Authorization" && v.starts_with("Bearer sig:")));
-    assert!(r3.headers.iter().any(|(k, v)| k == "X-Csrf-Token" && v == "abc123"));
-    assert!(r3.json.as_ref().expect("json body").contains("\"from\":10"), "pageno 2 -> from 10");
+    assert!(r3
+        .headers
+        .iter()
+        .any(|(k, v)| k == "Authorization" && v.starts_with("Bearer sig:")));
+    assert!(r3
+        .headers
+        .iter()
+        .any(|(k, v)| k == "X-Csrf-Token" && v == "abc123"));
+    assert!(
+        r3.json.as_ref().expect("json body").contains("\"from\":10"),
+        "pageno 2 -> from 10"
+    );
     // Chain ends after leg 3.
     let done = prev(&["a", "b", "c"], &[]);
     assert!(e.request("q", 1, &done).is_none());
     // Parse the real results shape (offline fixture, token pre-scrubbed).
-    let parsed = e.parse(&body(Some("tests/fixtures/tests-fixture-chatnoir-test.json"), None));
+    let parsed = e.parse(&body(
+        Some("tests/fixtures/tests-fixture-chatnoir-test.json"),
+        None,
+    ));
     assert_eq!(parsed.len(), 10, "expected 10, got {}", parsed.len());
     assert!(parsed[0].url.starts_with("https://"));
     // cookie() picks name=value out of Set-Cookie values.
-    let cs = vec!["other=1; Path=/".to_string(), "csrftoken=zz9; Path=/; HttpOnly".to_string()];
+    let cs = vec![
+        "other=1; Path=/".to_string(),
+        "csrftoken=zz9; Path=/; HttpOnly".to_string(),
+    ];
     assert_eq!(cookie(&cs, "csrftoken").as_deref(), Some("zz9"));
     assert!(cookie(&cs, "missing").is_none());
 }
@@ -361,13 +712,27 @@ fn dogpile_two_leg_post_chain() {
     let r1 = e.request("test", 1, &[]).expect("leg 1");
     assert!(matches!(r1.method, Method::Post));
     assert!(r1.url.ends_with("/api/token/refresh"));
-    assert!(r1.headers.iter().any(|(k, v)| k == "Cookie" && v == "dp_api_token=1"));
+    assert!(r1
+        .headers
+        .iter()
+        .any(|(k, v)| k == "Cookie" && v == "dp_api_token=1"));
     // Leg 2: search POST with the minted token (real shape, scrubbed).
-    let refresh = body(Some("tests/fixtures/tests-fixture-dogpile-refresh.json"), None);
-    let r2 = e.request("test query", 3, &prev(&[&refresh], &[])).expect("leg 2");
+    let refresh = body(
+        Some("tests/fixtures/tests-fixture-dogpile-refresh.json"),
+        None,
+    );
+    let r2 = e
+        .request("test query", 3, &prev(&[&refresh], &[]))
+        .expect("leg 2");
     assert!(r2.url.ends_with("/api/search"));
-    assert!(r2.headers.iter().any(|(k, v)| k == "x-dogpile-token" && v == "v1.REDACTED"));
-    assert!(r2.json.as_ref().expect("json").contains("\"page\":3"), "pageno passes through");
+    assert!(r2
+        .headers
+        .iter()
+        .any(|(k, v)| k == "x-dogpile-token" && v == "v1.REDACTED"));
+    assert!(
+        r2.json.as_ref().expect("json").contains("\"page\":3"),
+        "pageno passes through"
+    );
     // No token -> chain stops; chain terminates after leg 2.
     assert!(e.request("q", 1, &prev(&["{}"], &[])).is_none());
     assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
@@ -385,14 +750,22 @@ fn neosearch_xsrf_chain_last_line_json() {
         r#"<html><head><meta name="xsrf-token" content="ABC123xyz"></head>"#,
         "<meta name='xsrf-token' content='Z9_8'>",
     ] {
-        let r2 = e.request("some query", 1, &prev(&[home], &[])).expect("leg 2");
+        let r2 = e
+            .request("some query", 1, &prev(&[home], &[]))
+            .expect("leg 2");
         assert!(matches!(r2.method, Method::Post));
         assert!(r2.url.ends_with("/search"));
         assert!(r2.headers.iter().any(|(k, _)| k == "X-XSRF-TOKEN"));
-        assert!(r2.json.as_ref().expect("json").contains("\"generate\":\"auto\""));
+        assert!(r2
+            .json
+            .as_ref()
+            .expect("json")
+            .contains("\"generate\":\"auto\""));
     }
     // Missing token stops the chain; it terminates after leg 2.
-    assert!(e.request("q", 1, &prev(&["<html>no meta</html>"], &[])).is_none());
+    assert!(e
+        .request("q", 1, &prev(&["<html>no meta</html>"], &[]))
+        .is_none());
     assert!(e.request("q", 1, &prev(&["a", "b"], &[])).is_none());
 }
 
@@ -410,20 +783,53 @@ fn query_parsing() {
 #[test]
 fn json_contract_keys_byte_exact() {
     // Top-level + per-result key sets must match agentic/CONTRACT.md.
-    let r = SearchResult::basic("wikipedia", "https://example.com".into(), "T".into(), "C".into());
+    let r = SearchResult::basic(
+        "wikipedia",
+        "https://example.com".into(),
+        "T".into(),
+        "C".into(),
+    );
     let out: serde_json::Value =
         serde_json::from_str(&render::json("q", &[r], &[])).expect("render json");
-    let top: std::collections::HashSet<&str> =
-        out.as_object().unwrap().keys().map(|s| s.as_str()).collect();
-    for k in ["query", "results", "answers", "corrections", "infoboxes", "suggestions", "unresponsive_engines"] {
+    let top: std::collections::HashSet<&str> = out
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(|s| s.as_str())
+        .collect();
+    for k in [
+        "query",
+        "results",
+        "answers",
+        "corrections",
+        "infoboxes",
+        "suggestions",
+        "unresponsive_engines",
+    ] {
         assert!(top.contains(k), "top-level key missing: {k}");
     }
     let row = &out["results"][0];
-    let keys: std::collections::HashSet<&str> =
-        row.as_object().unwrap().keys().map(|s| s.as_str()).collect();
+    let keys: std::collections::HashSet<&str> = row
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(|s| s.as_str())
+        .collect();
     for k in [
-        "url", "title", "content", "engine", "engines", "publishedDate", "positions",
-        "score", "category", "template", "img_src", "thumbnail", "iframe_src", "audio_src",
+        "url",
+        "title",
+        "content",
+        "engine",
+        "engines",
+        "publishedDate",
+        "positions",
+        "score",
+        "category",
+        "template",
+        "img_src",
+        "thumbnail",
+        "iframe_src",
+        "audio_src",
     ] {
         assert!(keys.contains(k), "result key missing: {k}");
     }
@@ -484,31 +890,68 @@ fn scrape_native_shapes() {
     let r = scrape::parse(html, "https://example.com/dir/index.html").expect("doc");
     assert_eq!(r.title, "Test & Page");
     assert!(r.content.contains("reasonably long body"));
-    assert!(!r.content.contains("var x=1") && !r.content.contains("color:red") && !r.content.contains("comment"));
+    assert!(
+        !r.content.contains("var x=1")
+            && !r.content.contains("color:red")
+            && !r.content.contains("comment")
+    );
     assert!(r.links.contains(&"https://example.com/rel".to_string()));
     assert!(r.links.contains(&"https://cdn.example.com/x".to_string()));
-    assert!(r.links.contains(&"https://example.com/dir/sub/page".to_string()));
+    assert!(r
+        .links
+        .contains(&"https://example.com/dir/sub/page".to_string()));
     assert!(r.links.contains(&"https://example.com/up".to_string()));
-    assert!(r.links.contains(&"https://other.example/abs?a=1".to_string()));
+    assert!(r
+        .links
+        .contains(&"https://other.example/abs?a=1".to_string()));
     assert!(r.links.contains(&"https://example.com/nav".to_string()));
-    assert_eq!(r.links.len(), 6, "mailto/js/frag dropped, got {:?}", r.links);
+    assert_eq!(
+        r.links.len(),
+        6,
+        "mailto/js/frag dropped, got {:?}",
+        r.links
+    );
     // og:title fallback when <title> is absent.
     let r2 = scrape::parse(&format!("<html><head><meta property=\"og:title\" content=\"OG Only\"></head><body><p>{}</p></body></html>", "x".repeat(150)), "https://example.com/").expect("og");
     assert_eq!(r2.title, "OG Only");
     // Bot-wall titles -> None (fallback signal), never junk.
-    for wall in ["Just a moment...", "Attention Required! | Cloudflare", "Access Denied", "Client Challenge"] {
-        let h = format!("<html><head><title>{wall}</title></head><body><p>{}</p></body></html>", "x".repeat(200));
-        assert!(scrape::parse(&h, "https://example.com/").is_none(), "wall: {wall}");
+    for wall in [
+        "Just a moment...",
+        "Attention Required! | Cloudflare",
+        "Access Denied",
+        "Client Challenge",
+    ] {
+        let h = format!(
+            "<html><head><title>{wall}</title></head><body><p>{}</p></body></html>",
+            "x".repeat(200)
+        );
+        assert!(
+            scrape::parse(&h, "https://example.com/").is_none(),
+            "wall: {wall}"
+        );
     }
     // Thin shells, empty, garbage -> None, never panics.
-    assert!(scrape::parse("<html><head><title>T</title></head><body><p>short</p></body></html>", "https://example.com/").is_none());
+    assert!(scrape::parse(
+        "<html><head><title>T</title></head><body><p>short</p></body></html>",
+        "https://example.com/"
+    )
+    .is_none());
     for bad in ["", "{}", "not html at all", "<html>"] {
         assert!(scrape::parse(bad, "https://example.com/").is_none());
     }
     // Wall verdict over finished extracts (Reader-fallback filter).
-    assert!(scrape::is_walled("Just a moment...", "Verifying you are human."));
-    assert!(scrape::is_walled("Attention Required! | Cloudflare", &"x".repeat(300)));
-    assert!(!scrape::is_walled("How captchas work", &"Just a moment is a phrase. ".repeat(100)));
+    assert!(scrape::is_walled(
+        "Just a moment...",
+        "Verifying you are human."
+    ));
+    assert!(scrape::is_walled(
+        "Attention Required! | Cloudflare",
+        &"x".repeat(300)
+    ));
+    assert!(!scrape::is_walled(
+        "How captchas work",
+        &"Just a moment is a phrase. ".repeat(100)
+    ));
 }
 
 #[test]
@@ -532,9 +975,15 @@ fn config_xdg_resolution_order() {
     std::env::set_var("HOME", "/tmp/home");
     assert_eq!(config::default_path(), "/tmp/x.conf");
     std::env::remove_var("SEARXNG_CONF");
-    assert_eq!(config::default_path(), "/tmp/xdg/native-searxng/searxng.toml");
+    assert_eq!(
+        config::default_path(),
+        "/tmp/xdg/native-searxng/searxng.toml"
+    );
     std::env::remove_var("XDG_CONFIG_HOME");
-    assert_eq!(config::default_path(), "/tmp/home/.config/native-searxng/searxng.toml");
+    assert_eq!(
+        config::default_path(),
+        "/tmp/home/.config/native-searxng/searxng.toml"
+    );
     std::env::remove_var("HOME");
     assert_eq!(config::default_path(), "searxng.toml");
     // Missing everywhere -> defaults, never an error.
@@ -545,12 +994,33 @@ fn config_xdg_resolution_order() {
 
 #[test]
 fn merge_dedups_without_cap() {
-    let a = SearchResult::basic("wikipedia", "https://example.com/x".into(), "A".into(), "".into());
-    let b = SearchResult::basic("github", "https://example.com/x".into(), "B".into(), "".into());
+    let a = SearchResult::basic(
+        "wikipedia",
+        "https://example.com/x".into(),
+        "A".into(),
+        "".into(),
+    );
+    let b = SearchResult::basic(
+        "github",
+        "https://example.com/x".into(),
+        "B".into(),
+        "".into(),
+    );
     let merged = merge::merge(vec![vec![a], vec![b]]);
     assert_eq!(merged.len(), 1, "same URL must dedup");
     let many: Vec<SearchResult> = (0..30)
-        .map(|i| SearchResult::basic("mdn", format!("https://example.com/{i}"), "T".into(), "".into()))
+        .map(|i| {
+            SearchResult::basic(
+                "mdn",
+                format!("https://example.com/{i}"),
+                "T".into(),
+                "".into(),
+            )
+        })
         .collect();
-    assert_eq!(merge::merge(vec![many]).len(), 30, "no merge cap: full fan-out");
+    assert_eq!(
+        merge::merge(vec![many]).len(),
+        30,
+        "no merge cap: full fan-out"
+    );
 }

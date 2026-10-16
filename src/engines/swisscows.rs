@@ -78,7 +78,10 @@ impl Engine for Swisscows {
             _ => return vec![],
         };
         let empty = vec![];
-        let items = inner.get("items").and_then(|x| x.as_array()).unwrap_or(&empty);
+        let items = inner
+            .get("items")
+            .and_then(|x| x.as_array())
+            .unwrap_or(&empty);
         items
             .iter()
             .filter_map(|r| {

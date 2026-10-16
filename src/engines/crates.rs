@@ -19,7 +19,10 @@ impl Engine for Crates {
 
     fn build_url(&self, q: &str, pageno: u32) -> String {
         let page = pageno.clamp(1, 3);
-        format!("https://crates.io/api/v1/crates?q={}&per_page=10&page={page}", encode(q))
+        format!(
+            "https://crates.io/api/v1/crates?q={}&per_page=10&page={page}",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

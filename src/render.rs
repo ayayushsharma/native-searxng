@@ -42,8 +42,13 @@ struct FetchEnvelope<'a> {
 }
 
 pub fn fetch_json(url: &str, title: &str, content: &str, links: &[String]) -> String {
-    serde_json::to_string(&FetchEnvelope { url, title, content, links })
-        .unwrap_or_else(|_| "{\"error\":\"render failed\"}".into())
+    serde_json::to_string(&FetchEnvelope {
+        url,
+        title,
+        content,
+        links,
+    })
+    .unwrap_or_else(|_| "{\"error\":\"render failed\"}".into())
 }
 
 /// Minimal HTML for human smoke checks. Agents use JSON; the pretty page
@@ -69,5 +74,8 @@ pub fn html(query: &str, results: &[SearchResult]) -> String {
 }
 
 fn escape(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }

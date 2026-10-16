@@ -27,7 +27,10 @@ impl Engine for Packagist {
             Err(_) => return vec![],
         };
         let empty = vec![];
-        let rs = v.get("results").and_then(|x| x.as_array()).unwrap_or(&empty);
+        let rs = v
+            .get("results")
+            .and_then(|x| x.as_array())
+            .unwrap_or(&empty);
         rs.iter()
             .filter_map(|g| {
                 let name = g.get("name")?.as_str()?.trim();

@@ -22,7 +22,10 @@ impl Engine for Crossref {
 
     fn build_url(&self, q: &str, pageno: u32) -> String {
         let offset = 10 * (pageno.clamp(1, 3) - 1);
-        format!("https://api.crossref.org/works?query={}&rows=10&offset={offset}", encode(q))
+        format!(
+            "https://api.crossref.org/works?query={}&rows=10&offset={offset}",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {
@@ -77,7 +80,11 @@ impl Engine for Crossref {
                                     let g = a.get("given").and_then(|x| x.as_str()).unwrap_or("");
                                     let f = a.get("family").and_then(|x| x.as_str()).unwrap_or("");
                                     let full = format!("{g} {f}").trim().to_string();
-                                    if full.is_empty() { None } else { Some(full) }
+                                    if full.is_empty() {
+                                        None
+                                    } else {
+                                        Some(full)
+                                    }
                                 })
                         })
                         .take(3)

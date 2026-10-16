@@ -60,8 +60,12 @@ impl Engine for MicrosoftLearn {
                 .unwrap_or("")
                 .trim()
                 .to_string();
-            let mut res =
-                SearchResult::basic("microsoftlearn", url.to_string(), title.to_string(), content);
+            let mut res = SearchResult::basic(
+                "microsoftlearn",
+                url.to_string(),
+                title.to_string(),
+                content,
+            );
             if let Some(ts) = item
                 .get("lastUpdatedDate")
                 .and_then(|x| x.as_str())

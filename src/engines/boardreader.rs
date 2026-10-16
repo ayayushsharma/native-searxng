@@ -27,9 +27,16 @@ impl Engine for Boardreader {
         BASE.into()
     }
 
-    fn request(&self, query: &str, pageno: u32, prev: &[crate::engine::InResponse]) -> Option<crate::engine::OutRequest> {
+    fn request(
+        &self,
+        query: &str,
+        pageno: u32,
+        prev: &[crate::engine::InResponse],
+    ) -> Option<crate::engine::OutRequest> {
         if prev.is_empty() {
-            return Some(crate::engine::OutRequest::get(self.build_url(query, pageno)));
+            return Some(crate::engine::OutRequest::get(
+                self.build_url(query, pageno),
+            ));
         }
         if prev.len() > 1 {
             return None;

@@ -57,7 +57,11 @@ impl Engine for Bpb {
                     .and_then(|i| i.get("sources"))
                     .and_then(|x| x.as_array())
                 {
-                    if let Some(u) = srcs.last().and_then(|s| s.get("url")).and_then(|x| x.as_str()) {
+                    if let Some(u) = srcs
+                        .last()
+                        .and_then(|s| s.get("url"))
+                        .and_then(|x| x.as_str())
+                    {
                         if !u.trim().is_empty() {
                             res.thumbnail = format!("{BASE}{}", u.trim());
                         }

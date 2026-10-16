@@ -20,7 +20,10 @@ impl Engine for Nuget {
     }
 
     fn build_url(&self, q: &str, _pageno: u32) -> String {
-        format!("https://azuresearch-usnc.nuget.org/query?q={}&take=10", encode(q))
+        format!(
+            "https://azuresearch-usnc.nuget.org/query?q={}&take=10",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

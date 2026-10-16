@@ -27,9 +27,16 @@ impl Engine for Gmx {
         2
     }
 
-    fn request(&self, query: &str, pageno: u32, prev: &[crate::engine::InResponse]) -> Option<crate::engine::OutRequest> {
+    fn request(
+        &self,
+        query: &str,
+        pageno: u32,
+        prev: &[crate::engine::InResponse],
+    ) -> Option<crate::engine::OutRequest> {
         if prev.is_empty() {
-            return Some(crate::engine::OutRequest::get(self.build_url(query, pageno)));
+            return Some(crate::engine::OutRequest::get(
+                self.build_url(query, pageno),
+            ));
         }
         if prev.len() > 1 {
             return None;
@@ -65,8 +72,7 @@ impl Engine for Gmx {
             .and_then(|x| x.get("hits"))
             .and_then(|x| x.as_array())
             .unwrap_or(&empty);
-        hits
-            .iter()
+        hits.iter()
             .filter_map(|r| {
                 let url = r.get("u")?.as_str()?.trim();
                 if url.is_empty() {

@@ -48,8 +48,11 @@ impl Engine for SepiaSearch {
             // Upstream metadata line: channel display, name@host, tags.
             let chan = r.get("channel").and_then(|c| c.as_object());
             let meta: Vec<String> = [
-                chan.and_then(|c| c.get("displayName")).and_then(|x| x.as_str()),
-                r.get("account").and_then(|a| a.get("displayName")).and_then(|x| x.as_str()),
+                chan.and_then(|c| c.get("displayName"))
+                    .and_then(|x| x.as_str()),
+                r.get("account")
+                    .and_then(|a| a.get("displayName"))
+                    .and_then(|x| x.as_str()),
             ]
             .into_iter()
             .flatten()
@@ -58,7 +61,12 @@ impl Engine for SepiaSearch {
             let tags: Vec<String> = r
                 .get("tags")
                 .and_then(|t| t.as_array())
-                .map(|a| a.iter().filter_map(|x| x.as_str()).map(|s| s.to_string()).collect())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str())
+                        .map(|s| s.to_string())
+                        .collect()
+                })
                 .unwrap_or_default();
             let desc = r.get("description").and_then(|x| x.as_str()).unwrap_or("");
             let mut content = String::new();
@@ -72,16 +80,25 @@ impl Engine for SepiaSearch {
                 content.push_str(&tags.join(", "));
                 content.push(']');
             }
-            let mut res = SearchResult::basic("sepiasearch", url.to_string(), title.to_string(), content);
+            let mut res =
+                SearchResult::basic("sepiasearch", url.to_string(), title.to_string(), content);
             res.template = "videos.html".into();
-            res.iframe_src = r.get("embedUrl").and_then(|x| x.as_str()).unwrap_or("").to_string();
+            res.iframe_src = r
+                .get("embedUrl")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_string();
             res.thumbnail = r
                 .get("thumbnailUrl")
                 .and_then(|x| x.as_str())
                 .or_else(|| r.get("previewUrl").and_then(|x| x.as_str()))
                 .unwrap_or("")
                 .to_string();
-            if let Some(ts) = r.get("publishedAt").and_then(|x| x.as_str()).filter(|s| s.len() >= 10) {
+            if let Some(ts) = r
+                .get("publishedAt")
+                .and_then(|x| x.as_str())
+                .filter(|s| s.len() >= 10)
+            {
                 res.published_date = Some(ts[..10].into());
             }
             out.push(res);

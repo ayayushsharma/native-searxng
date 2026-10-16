@@ -113,7 +113,10 @@ impl Client {
     /// Execute one engine-described request (GET or POST). POST carries
     /// either urlencoded `form` or a raw `json` body. Responses are
     /// capped like GETs; key material never enters errors or logs.
-    pub fn execute(&self, req: &crate::engine::OutRequest) -> Result<crate::engine::InResponse, String> {
+    pub fn execute(
+        &self,
+        req: &crate::engine::OutRequest,
+    ) -> Result<crate::engine::InResponse, String> {
         self.execute_capped(req, None)
     }
 
@@ -181,18 +184,30 @@ impl Client {
         }
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
         if body.len() <= cap {
-            return Ok(crate::engine::InResponse { status, cookies, body });
+            return Ok(crate::engine::InResponse {
+                status,
+                cookies,
+                body,
+            });
         }
         let mut s = body;
         s.truncate(s.floor_char_boundary(cap).min(s.len()));
-        Ok(crate::engine::InResponse { status, cookies, body: s })
+        Ok(crate::engine::InResponse {
+            status,
+            cookies,
+            body: s,
+        })
     }
 
     /// Strangler proxy: forward raw path+query to the Python reference.
     /// Uses the long-deadline agent (full oracle fan-out needs seconds).
     pub fn proxy(&self, base: &str, path_query: &str) -> Result<(u16, String), String> {
         let url = format!("{}{}", base.trim_end_matches('/'), path_query);
-        let mut res = self.proxy_agent.get(&url).call().map_err(|e| e.to_string())?;
+        let mut res = self
+            .proxy_agent
+            .get(&url)
+            .call()
+            .map_err(|e| e.to_string())?;
         let status = res.status().as_u16();
         let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
         Ok((status, body))

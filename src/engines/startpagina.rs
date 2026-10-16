@@ -45,8 +45,7 @@ impl Engine for Startpagina {
                 .get("description")
                 .and_then(|x| x.as_str())
                 .unwrap_or_default();
-            let content: String =
-                desc.split_whitespace().collect::<Vec<_>>().join(" ");
+            let content: String = desc.split_whitespace().collect::<Vec<_>>().join(" ");
             out.push(SearchResult::basic(
                 "startpagina",
                 url.into(),

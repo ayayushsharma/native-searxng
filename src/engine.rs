@@ -88,12 +88,7 @@ pub trait Engine: Send + Sync {
     /// body. Default: single GET of `build_url`, then stop.
     /// `query`/`pageno` are passed through because later legs usually
     /// re-state them (boardreader's return.php needs both + session).
-    fn request(
-        &self,
-        query: &str,
-        pageno: u32,
-        prev: &[InResponse],
-    ) -> Option<OutRequest> {
+    fn request(&self, query: &str, pageno: u32, prev: &[InResponse]) -> Option<OutRequest> {
         if prev.is_empty() {
             return Some(OutRequest::get(self.build_url(query, pageno)));
         }
@@ -124,7 +119,13 @@ pub struct OutRequest {
 
 impl OutRequest {
     pub fn get(url: String) -> Self {
-        Self { url, method: Method::Get, form: vec![], json: None, headers: vec![] }
+        Self {
+            url,
+            method: Method::Get,
+            form: vec![],
+            json: None,
+            headers: vec![],
+        }
     }
 }
 
@@ -174,10 +175,7 @@ pub fn unescape(s: &str) -> String {
             Some(h) => (h, true),
             None => (tail, false),
         };
-        let n = digits
-            .bytes()
-            .take_while(|b| b.is_ascii_hexdigit())
-            .count();
+        let n = digits.bytes().take_while(|b| b.is_ascii_hexdigit()).count();
         let after = &digits[n..];
         if n > 0 && after.starts_with(';') {
             let num = &digits[..n];
@@ -238,14 +236,21 @@ pub fn ddg_parse(body: &str, engine: &'static str) -> Vec<SearchResult> {
     let mut out = Vec::new();
     let mut rest = body;
     while out.len() < 10 {
-        let Some(ai) = rest.find("result__a\"") else { break };
-        let Some(tag_start) = rest[..ai].rfind("<a") else { break };
+        let Some(ai) = rest.find("result__a\"") else {
+            break;
+        };
+        let Some(tag_start) = rest[..ai].rfind("<a") else {
+            break;
+        };
         // Whole anchor tag (href sits after the class in DDG's HTML).
         let tag_end = rest[ai..].find('>').map(|g| ai + g).unwrap_or(rest.len());
         let tag = &rest[tag_start..tag_end];
         let url = attr(tag, "href").unwrap_or_default();
         let text_start = tag_end + 1;
-        let text_end = rest[text_start..].find("</a>").map(|e| text_start + e).unwrap_or(rest.len());
+        let text_end = rest[text_start..]
+            .find("</a>")
+            .map(|e| text_start + e)
+            .unwrap_or(rest.len());
         let title = strip_tags(&rest[text_start..text_end]);
         rest = &rest[text_end..];
         if url.trim().is_empty() || title.is_empty() {
@@ -260,14 +265,23 @@ pub fn ddg_parse(body: &str, engine: &'static str) -> Vec<SearchResult> {
                 let back = &window[..si];
                 let (a_pos, d_pos) = (back.rfind("<a"), back.rfind("<div"));
                 let close_tag = match (a_pos, d_pos) {
-                    (Some(a), Some(d)) => if d > a { "</div>" } else { "</a>" },
+                    (Some(a), Some(d)) => {
+                        if d > a {
+                            "</div>"
+                        } else {
+                            "</a>"
+                        }
+                    }
                     (Some(_), None) => "</a>",
                     _ => "</div>",
                 };
                 match window[si..].find('>') {
                     Some(g) => {
                         let cs = si + g + 1;
-                        let ce = window[cs..].find(close_tag).map(|e| cs + e).unwrap_or(window.len());
+                        let ce = window[cs..]
+                            .find(close_tag)
+                            .map(|e| cs + e)
+                            .unwrap_or(window.len());
                         strip_tags(&window[cs..ce])
                     }
                     None => String::new(),
@@ -275,7 +289,12 @@ pub fn ddg_parse(body: &str, engine: &'static str) -> Vec<SearchResult> {
             }
             None => String::new(),
         };
-        out.push(SearchResult::basic(engine, url.trim().to_string(), title, content));
+        out.push(SearchResult::basic(
+            engine,
+            url.trim().to_string(),
+            title,
+            content,
+        ));
     }
     out
 }
@@ -287,8 +306,18 @@ pub fn ddg_parse(body: &str, engine: &'static str) -> Vec<SearchResult> {
 /// Meaningful params (?v=, ?q=, ?id=) are kept: only a fixed tracker
 /// list is stripped, the rest of the query stays in the key.
 const TRACKERS: &[&str] = &[
-    "fbclid", "gclid", "gclsrc", "ref", "ref_src", "ref_url", "si",
-    "mc_cid", "mc_eid", "igshid", "vero_conv", "vero_id",
+    "fbclid",
+    "gclid",
+    "gclsrc",
+    "ref",
+    "ref_src",
+    "ref_url",
+    "si",
+    "mc_cid",
+    "mc_eid",
+    "igshid",
+    "vero_conv",
+    "vero_id",
 ];
 
 pub fn normalize_url(u: &str) -> String {

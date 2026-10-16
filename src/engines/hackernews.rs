@@ -22,7 +22,10 @@ impl Engine for HackerNews {
 
     fn build_url(&self, q: &str, pageno: u32) -> String {
         let page = pageno.clamp(1, 3) - 1;
-        format!("https://hn.algolia.com/api/v1/search?query={}&page={page}&hitsPerPage=10", encode(q))
+        format!(
+            "https://hn.algolia.com/api/v1/search?query={}&page={page}&hitsPerPage=10",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {
@@ -74,8 +77,13 @@ impl Engine for HackerNews {
             if let Some(c) = hit.get("num_comments").and_then(|x| x.as_u64()) {
                 bits.push(format!("{c} comments"));
             }
-            let mut res = SearchResult::basic("hackernews", url, title.to_string(), bits.join(" · "));
-            if let Some(ts) = hit.get("created_at").and_then(|x| x.as_str()).filter(|s| s.len() >= 10) {
+            let mut res =
+                SearchResult::basic("hackernews", url, title.to_string(), bits.join(" · "));
+            if let Some(ts) = hit
+                .get("created_at")
+                .and_then(|x| x.as_str())
+                .filter(|s| s.len() >= 10)
+            {
                 res.published_date = Some(ts[..10].into());
             }
             out.push(res);

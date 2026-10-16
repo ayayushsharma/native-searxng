@@ -6,7 +6,7 @@
 //! day this egress IP's reputation clears, with zero code changes.
 //! No live fixture possible while challenged (see ddg anomaly fixture).
 
-use crate::engine::{Engine, SearchResult, ddg_parse};
+use crate::engine::{ddg_parse, Engine, SearchResult};
 
 pub struct DdgNews;
 

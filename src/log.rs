@@ -139,7 +139,10 @@ mod tests {
 
     #[test]
     fn host_of_hides_query() {
-        assert_eq!(host_of("https://api.example.com/search?q=secret+x"), "api.example.com");
+        assert_eq!(
+            host_of("https://api.example.com/search?q=secret+x"),
+            "api.example.com"
+        );
         assert_eq!(host_of("http://h:8123/p"), "h:8123");
     }
 }

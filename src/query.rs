@@ -70,7 +70,11 @@ pub fn parse(url: &str) -> Query {
         match k {
             "q" => q.q = v.trim().to_string(),
             "format" => {
-                q.format = if v == "json" { "json".into() } else { "html".into() };
+                q.format = if v == "json" {
+                    "json".into()
+                } else {
+                    "html".into()
+                };
             }
             "pageno" => q.pageno = v.parse().unwrap_or(1).clamp(1, 3),
             "language" => q.language = v,

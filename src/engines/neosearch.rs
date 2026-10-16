@@ -51,28 +51,52 @@ impl Engine for Neosearch {
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {
-        let last = body.split('\n').filter(|l| !l.trim().is_empty()).last().unwrap_or("");
+        let last = body
+            .split('\n')
+            .filter(|l| !l.trim().is_empty())
+            .last()
+            .unwrap_or("");
         let v: Value = match serde_json::from_str(last) {
             Ok(v) => v,
             Err(_) => return vec![],
         };
         let no_lens = vec![];
-        let lenses = v.get("lenses").and_then(|x| x.as_array()).unwrap_or(&no_lens);
+        let lenses = v
+            .get("lenses")
+            .and_then(|x| x.as_array())
+            .unwrap_or(&no_lens);
         let mut out = vec![];
         for lens in lenses {
             let no_cats = vec![];
-            let cats = lens.get("categories").and_then(|x| x.as_array()).unwrap_or(&no_cats);
+            let cats = lens
+                .get("categories")
+                .and_then(|x| x.as_array())
+                .unwrap_or(&no_cats);
             for cat in cats {
                 let no_links = vec![];
-                let links = cat.get("links").and_then(|x| x.as_array()).unwrap_or(&no_links);
+                let links = cat
+                    .get("links")
+                    .and_then(|x| x.as_array())
+                    .unwrap_or(&no_links);
                 for link in links {
-                    let url = link.get("url").and_then(|x| x.as_str()).unwrap_or("").trim();
-                    let title = link.get("title").and_then(|x| x.as_str()).unwrap_or("").trim();
+                    let url = link
+                        .get("url")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .trim();
+                    let title = link
+                        .get("title")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .trim();
                     if url.is_empty() || title.is_empty() {
                         continue;
                     }
                     let snip = link.get("snippet").and_then(|x| x.as_str()).unwrap_or("");
-                    let desc = link.get("description").and_then(|x| x.as_str()).unwrap_or("");
+                    let desc = link
+                        .get("description")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("");
                     let content = if snip.trim().is_empty() { desc } else { snip };
                     out.push(SearchResult::basic(
                         "neosearch",
@@ -94,9 +118,13 @@ impl Engine for Neosearch {
 /// quote style; first hit wins; empty → None so the chain stops honestly).
 fn xsrf(home_body: &str) -> Option<String> {
     for name in ["name=\"xsrf-token\"", "name='xsrf-token'"] {
-        let Some(i) = home_body.find(name) else { continue };
+        let Some(i) = home_body.find(name) else {
+            continue;
+        };
         let rest = &home_body[i + name.len()..];
-        let Some(c) = rest.find("content=") else { continue };
+        let Some(c) = rest.find("content=") else {
+            continue;
+        };
         let val = rest[c + 8..].trim_start_matches(['"', '\'']);
         let tok: String = val
             .chars()

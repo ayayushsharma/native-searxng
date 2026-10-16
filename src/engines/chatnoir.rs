@@ -11,7 +11,7 @@
 //! are matched exactly. A user-supplied `SEARXNG_API_KEY_CHATNOIR` skips
 //! legs 1-2 (oracle's `api_key` branch) — unset means scrape (default).
 
-use crate::engine::{Engine, InResponse, Method, OutRequest, SearchResult, cookie};
+use crate::engine::{cookie, Engine, InResponse, Method, OutRequest, SearchResult};
 use serde_json::Value;
 
 pub struct ChatNoir;
@@ -67,7 +67,10 @@ impl Engine for ChatNoir {
             Err(_) => return vec![],
         };
         let empty = vec![];
-        let rs = v.get("results").and_then(|x| x.as_array()).unwrap_or(&empty);
+        let rs = v
+            .get("results")
+            .and_then(|x| x.as_array())
+            .unwrap_or(&empty);
         rs.iter()
             .filter_map(|r| {
                 let url = r.get("target_uri")?.as_str()?.trim();

@@ -20,7 +20,10 @@ impl Engine for Terraform {
     }
 
     fn build_url(&self, q: &str, _pageno: u32) -> String {
-        format!("https://registry.terraform.io/v1/modules/search?q={}&limit=10", encode(q))
+        format!(
+            "https://registry.terraform.io/v1/modules/search?q={}&limit=10",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

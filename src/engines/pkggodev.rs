@@ -63,7 +63,11 @@ fn find_title_anchor(html: &str) -> Option<(String, String, &str)> {
     let tag = &html[a_start..tag_end];
     let href = attr(tag, "href")?;
     let close = html[tag_end..].find("</a>")? + tag_end;
-    Some((href, html[tag_end + 1..close].to_string(), &html[close + 4..]))
+    Some((
+        href,
+        html[tag_end + 1..close].to_string(),
+        &html[close + 4..],
+    ))
 }
 
 fn snippet_after(html: &str) -> String {
@@ -78,7 +82,10 @@ fn snippet_after(html: &str) -> String {
         return String::new();
     };
     let start = hi + gt + 1;
-    let end = window[start..].find("</p>").map(|i| start + i).unwrap_or(window.len());
+    let end = window[start..]
+        .find("</p>")
+        .map(|i| start + i)
+        .unwrap_or(window.len());
     window[start..end].to_string()
 }
 

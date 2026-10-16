@@ -25,22 +25,41 @@ fn main() {
         std::process::exit(1);
     }
     if !cfg.ca_file.trim().is_empty() {
-        native_searxng::info!("custom CA active ({}): system/bundled roots replaced", cfg.ca_file);
+        native_searxng::info!(
+            "custom CA active ({}): system/bundled roots replaced",
+            cfg.ca_file
+        );
     }
     // Fail closed: an unset token is a refused start, not an open server
     // (a cloudflared tunnel makes even loopback publicly reachable).
     // Local dev escape hatch is explicit: `auth=off` in the conf.
     let tokens = config::api_tokens();
     if tokens.is_empty() && cfg.require_auth {
-        log::emit(log::Level::Error, "refusing to start: SEARXNG_API_TOKEN is unset and conf auth != off.".into());
-        log::emit(log::Level::Error, "Set SEARXNG_API_TOKEN (comma-separated OK for rotation),".into());
-        log::emit(log::Level::Error, "or add `auth=off` to the conf for local dev only — never on a tunnelled host.".into());
+        log::emit(
+            log::Level::Error,
+            "refusing to start: SEARXNG_API_TOKEN is unset and conf auth != off.".into(),
+        );
+        log::emit(
+            log::Level::Error,
+            "Set SEARXNG_API_TOKEN (comma-separated OK for rotation),".into(),
+        );
+        log::emit(
+            log::Level::Error,
+            "or add `auth=off` to the conf for local dev only — never on a tunnelled host.".into(),
+        );
         std::process::exit(1);
     }
     if args.iter().any(|a| a == "--mcp") {
         mcp::run_stdio(&cfg);
         return;
     }
-    native_searxng::info!("native-searxng on {}:{} (auth {}) with {} engines (log {})", cfg.bind, cfg.port, if tokens.is_empty() { "OFF (dev)" } else { "on" }, cfg.engines.len(), cfg.log_level);
+    native_searxng::info!(
+        "native-searxng on {}:{} (auth {}) with {} engines (log {})",
+        cfg.bind,
+        cfg.port,
+        if tokens.is_empty() { "OFF (dev)" } else { "on" },
+        cfg.engines.len(),
+        cfg.log_level
+    );
     server::run(&cfg, &tokens);
 }

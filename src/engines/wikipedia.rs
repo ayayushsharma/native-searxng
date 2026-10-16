@@ -23,16 +23,34 @@ impl Engine for Wikipedia {
             Ok(v) => v,
             Err(_) => return vec![],
         };
-        let titles = v.get(1).and_then(|x| x.as_array()).cloned().unwrap_or_default();
-        let descs = v.get(2).and_then(|x| x.as_array()).cloned().unwrap_or_default();
-        let urls = v.get(3).and_then(|x| x.as_array()).cloned().unwrap_or_default();
+        let titles = v
+            .get(1)
+            .and_then(|x| x.as_array())
+            .cloned()
+            .unwrap_or_default();
+        let descs = v
+            .get(2)
+            .and_then(|x| x.as_array())
+            .cloned()
+            .unwrap_or_default();
+        let urls = v
+            .get(3)
+            .and_then(|x| x.as_array())
+            .cloned()
+            .unwrap_or_default();
         let mut out = Vec::new();
         for i in 0..titles.len().min(10) {
-            let (Some(t), Some(u)) = (titles[i].as_str(), urls.get(i).and_then(|x| x.as_str())) else {
+            let (Some(t), Some(u)) = (titles[i].as_str(), urls.get(i).and_then(|x| x.as_str()))
+            else {
                 continue;
             };
             let d = descs.get(i).and_then(|x| x.as_str()).unwrap_or("");
-            out.push(SearchResult::basic("wikipedia", u.into(), t.into(), d.into()));
+            out.push(SearchResult::basic(
+                "wikipedia",
+                u.into(),
+                t.into(),
+                d.into(),
+            ));
         }
         out
     }

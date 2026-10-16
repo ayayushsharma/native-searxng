@@ -56,12 +56,7 @@ impl Engine for Github {
                     }
                 }
             }
-            let mut res = SearchResult::basic(
-                "github",
-                url.into(),
-                title.into(),
-                bits.join(" / "),
-            );
+            let mut res = SearchResult::basic("github", url.into(), title.into(), bits.join(" / "));
             res.template = "packages.html".into();
             if let Some(avatar) = r
                 .get("owner")

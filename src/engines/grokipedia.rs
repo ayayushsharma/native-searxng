@@ -47,10 +47,7 @@ impl Engine for Grokipedia {
                 .get("snippet")
                 .and_then(|x| x.as_str())
                 .unwrap_or_default();
-            let content: String = snippet
-                .split_whitespace()
-                .collect::<Vec<_>>()
-                .join(" ");
+            let content: String = snippet.split_whitespace().collect::<Vec<_>>().join(" ");
             out.push(SearchResult::basic(
                 "grokipedia",
                 format!("https://grokipedia.com/page/{slug}"),

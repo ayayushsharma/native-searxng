@@ -66,9 +66,14 @@ impl Engine for OpenMeteo {
         };
         let num = |k: &str| cur.get(k).and_then(|x| x.as_f64());
         let (temp, feels, hum, cloud, pres, wind, wdir, code) = (
-            num("temperature_2m"), num("apparent_temperature"), num("relative_humidity_2m"),
-            num("cloud_cover"), num("pressure_msl"), num("wind_speed_10m"),
-            num("wind_direction_10m"), num("weather_code"),
+            num("temperature_2m"),
+            num("apparent_temperature"),
+            num("relative_humidity_2m"),
+            num("cloud_cover"),
+            num("pressure_msl"),
+            num("wind_speed_10m"),
+            num("wind_direction_10m"),
+            num("weather_code"),
         );
         // All eight current fields required — a partial block is a
         // schema change, not weather (skip, don't half-report).
@@ -109,7 +114,11 @@ impl Engine for OpenMeteo {
             title,
             content,
         );
-        if let Some(t) = cur.get("time").and_then(|x| x.as_str()).filter(|s| s.len() >= 10) {
+        if let Some(t) = cur
+            .get("time")
+            .and_then(|x| x.as_str())
+            .filter(|s| s.len() >= 10)
+        {
             res.published_date = Some(t[..10].into());
         }
         vec![res]

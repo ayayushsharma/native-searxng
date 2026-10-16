@@ -18,7 +18,10 @@ impl Engine for Rubygems {
     }
 
     fn build_url(&self, q: &str, _pageno: u32) -> String {
-        format!("https://rubygems.org/api/v1/search.json?query={}", encode(q))
+        format!(
+            "https://rubygems.org/api/v1/search.json?query={}",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

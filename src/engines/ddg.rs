@@ -1,7 +1,7 @@
 //! DuckDuckGo HTML endpoint (lenient, no-JS form service).
 //! Parser is fixture-driven (see tests/): substring spans only, skip on mismatch.
 
-use crate::engine::{Engine, SearchResult, ddg_parse};
+use crate::engine::{ddg_parse, Engine, SearchResult};
 
 pub struct Ddg;
 

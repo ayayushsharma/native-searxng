@@ -4,7 +4,10 @@
 //! /style.css, /api/config (capability manifest), /search -> pipeline,
 //! /fetch -> page extract, /healthz, /opensearch.xml.
 
-use crate::{config::Config, crypto, engine::SearchResult, engines, fetch, jina, mcp, merge, query, render, scrape};
+use crate::{
+    config::Config, crypto, engine::SearchResult, engines, fetch, jina, mcp, merge, query, render,
+    scrape,
+};
 use tiny_http::{Header, Method, Response, Server};
 
 /// Static console: real files in `web/` (`index.html`, `app.js`,
@@ -31,7 +34,9 @@ pub fn authorized(auth_header: Option<&str>, tokens: &[String]) -> bool {
         return false;
     }
     let cred = cred.trim();
-    tokens.iter().any(|t| crypto::ct_eq(t.as_bytes(), cred.as_bytes()))
+    tokens
+        .iter()
+        .any(|t| crypto::ct_eq(t.as_bytes(), cred.as_bytes()))
 }
 
 fn header<'a>(req: &'a tiny_http::Request, name: &str) -> Option<&'a str> {
@@ -45,7 +50,10 @@ fn header<'a>(req: &'a tiny_http::Request, name: &str) -> Option<&'a str> {
 /// (a token-entry page that 401s is a locked key-box). Public facts
 /// only — every data route stays gated.
 fn open_path(path: &str) -> bool {
-    matches!(path, "/healthz" | "/" | "/app.js" | "/style.css" | "/api/config")
+    matches!(
+        path,
+        "/healthz" | "/" | "/app.js" | "/style.css" | "/api/config"
+    )
 }
 
 /// Capability manifest for the console (`GET /api/config`). Built from
@@ -77,7 +85,10 @@ fn api_config(cfg: &Config, tokens: &[String]) -> String {
         !tokens.is_empty(),
         env!("CARGO_PKG_VERSION"),
         engines.join(","),
-        cats.iter().map(|c| format!("{c:?}")).collect::<Vec<_>>().join(","),
+        cats.iter()
+            .map(|c| format!("{c:?}"))
+            .collect::<Vec<_>>()
+            .join(","),
         mcp::search_tool(),
         mcp::fetch_tool(),
     )
@@ -85,13 +96,26 @@ fn api_config(cfg: &Config, tokens: &[String]) -> String {
 /// One access line per request: method, path (truncated — /fetch URLs
 /// run long), status, bytes, wall ms. The single source for "what did
 /// the server do"; per-engine WHY lives in search()/fetch warn lines.
-fn access_log(method: &tiny_http::Method, url: &str, status: u16, len: usize, t0: std::time::Instant) {
+fn access_log(
+    method: &tiny_http::Method,
+    url: &str,
+    status: u16,
+    len: usize,
+    t0: std::time::Instant,
+) {
     let mut u = url.to_string();
     if u.len() > 160 {
         u.truncate(160);
         u.push('…');
     }
-    crate::info!("{} {} -> {} {}B {:.0}ms", method.as_str(), u, status, len, t0.elapsed().as_secs_f64() * 1000.0);
+    crate::info!(
+        "{} {} -> {} {}B {:.0}ms",
+        method.as_str(),
+        u,
+        status,
+        len,
+        t0.elapsed().as_secs_f64() * 1000.0
+    );
 }
 /// Who to blame in the log on a 401. Prefers Cloudflare's connecting
 /// IP — trustworthy here ONLY because the documented deployment binds
@@ -104,7 +128,9 @@ fn client_ip(req: &tiny_http::Request) -> String {
             return format!("cf:{cf}");
         }
     }
-    req.remote_addr().map(|a| a.to_string()).unwrap_or_else(|| "-".into())
+    req.remote_addr()
+        .map(|a| a.to_string())
+        .unwrap_or_else(|| "-".into())
 }
 
 /// Panic isolation (item 5): one engine blowing up must not abort its
@@ -168,9 +194,12 @@ pub fn run(cfg: &Config, tokens: &[String]) {
                 (true, Ok(b)) => mcp::handle_http(cfg, &client, &b),
                 _ => "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"parse error\"}}".into(),
             };
-            let header = Header::from_bytes("Content-Type", b"application/json".as_slice()).unwrap();
+            let header =
+                Header::from_bytes("Content-Type", b"application/json".as_slice()).unwrap();
             let len = out.len();
-            let resp = Response::from_string(out).with_status_code(200).with_header(header);
+            let resp = Response::from_string(out)
+                .with_status_code(200)
+                .with_header(header);
             let method = req.method().clone();
             let _ = req.respond(resp);
             access_log(&method, &url, 200, len, t0);
@@ -179,14 +208,21 @@ pub fn run(cfg: &Config, tokens: &[String]) {
         let (status, ctype, body) = route(cfg, &client, tokens, &url);
         let header = Header::from_bytes("Content-Type", ctype).unwrap();
         let len = body.len();
-        let resp = Response::from_string(body).with_status_code(status).with_header(header);
+        let resp = Response::from_string(body)
+            .with_status_code(status)
+            .with_header(header);
         let method = req.method().clone();
         let _ = req.respond(resp);
         access_log(&method, &url, status, len, t0);
     }
 }
 
-fn route(cfg: &Config, client: &fetch::Client, tokens: &[String], url: &str) -> (u16, &'static [u8], String) {
+fn route(
+    cfg: &Config,
+    client: &fetch::Client,
+    tokens: &[String],
+    url: &str,
+) -> (u16, &'static [u8], String) {
     let path = url.split('?').next().unwrap_or("/");
     match path {
         "/" => (200, b"text/html", INDEX_HTML.into()),
@@ -226,19 +262,33 @@ fn fetch_page(client: &fetch::Client, url: &str) -> (u16, &'static [u8], String)
         return (400, b"application/json", render::error_json("No url"));
     }
     if let Ok(r) = scrape::scrape(client, &target) {
-        return (200, b"application/json", render::fetch_json(&target, &r.title, &r.content, &r.links));
+        return (
+            200,
+            b"application/json",
+            render::fetch_json(&target, &r.title, &r.content, &r.links),
+        );
     }
-    crate::debug!("fetch: native scrape failed, trying reader for {}", crate::log::host_of(&target));
+    crate::debug!(
+        "fetch: native scrape failed, trying reader for {}",
+        crate::log::host_of(&target)
+    );
     match jina::fetch(client, &target) {
         Ok(r) if scrape::is_walled(&r.title, &r.content) => {
-            crate::warn!("fetch {} -> walled (reader returned a challenge)", crate::log::host_of(&target));
+            crate::warn!(
+                "fetch {} -> walled (reader returned a challenge)",
+                crate::log::host_of(&target)
+            );
             (
                 502,
                 b"application/json",
                 render::error_json("page is bot-walled (reader returned a challenge)"),
             )
         }
-        Ok(r) => (200, b"application/json", render::fetch_json(&target, &r.title, &r.content, &r.links)),
+        Ok(r) => (
+            200,
+            b"application/json",
+            render::fetch_json(&target, &r.title, &r.content, &r.links),
+        ),
         Err(e) => {
             crate::warn!("fetch {} -> {}", crate::log::host_of(&target), e);
             (502, b"application/json", render::error_json(&e))
@@ -260,10 +310,18 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
     } else {
         q.categories.as_str()
     };
-    let native = matches!(want, "general" | "it" | "science" | "news" | "packages" | "videos" | "dictionaries" | "weather");
+    let native = matches!(
+        want,
+        "general" | "it" | "science" | "news" | "packages" | "videos" | "dictionaries" | "weather"
+    );
     // engines= filter (SearXNG compat): comma list restricts natives.
     // Unknown names -> whole query proxies (strangler owns the unknown).
-    let filter: Vec<&str> = q.engines.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+    let filter: Vec<&str> = q
+        .engines
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
     if (!filter.is_empty() && filter.iter().any(|n| engines::find(n).is_none())) || !native {
         if !cfg.proxy_to.is_empty() {
             return match client.proxy(&cfg.proxy_to, url) {
@@ -274,7 +332,11 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
                 }
             };
         }
-        return (503, b"application/json", render::error_json("category not ported yet"));
+        return (
+            503,
+            b"application/json",
+            render::error_json("category not ported yet"),
+        );
     }
 
     // Resolve + gate first (order = cfg order = merge weight order).
@@ -282,7 +344,10 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
     let mut unresponsive: Vec<(String, String)> = Vec::new();
     for name in &cfg.engines {
         let Some(engine) = engines::find(name) else {
-            crate::warn!("search: conf engine {:?} has no native (unknown engine)", name);
+            crate::warn!(
+                "search: conf engine {:?} has no native (unknown engine)",
+                name
+            );
             unresponsive.push((name.clone(), "unknown engine".into()));
             continue;
         };
@@ -447,7 +512,11 @@ fn search(cfg: &Config, client: &fetch::Client, url: &str) -> (u16, &'static [u8
     });
     let results = merge::rank(merge::merge(lists), &q.q);
     if q.format == "json" {
-        (200, b"application/json", render::json(&q.q, &results, &unresponsive))
+        (
+            200,
+            b"application/json",
+            render::json(&q.q, &results, &unresponsive),
+        )
     } else {
         (200, b"text/html", render::html(&q.q, &results))
     }
@@ -475,7 +544,7 @@ mod tests {
         assert!(!authorized(Some("Bearer s3cr3t!"), &t));
         assert!(!authorized(Some("Basic c2Vjcm4n"), &t)); // wrong scheme
         assert!(!authorized(Some("s3cr3t"), &t)); // no scheme
-        // Dev-open only when main allows it (explicit auth=off).
+                                                  // Dev-open only when main allows it (explicit auth=off).
         assert!(authorized(None, &[]));
     }
 
@@ -530,7 +599,10 @@ mod tests {
         assert_eq!(v["version"], env!("CARGO_PKG_VERSION"));
         assert_eq!(v["engines"][0]["name"], "wikipedia");
         assert_eq!(v["engines"][0]["category"], "general");
-        assert!(v["categories"].as_array().unwrap().contains(&serde_json::json!("general")));
+        assert!(v["categories"]
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!("general")));
         assert!(v["mcp"]["search"]["name"] == "search");
         assert!(v["mcp"]["fetch"]["name"] == "fetch");
         let o: serde_json::Value = serde_json::from_str(&open).expect("valid JSON");

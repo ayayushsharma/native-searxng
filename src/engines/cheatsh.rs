@@ -26,7 +26,12 @@ impl Engine for Cheatsh {
         format!("http://cheat.sh/{topic}?QT")
     }
 
-    fn request(&self, query: &str, pageno: u32, prev: &[crate::engine::InResponse]) -> Option<OutRequest> {
+    fn request(
+        &self,
+        query: &str,
+        pageno: u32,
+        prev: &[crate::engine::InResponse],
+    ) -> Option<OutRequest> {
         if !prev.is_empty() {
             return None;
         }
@@ -46,7 +51,12 @@ impl Engine for Cheatsh {
         let t = text.trim();
         // Scaffolding, not a sheet: unknown-topic notice, JSON/HTML
         // shells, or stubs too short to be a cheat sheet.
-        if t.is_empty() || t.len() < 50 || t.starts_with("Unknown topic.") || t.starts_with('<') || t.starts_with('{') {
+        if t.is_empty()
+            || t.len() < 50
+            || t.starts_with("Unknown topic.")
+            || t.starts_with('<')
+            || t.starts_with('{')
+        {
             return vec![];
         }
         let topic = query.split_whitespace().next().unwrap_or("").to_lowercase();

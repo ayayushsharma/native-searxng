@@ -54,8 +54,14 @@ pub fn search(body: &str, site: &Site, query: &str, engine: &'static str) -> Vec
     if docnames.is_empty() {
         return vec![];
     }
-    let terms = v.get("terms").and_then(|x| x.as_object()).unwrap_or(&empty_m);
-    let titleterms = v.get("titleterms").and_then(|x| x.as_object()).unwrap_or(&empty_m);
+    let terms = v
+        .get("terms")
+        .and_then(|x| x.as_object())
+        .unwrap_or(&empty_m);
+    let titleterms = v
+        .get("titleterms")
+        .and_then(|x| x.as_object())
+        .unwrap_or(&empty_m);
 
     let tokens: Vec<String> = query
         .split(|c: char| !c.is_alphanumeric())
@@ -94,7 +100,11 @@ pub fn search(body: &str, site: &Site, query: &str, engine: &'static str) -> Vec
             if doc.is_empty() {
                 return None;
             }
-            let title = titles.get(i).map(|t| t.trim()).filter(|t| !t.is_empty()).unwrap_or(doc);
+            let title = titles
+                .get(i)
+                .map(|t| t.trim())
+                .filter(|t| !t.is_empty())
+                .unwrap_or(doc);
             Some(SearchResult::basic(
                 engine,
                 format!("{}{}{}", site.base, doc, site.suffix),
@@ -109,7 +119,10 @@ pub fn search(body: &str, site: &Site, query: &str, engine: &'static str) -> Vec
 fn posting(v: &Value) -> Vec<usize> {
     match v {
         Value::Number(n) => n.as_u64().map(|i| vec![i as usize]).unwrap_or_default(),
-        Value::Array(a) => a.iter().filter_map(|x| x.as_u64().map(|i| i as usize)).collect(),
+        Value::Array(a) => a
+            .iter()
+            .filter_map(|x| x.as_u64().map(|i| i as usize))
+            .collect(),
         _ => vec![],
     }
 }

@@ -50,10 +50,7 @@ impl Engine for Gentoo {
                 .unwrap_or_default();
             out.push(SearchResult::basic(
                 "gentoo",
-                format!(
-                    "https://wiki.gentoo.org/wiki/{}",
-                    title.replace(' ', "_")
-                ),
+                format!("https://wiki.gentoo.org/wiki/{}", title.replace(' ', "_")),
                 title.into(),
                 strip_tags(snippet),
             ));

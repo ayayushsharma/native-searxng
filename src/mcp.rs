@@ -14,7 +14,7 @@
 //! before claiming compatibility.
 
 use crate::{config::Config, fetch, server};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::io::{BufRead, Write};
 
 pub const PROTOCOL_VERSION: &str = "2025-06-18";
@@ -35,8 +35,11 @@ pub fn run_stdio(cfg: &Config) {
         let req: Value = match serde_json::from_str(&line) {
             Ok(v) => v,
             Err(_) => {
-                respond(&mut out, json!({"jsonrpc": "2.0", "id": null,
-                    "error": {"code": -32700, "message": "parse error"}}));
+                respond(
+                    &mut out,
+                    json!({"jsonrpc": "2.0", "id": null,
+                    "error": {"code": -32700, "message": "parse error"}}),
+                );
                 continue;
             }
         };
@@ -55,7 +58,11 @@ pub fn dispatch(cfg: &Config, client: &fetch::Client, req: &Value) -> Option<Val
     if req.get("id").is_none() {
         return None;
     }
-    crate::debug!("mcp {} {}", method, params.get("name").and_then(|n| n.as_str()).unwrap_or(""));
+    crate::debug!(
+        "mcp {} {}",
+        method,
+        params.get("name").and_then(|n| n.as_str()).unwrap_or("")
+    );
     let result = match method {
         "initialize" => Some(json!({
             "protocolVersion": PROTOCOL_VERSION,
@@ -89,12 +96,16 @@ pub fn dispatch(cfg: &Config, client: &fetch::Client, req: &Value) -> Option<Val
 pub fn handle_http(cfg: &Config, client: &fetch::Client, body: &str) -> String {
     let req: Value = match serde_json::from_str(body) {
         Ok(v) => v,
-        Err(_) => return serde_json::to_string(&json!({"jsonrpc": "2.0", "id": null,
-            "error": {"code": -32700, "message": "parse error"}})).unwrap_or_default(),
+        Err(_) => {
+            return serde_json::to_string(&json!({"jsonrpc": "2.0", "id": null,
+            "error": {"code": -32700, "message": "parse error"}}))
+            .unwrap_or_default()
+        }
     };
     match dispatch(cfg, client, &req) {
         Some(resp) => serde_json::to_string(&resp).unwrap_or_default(),
-        None => serde_json::to_string(&json!({"jsonrpc": "2.0", "id": null, "result": null})).unwrap_or_default(),
+        None => serde_json::to_string(&json!({"jsonrpc": "2.0", "id": null, "result": null}))
+            .unwrap_or_default(),
     }
 }
 
@@ -135,13 +146,28 @@ fn call_tool(cfg: &Config, client: &fetch::Client, params: &Value) -> Value {
     let args = params.get("arguments").cloned().unwrap_or(Value::Null);
     match name {
         "search" => {
-            let q = args.get("query").and_then(|x| x.as_str()).unwrap_or("").trim();
+            let q = args
+                .get("query")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .trim();
             if q.is_empty() {
                 return tool_error("query is required");
             }
-            let cat = args.get("categories").and_then(|x| x.as_str()).unwrap_or("general");
-            let max = args.get("max_results").and_then(|x| x.as_u64()).unwrap_or(5).clamp(1, 50) as usize;
-            let page = args.get("pageno").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 3);
+            let cat = args
+                .get("categories")
+                .and_then(|x| x.as_str())
+                .unwrap_or("general");
+            let max = args
+                .get("max_results")
+                .and_then(|x| x.as_u64())
+                .unwrap_or(5)
+                .clamp(1, 50) as usize;
+            let page = args
+                .get("pageno")
+                .and_then(|x| x.as_u64())
+                .unwrap_or(1)
+                .clamp(1, 3);
             let eng = args.get("engines").and_then(|x| x.as_str()).unwrap_or("");
             let url = format!(
                 "/search?q={}&format=json&categories={}&pageno={}&engines={}",
@@ -159,12 +185,19 @@ fn call_tool(cfg: &Config, client: &fetch::Client, params: &Value) -> Value {
                 return tool_error(e);
             }
             let empty = vec![];
-            let rs = v.get("results").and_then(|x| x.as_array()).unwrap_or(&empty);
+            let rs = v
+                .get("results")
+                .and_then(|x| x.as_array())
+                .unwrap_or(&empty);
             if rs.is_empty() {
                 let unresp: Vec<String> = v
                     .get("unresponsive_engines")
                     .and_then(|x| x.as_array())
-                    .map(|a| a.iter().filter_map(|e| e.get(0)?.as_str().map(|s| s.to_string())).collect())
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|e| e.get(0)?.as_str().map(|s| s.to_string()))
+                            .collect()
+                    })
                     .unwrap_or_default();
                 let mut t = "No results found.".to_string();
                 if !unresp.is_empty() {
@@ -190,22 +223,38 @@ fn call_tool(cfg: &Config, client: &fetch::Client, params: &Value) -> Value {
             tool_text(&text)
         }
         "fetch" => {
-            let u = args.get("url").and_then(|x| x.as_str()).unwrap_or("").trim();
+            let u = args
+                .get("url")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .trim();
             if u.is_empty() {
                 return tool_error("url is required");
             }
             let (status, body) = server::fetch_pub(client, &format!("/fetch?url={}", encode(u)));
             let v: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
             if status != 200 {
-                let e = v.get("error").and_then(|x| x.as_str()).unwrap_or("fetch failed");
+                let e = v
+                    .get("error")
+                    .and_then(|x| x.as_str())
+                    .unwrap_or("fetch failed");
                 return tool_error(e);
             }
             let title = v.get("title").and_then(|x| x.as_str()).unwrap_or("");
             let content = v.get("content").and_then(|x| x.as_str()).unwrap_or("");
-            let links = v.get("links").and_then(|x| x.as_array()).map(|a| {
-                a.iter().filter_map(|l| l.as_str().map(|s| s.to_string())).collect::<Vec<_>>()
-            }).unwrap_or_default();
-            let mut t = format!("Title: {title}\n\nContent:\n{content}\n\nLinks found: {}", links.len());
+            let links = v
+                .get("links")
+                .and_then(|x| x.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|l| l.as_str().map(|s| s.to_string()))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            let mut t = format!(
+                "Title: {title}\n\nContent:\n{content}\n\nLinks found: {}",
+                links.len()
+            );
             for l in links.iter().take(10) {
                 t.push_str(&format!("\n  - {l}"));
             }
@@ -238,7 +287,9 @@ fn encode(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for b in s.as_bytes() {
         match b {
-            b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' | b'-' | b'_' | b'.' | b'~' => out.push(*b as char),
+            b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(*b as char)
+            }
             b' ' => out.push('+'),
             _ => out.push_str(&format!("%{b:02X}")),
         }
@@ -248,7 +299,7 @@ fn encode(s: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{PROTOCOL_VERSION, dispatch};
+    use super::{dispatch, PROTOCOL_VERSION};
     use serde_json::json;
 
     // Framing-only: no Config/client needed (tools/list, ping, errors).
@@ -264,7 +315,12 @@ mod tests {
         assert_eq!(r["result"]["protocolVersion"], PROTOCOL_VERSION);
         assert_eq!(r["result"]["serverInfo"]["name"], "native-searxng");
         let r = dispatch(&cfg, &client, &req("tools/list", 2)).unwrap();
-        let names: Vec<&str> = r["result"]["tools"].as_array().unwrap().iter().map(|t| t["name"].as_str().unwrap()).collect();
+        let names: Vec<&str> = r["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|t| t["name"].as_str().unwrap())
+            .collect();
         assert_eq!(names, vec!["search", "fetch"]);
         assert!(dispatch(&cfg, &client, &req("ping", 3)).unwrap()["result"].is_object());
         let r = dispatch(&cfg, &client, &req("nope", 4)).unwrap();

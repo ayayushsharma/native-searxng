@@ -10,7 +10,7 @@
 //! licensed, 1 req/query.
 //! Fixture: `tests/fixtures/tests-fixture-archlinux-test.json` (HTTP 200, clean).
 
-use crate::engine::{Engine, SearchResult, strip_tags};
+use crate::engine::{strip_tags, Engine, SearchResult};
 
 pub struct ArchLinux;
 
@@ -43,7 +43,11 @@ impl Engine for ArchLinux {
             .unwrap_or_default();
         let mut out = Vec::new();
         for hit in arr.iter().take(10) {
-            let title = hit.get("title").and_then(|x| x.as_str()).unwrap_or("").trim();
+            let title = hit
+                .get("title")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .trim();
             if title.is_empty() {
                 continue;
             }

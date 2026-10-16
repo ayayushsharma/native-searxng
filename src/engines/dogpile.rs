@@ -66,7 +66,10 @@ impl Engine for Dogpile {
             Err(_) => return vec![],
         };
         let empty = vec![];
-        let rs = v.get("results").and_then(|x| x.as_array()).unwrap_or(&empty);
+        let rs = v
+            .get("results")
+            .and_then(|x| x.as_array())
+            .unwrap_or(&empty);
         rs.iter()
             .filter_map(|r| {
                 let url = r.get("clickUrl")?.as_str()?.trim();

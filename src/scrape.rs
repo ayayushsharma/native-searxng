@@ -35,7 +35,9 @@ pub fn scrape(client: &Client, target: &str) -> Result<FetchResult, String> {
         return Err("fetch needs an http(s) URL".into());
     }
     let req = OutRequest::get(target.to_string());
-    let res = client.execute_capped(&req, Some(PAGE_CAP_KB)).map_err(short_err)?;
+    let res = client
+        .execute_capped(&req, Some(PAGE_CAP_KB))
+        .map_err(short_err)?;
     if res.status != 200 {
         return Err(format!("native scrape: http {}", res.status));
     }
@@ -57,7 +59,11 @@ pub fn parse(html: &str, base: &str) -> Option<FetchResult> {
         return None;
     }
     let content: String = content.chars().take(MAX_CONTENT_CHARS).collect();
-    Some(FetchResult { title, content, links: links_of(html, base) })
+    Some(FetchResult {
+        title,
+        content,
+        links: links_of(html, base),
+    })
 }
 
 /// Bot-wall verdict over a finished extract (title + short body).
@@ -88,7 +94,9 @@ fn title_of(html: &str) -> String {
     if let Some(i) = low.find("<title") {
         let start = html[i..].find('>').map(|e| i + e + 1).unwrap_or(html.len());
         if let Some(e) = low[start..].find("</title>") {
-            let t = engine::strip_tags(&html[start..start + e]).trim().to_string();
+            let t = engine::strip_tags(&html[start..start + e])
+                .trim()
+                .to_string();
             if !t.is_empty() {
                 return t;
             }
@@ -167,7 +175,10 @@ fn links_of(html: &str, base: &str) -> Vec<String> {
     let mut pos = 0;
     while let Some(o) = low[pos..].find("<a") {
         let o = pos + o;
-        let end = low[o..].find('>').map(|e| o + e).unwrap_or(html.len().min(o + 512));
+        let end = low[o..]
+            .find('>')
+            .map(|e| o + e)
+            .unwrap_or(html.len().min(o + 512));
         if let Some(href) = engine::attr(&html[o..end], "href") {
             let h = href.trim();
             if !h.is_empty()
@@ -235,4 +246,3 @@ fn short_err(e: String) -> String {
     let short: String = first.chars().take(80).collect();
     format!("native scrape: {short}")
 }
-

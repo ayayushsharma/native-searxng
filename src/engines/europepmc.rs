@@ -4,7 +4,7 @@
 //! firstPublicationDate, ...}]}}`. Page-1 needs no cursorMark.
 //! Fixture: `tests/fixtures/tests-fixture-europepmc-test.json` (HTTP 200, verified clean).
 
-use crate::engine::{Engine, SearchResult, unescape};
+use crate::engine::{unescape, Engine, SearchResult};
 
 pub struct EuropePmc;
 

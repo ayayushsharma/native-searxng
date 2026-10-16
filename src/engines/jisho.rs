@@ -26,7 +26,10 @@ impl Engine for Jisho {
 
     fn build_url(&self, q: &str, _pageno: u32) -> String {
         // paging=False upstream: pageno ignored.
-        format!("https://jisho.org/api/v1/search/words?keyword={}", encode(q))
+        format!(
+            "https://jisho.org/api/v1/search/words?keyword={}",
+            encode(q)
+        )
     }
 
     fn parse(&self, body: &str) -> Vec<SearchResult> {

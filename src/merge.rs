@@ -94,13 +94,20 @@ mod tests {
         assert_eq!(a, b);
         assert_eq!(b, c);
         // Meaningful params survive: ?v= is a different video.
-        assert_ne!(normalize_url("https://yt.com/w?v=1"), normalize_url("https://yt.com/w?v=2"));
+        assert_ne!(
+            normalize_url("https://yt.com/w?v=1"),
+            normalize_url("https://yt.com/w?v=2")
+        );
     }
 
     #[test]
     fn rank_title_beats_content() {
         let rows = vec![
-            row("http://a/1", "unrelated", "flask request context everywhere"),
+            row(
+                "http://a/1",
+                "unrelated",
+                "flask request context everywhere",
+            ),
             row("http://a/2", "flask request context", "other words"),
         ];
         let ranked = rank(rows, "flask request context");

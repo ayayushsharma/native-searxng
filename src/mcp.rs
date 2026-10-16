@@ -63,7 +63,16 @@ pub fn dispatch(cfg: &Config, client: &fetch::Client, req: &Value) -> Option<Val
         })),
         "ping" => Some(json!({})),
         "tools/list" => Some(json!({"tools": [search_tool(), fetch_tool()]})),
-        "tools/call" => Some(call_tool(cfg, client, &params)),
+        "tools/call" => {
+            // Unknown tools are a top-level JSON-RPC error (-32602), not
+            // a result body (conformance probe caught the nesting bug).
+            let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+            if !matches!(name, "search" | "fetch") {
+                return Some(json!({"jsonrpc": "2.0", "id": id,
+                    "error": {"code": -32602, "message": format!("unknown tool {name}")}}));
+            }
+            Some(call_tool(cfg, client, &params))
+        }
         _ => {
             return Some(json!({"jsonrpc": "2.0", "id": id,
                 "error": {"code": -32601, "message": format!("unknown method {method}")}}));
@@ -201,8 +210,9 @@ fn call_tool(cfg: &Config, client: &fetch::Client, params: &Value) -> Value {
             }
             tool_text(&t)
         }
-        _ => json!({"jsonrpc": "2.0", "id": Value::Null,
-            "error": {"code": -32602, "message": format!("unknown tool {name}")}}),
+        // Unreachable via dispatch (unknown names rejected above);
+        // defensive isError so a direct caller never gets a nested envelope.
+        _ => tool_error(&format!("unknown tool {name}")),
     }
 }
 

@@ -67,6 +67,7 @@ const CASES: &[(&str, Option<&str>, Option<&str>, usize)] = &[
     ("terraform", Some("tests-fixture-terraform-test.json"), None, 3),
     ("datatracker", Some("tests-fixture-datatracker-test.json"), None, 3),
     ("tagesschau", Some("tests-fixture-tagesschau-test.json"), None, 2),
+    ("sepiasearch", Some("tests-fixture-sepiasearch-test.json"), None, 1),
     ("pkggodev", Some("tests-fixture-pkggodev-test.html"), None, 3),
 ];
 

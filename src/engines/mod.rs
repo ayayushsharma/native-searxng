@@ -40,6 +40,7 @@ pub mod pkggodev;
 pub mod pubmed;
 pub mod pubdev;
 pub mod rubygems;
+pub mod sepiasearch;
 pub mod stackexchange;
 pub mod startpagina;
 pub mod swisscows;
@@ -81,6 +82,7 @@ pub fn find(name: &str) -> Option<Box<dyn Engine>> {
         "pipdocs" => Some(Box::new(pipdocs::Pip)),
         "cheatsh" => Some(Box::new(cheatsh::Cheatsh)),
         "tagesschau" => Some(Box::new(tagesschau::Tagesschau)),
+        "sepiasearch" => Some(Box::new(sepiasearch::SepiaSearch)),
         "pkggodev" => Some(Box::new(pkggodev::PkgGoDev)),
         "pubdev" => Some(Box::new(pubdev::Pubdev)),
         "terraform" => Some(Box::new(terraform::Terraform)),

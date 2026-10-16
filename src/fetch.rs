@@ -61,11 +61,23 @@ impl Client {
         let agent: ureq::Agent = base()
             .timeout_global(Some(Duration::from_millis(cfg.timeout_ms)))
             .user_agent(cfg.user_agent.clone())
+            // Pool: reuse is a LATENCY feature (hot hosts skip the TLS
+            // handshake on the next search), so the caps stay generous —
+            // 10 idle total is already lean. No change from ureq defaults
+            // here by choice, written out so the next diet pass sees it.
+            .max_idle_connections(10)
+            .max_idle_connections_per_host(3)
+            .max_idle_age(Duration::from_secs(15))
             .build()
             .into();
         let proxy_agent: ureq::Agent = base()
             .timeout_global(Some(Duration::from_millis(cfg.proxy_timeout_ms)))
             .user_agent(cfg.user_agent.clone())
+            // Strangler use is strictly sequential against ONE host, so
+            // a single reusable slot is all it ever needs (was: 3 idle).
+            .max_idle_connections(2)
+            .max_idle_connections_per_host(1)
+            .max_idle_age(Duration::from_secs(15))
             .build()
             .into();
         Self {
@@ -182,7 +194,22 @@ impl Client {
                 cookies.push(s.to_string());
             }
         }
-        let body = res.body_mut().read_to_string().map_err(|e| e.to_string())?;
+        let body = {
+            use std::io::Read as _;
+            // Bounded read: never allocate past cap+4 (max UTF-8 char is
+            // 4 bytes, so the char-boundary cut below always lands on
+            // valid UTF-8). Byte-identical result to read-all-then-cut,
+            // minus the transient spike on bloated pages — and faster,
+            // since the socket stops being drained past the cap.
+            let limit = (cap + 4) as u64;
+            let mut s = String::new();
+            res.body_mut()
+                .as_reader()
+                .take(limit)
+                .read_to_string(&mut s)
+                .map_err(|e| e.to_string())?;
+            s
+        };
         if body.len() <= cap {
             return Ok(crate::engine::InResponse {
                 status,

@@ -45,3 +45,21 @@ Method: `tools/measure.sh <bin>` — `ls/size` for disk, then 50 sequential
 - Suspects if high: 96KB body cap × 10 concurrent engines (~1 MB live),
   `scraper` DOMs for large HTML (Bing ~280KB in), serde_json Values for
   65–70KB API bodies (GitHub, Europe PMC).
+
+## Stress 4x3 concurrent (dev, phone, 2026-10-17)
+
+`tools/stress.sh 4 3` (4 concurrent heavy queries x 3 rounds, RSS sampled
+at 5Hz). Bounded harness: sentinel files + 180s/round deadline (an early
+`jobs -p` polling version hung forever — job-table semantics vary).
+
+| build | steady | peak | latencies | non-200 |
+|---|---|---|---|---|
+| before (read-all-then-cut) | 3.4 MB fresh | 18.1 MB | 3.6–19.3s | 0 |
+| after (take(cap+4) + proxy pool 2/1) | 13.7 MB warmed | 17.6 MB | 3.6–18.3s | 0 |
+
+Single-query guard: 5.9s -> 4.0s (upstream variance dominates; band
+unchanged under contention). Peak -0.5MB on THIS workload — most bodies
+fit under cap so take() rarely engages; the win scales with bloated
+over-cap pages (mechanism proven, byte-identical truncation via offline
+suite). Pool was already lean (10/3/15s kept deliberately: reuse is a
+latency feature); only the sequential strangler slot tightened (3->1).

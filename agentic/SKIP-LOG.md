@@ -162,3 +162,8 @@ Queue verdicts (all 9 closed: 7 ported, 2 proven-parked):
 Probe spend: ~20 (all ≤2/engine) · gates: check.py 23/23 0/0.
 Live `flask request context` 62 results · `router` (packages) 98 ·
 `bundestag` (news) 24.
+
+## 2026-10-16: reuters → SKIP (DataDome wall, 1 probe)
+`www.reuters.com/pf/api/v3/content/fetch/articles-by-search-v2` (keyless
+Arc JSON API) answers 401 + `var dd=` DataDome JS challenge to this
+egress. Same revisit rule as other bot walls.

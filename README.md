@@ -47,6 +47,11 @@ Eval scripts read the same env var — export before gating.
 pure JSON-RPC — logs go to stderr, always). `engines=` intersects the
 configured natives; unknown names fall through to the proxy.
 
+Pi agent integration (global stdio server, no token, no daemon):
+`pi mcp add searxng --env SEARXNG_CONF=<repo>/searxng.toml -- \
+<repo>/target/debug/native-searxng --mcp` — then `search`/`fetch`
+are agent tools (`pi -p` verified).
+
 ## Config (`searxng.toml`, XDG-aware)
 
 Resolution: `SEARXNG_CONF` > `$XDG_CONFIG_HOME/searxng.toml` >

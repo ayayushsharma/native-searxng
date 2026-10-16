@@ -30,6 +30,13 @@ fn main() {
             cfg.ca_file
         );
     }
+    // stdio MCP: OS trust boundary (local pipe to the agent host), so no
+    // bearer — but the binary must still prove it CAN run (bad CA file
+    // refuses above). Branches before the HTTP auth gate by design.
+    if args.iter().any(|a| a == "--mcp") {
+        mcp::run_stdio(&cfg);
+        return;
+    }
     // Fail closed: an unset token is a refused start, not an open server
     // (a cloudflared tunnel makes even loopback publicly reachable).
     // Local dev escape hatch is explicit: `auth=off` in the conf.
@@ -48,10 +55,6 @@ fn main() {
             "or add `auth=off` to the conf for local dev only — never on a tunnelled host.".into(),
         );
         std::process::exit(1);
-    }
-    if args.iter().any(|a| a == "--mcp") {
-        mcp::run_stdio(&cfg);
-        return;
     }
     native_searxng::info!(
         "native-searxng on {}:{} (auth {}) with {} engines (log {})",

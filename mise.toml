@@ -1,0 +1,45 @@
+# mise tasks — thin wrappers over the established phone workflows.
+# No logic lives here: every command below is the documented command from
+# AGENTS.md / PLAN.md §6. Phone rules still apply by hand:
+# iterate `mise run check`, run `mise run build`, ONE cargo at a time,
+# server STOPPED during builds, never -j8.
+
+[tasks.check]
+description = "Iterate: cargo check -j4 via safe-build (~1s warm)"
+run = "~/scripts/safe-build.sh cargo check -j4"
+
+[tasks.build]
+description = "Dev binary: cargo build -j2 (stop server first)"
+run = "cargo build -j2"
+
+[tasks.test]
+description = "Offline suite: cargo test -j4, zero network"
+run = "~/scripts/safe-build.sh cargo test -j4"
+
+[tasks.run]
+description = "Serve dev binary (conf via load_default resolution)"
+run = "./target/debug/native-searxng"
+
+[tasks.mcp]
+description = "MCP server on stdio (protocol 2025-06-18)"
+run = "./target/debug/native-searxng --mcp"
+
+[tasks.gate]
+description = "Contract gate vs native (needs SEARXNG_API_TOKEN in env)"
+run = "python3 agentic/evals/check.py --base http://127.0.0.1:8888"
+
+[tasks.conform]
+description = "MCP conformance, both transports (needs SEARXNG_API_TOKEN)"
+run = "python3 agentic/evals/mcp_check.py --base http://127.0.0.1:8888"
+
+[tasks.exam]
+description = "20 agent-style searches via POST /mcp (needs SEARXNG_API_TOKEN)"
+run = "python3 agentic/evals/agent_exam.py --base http://127.0.0.1:8888"
+
+[tasks.diff]
+description = "Native vs oracle key-drift (needs oracle on :8889 + token)"
+run = "python3 agentic/diff/diff.py"
+
+[tasks.measure]
+description = "Footprint: peak RSS over 50 queries (needs running server)"
+run = "bash tools/measure.sh"

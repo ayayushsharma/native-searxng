@@ -267,6 +267,11 @@ diff runner + examples — the contract IS SearXNG's `/search&format=json`.
    pipeline). Raw query to geo, like upstream (`berlin`, not sentences).
 5. **Lane hardening** ✅ DONE (`381c2c8`): per-engine `catch_unwind` →
    honest `(engine, panicked)`, slice continues. Unit-tested.
+6. **Web console** (planned, `agentic/WEB-UI.md`): proper search-engine
+   page at `/` — search view + capabilities + swagger-like try-it
+   console, bearer box iff `AUTH_REQUIRED`, zero new crates. Needs one
+   structural change: `GET /` exempt from the gate (static page,
+   leaks nothing). Not started — owner's call.
 
 Deployment (cloudflared): bind `127.0.0.1`, tunnel → localhost, bearer at
 origin, TLS at the Cloudflare edge. Full procedure in `agentic/DEPLOY.md`.

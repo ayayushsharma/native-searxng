@@ -63,3 +63,12 @@ fit under cap so take() rarely engages; the win scales with bloated
 over-cap pages (mechanism proven, byte-identical truncation via offline
 suite). Pool was already lean (10/3/15s kept deliberately: reuse is a
 latency feature); only the sequential strangler slot tightened (3->1).
+
+## 0.2.0 release sizes (CI run 38920771812, 2026-10-16)
+
+x86_64 2.0MB (2091640B), Android arm64 1.7MB (1766208B) — down from
+3.3/3.0MB at v0.1.0 (diet: no scraper/encoding_rs + LTO + growth since
+absorbed). Smoke step red AS PREDICTED (tokenless, pre-diagnosed —
+needs the parked workflow bearer fix); builds+sizes green, no artifacts
+uploaded. Recovery: push workflow fix (mac/re-scoped token), then
+workflow_dispatch re-runs release without a new tag.

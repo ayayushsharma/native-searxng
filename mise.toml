@@ -1,64 +1,91 @@
-# mise tasks — thin wrappers over the established phone workflows.
-# No logic lives here: every command below is the documented command from
-# AGENTS.md / PLAN.md §6. Phone rules still apply by hand:
-# iterate `mise run check`, run `mise run build`, ONE cargo at a time,
-# server STOPPED during builds, never -j8.
+# mise tasks — thin wrappers, no logic. Portable across Termux, macOS,
+# Linux (POSIX sh only; no Termux paths, no hardcoded -j counts).
+#
+# Environment overrides (all optional):
+#   JOBS=   cargo parallelism (default: nproc/sysctl autodetect).
+#           Phone-safe values: JOBS=4 check/test, JOBS=2 build.
+#   BASE=   server under test (default http://127.0.0.1:8888).
+#   REF=    reference oracle for diff (default http://127.0.0.1:8889).
+#   BIN=    server binary (default ./target/debug/native-searxng).
+#   TARGET= cross target triple for build-* (defaults per task).
+# Rules still apply by hand: ONE cargo at a time (tools/cargo-run.sh
+# enforces), server STOPPED during builds, phone never runs
+# build-release/build-* (rustc codegen LMK-kills Termux — CI owns those).
 
 [tasks.check]
-description = "Iterate: cargo check -j4 via safe-build (~1s warm)"
-run = "~/scripts/safe-build.sh cargo check -j4"
+description = "Iterate: cargo check (jobs auto; phone: JOBS=4)"
+run = "sh tools/cargo-run.sh check"
 
 [tasks.build]
-description = "Dev binary: cargo build -j2 (stop server first)"
-run = "cargo build -j2"
+description = "Dev binary, native host (phone: JOBS=2; stop server first)"
+run = "sh tools/cargo-run.sh build"
 
 [tasks.test]
-description = "Offline suite: cargo test -j4, zero network"
-run = "~/scripts/safe-build.sh cargo test -j4"
+description = "Offline suite, zero network (phone: JOBS=4)"
+run = "sh tools/cargo-run.sh test"
+
+[tasks.build-release]
+description = "Host release binary. CI owns this; phone: NEVER (RAM)"
+run = "sh tools/cargo-run.sh build --locked --release"
+
+[tasks.targets]
+description = "One-time: add the cross targets (needs rustup + toolchains)"
+run = "rustup target add x86_64-unknown-linux-gnu aarch64-linux-android34"
+
+[tasks.build-linux]
+description = "Linux x86_64 release (TARGET= override; needs toolchain)"
+run = "sh tools/cargo-run.sh build --locked --release --target \"${TARGET:-x86_64-unknown-linux-gnu}\""
+
+[tasks.build-android]
+description = "Android arm64 release (needs NDK r27+, ANDROID_NDK_HOME set)"
+run = """
+PREBUILT=\"${ANDROID_NDK_HOME:?set ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/$(case \"$(uname -s)\" in Darwin) echo darwin-x86_64;; *) echo linux-x86_64;; esac)/bin\"
+export PATH=\"$PREBUILT:$PATH\"
+export CC_aarch64_linux_android=\"$PREBUILT/aarch64-linux-android34-clang\"
+export AR_aarch64_linux_android=\"$PREBUILT/llvm-ar\"
+sh tools/cargo-run.sh build --locked --release --target \"${TARGET:-aarch64-linux-android}\"
+"""
+
+[tasks.build-mac]
+description = "macOS release, native arch (runs on a Mac; TARGET= override)"
+run = "sh tools/cargo-run.sh build --locked --release --target \"${TARGET:-aarch64-apple-darwin}\""
 
 [tasks.run]
 description = "Serve dev binary (conf via load_default resolution)"
-run = "./target/debug/native-searxng"
+run = "\"${BIN:-./target/debug/native-searxng}\""
 
-[tasks.build-mac-debug]
-description = "Debug binary, native target (run ON a mac: cargo builds for the host)"
-run = "cargo build --locked"
+[tasks.mcp]
+description = "Serve dev binary in MCP stdio mode (for Inspector)"
+run = "\"${BIN:-./target/debug/native-searxng}\" --mcp"
 
-[tasks.debug-mac]
-description = "Build + run dev server in foreground, ready to test (mac daily driver)"
-depends = ["build-mac-debug"]
+[tasks.debug]
+description = "Build native debug + serve foreground, throwaway token, ready-to-test (localhost only)"
+alias = "debug-mac"
 run = """
-if [ -z "${SEARXNG_API_TOKEN:-}" ]; then
-  export SEARXNG_API_TOKEN="dev-$(python3 -c 'import secrets;print(secrets.token_hex(8))')"
-  echo 'no token in env: generated a throwaway dev token (localhost only). To reuse it:'
-  echo "  export SEARXNG_API_TOKEN=$SEARXNG_API_TOKEN"
-fi
-echo 'ready to test:'
-echo "  curl -H 'Authorization: Bearer $SEARXNG_API_TOKEN' 'http://127.0.0.1:8888/search?q=flask+request+context&format=json&categories=it'"
-echo '  python3 agentic/evals/check.py --base http://127.0.0.1:8888'
+cargo build --locked
+export SEARXNG_API_TOKEN=\"${SEARXNG_API_TOKEN:-dev-$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \\n')}\"
+echo \"token: $SEARXNG_API_TOKEN (localhost only)\"
+echo 'try: curl -H \"Authorization: Bearer $SEARXNG_API_TOKEN\" \"http://127.0.0.1:8888/search?q=flask+request+context&format=json&categories=it\"'
+echo 'try: curl -H \"Authorization: Bearer $SEARXNG_API_TOKEN\" \"http://127.0.0.1:8888/fetch?url=https://example.com\"'
 ./target/debug/native-searxng
 """
 
-[tasks.mcp]
-description = "MCP server on stdio (protocol 2025-06-18)"
-run = "./target/debug/native-searxng --mcp"
-
 [tasks.gate]
-description = "Contract gate vs native (needs SEARXNG_API_TOKEN in env)"
-run = "python3 agentic/evals/check.py --base http://127.0.0.1:8888"
+description = "Contract gate: 26 queries vs live server (BASE= override)"
+run = "SEARXNG_API_TOKEN=\"${SEARXNG_API_TOKEN:?set token}\" python3 agentic/evals/check.py --base \"${BASE:-http://127.0.0.1:8888}\""
 
 [tasks.conform]
-description = "MCP conformance, both transports (needs SEARXNG_API_TOKEN)"
-run = "python3 agentic/evals/mcp_check.py --base http://127.0.0.1:8888"
+description = "MCP conformance 20/20 stdio+HTTP (BASE= override)"
+run = "SEARXNG_API_TOKEN=\"${SEARXNG_API_TOKEN:?set token}\" python3 agentic/evals/mcp_check.py --base \"${BASE:-http://127.0.0.1:8888}\""
 
 [tasks.exam]
-description = "20 agent-style searches via POST /mcp (needs SEARXNG_API_TOKEN)"
-run = "python3 agentic/evals/agent_exam.py --base http://127.0.0.1:8888"
+description = "20-question agent exam over POST /mcp (BASE= override)"
+run = "SEARXNG_API_TOKEN=\"${SEARXNG_API_TOKEN:?set token}\" python3 agentic/evals/agent_exam.py --base \"${BASE:-http://127.0.0.1:8888}\""
 
 [tasks.diff]
-description = "Native vs oracle key-drift (needs oracle on :8889 + token)"
-run = "python3 agentic/diff/diff.py"
+description = "Native vs oracle diff, one query (REF=/oracle BASE=/native overrides)"
+run = "SEARXNG_API_TOKEN=\"${SEARXNG_API_TOKEN:?set token}\" python3 agentic/diff/diff.py --ref \"${REF:-http://127.0.0.1:8889}\" --new \"${BASE:-http://127.0.0.1:8888}\" --q \"${Q:?pass Q='query'}\""
 
 [tasks.measure]
-description = "Footprint: peak RSS over 50 queries (needs running server)"
-run = "bash tools/measure.sh"
+description = "Server RSS under N-query load (BIN= binary, BASE= override)"
+run = "sh tools/measure.sh \"${BIN:-./target/debug/native-searxng}\""

@@ -2,24 +2,21 @@
 
 Sync-only Rust (no async runtime), SearXNG-compatible `/search&format=json`.
 
-## Build
-
-PC (fast, releases + cross):
+## Build (via mise — portable: Termux, macOS, Linux)
 ```sh
-cargo build                    # dev
-cargo build --release          # release (opt-z, stripped, <800KB goal)
-cargo build --release --target aarch64-unknown-linux-musl   # router
-cargo build --target aarch64-linux-android                  # phone deploy
+mise run check            # iterate (jobs auto; phone: JOBS=4)
+mise run build             # dev binary (phone: JOBS=2)
+mise run build-release     # host release (CI owns; phone: NEVER)
+mise run build-linux       # x86_64 release (needs toolchain)
+mise run build-android     # arm64 release (needs NDK r27+)
+mise run build-mac         # macOS release (runs on a Mac)
+mise run debug             # build + serve, throwaway token (localhost)
 ```
-
-Phone homeserver (Termux — capped parallelism per LMK rules):
-```sh
-~/scripts/safe-build.sh cargo check -j4   # default gate: ~1s warm, ~90s cold
-~/scripts/safe-build.sh cargo build -j2   # only to run; codegen stays -j2
-```
-`check` skips LLVM so its jobs are light enough for -j4 (proven safe ceiling);
-codegen at -j4+ risks the LMK whole-app kill — never `-j8`. First build compiles
-~70 crates (minutes, one time — `target/` is cached on 35GB disk).
+Overrides: `JOBS=` parallelism, `BASE=` server URL, `BIN=` binary,
+`TARGET=` triple, `REF=` oracle. `check` skips LLVM so its jobs are
+light (proven phone-safe ceiling JOBS=4); codegen at -j4+ risks the
+LMK whole-app kill — never `-j8`. First build compiles ~70 crates
+(minutes, one time — `target/` is cached, never deleted).
 
 ## Run
 

@@ -90,10 +90,10 @@ Discipline (binding — this is what keeps Rust inside budget):
   native serves unchallenged endpoints (Wikipedia/JSON APIs verified from this
   network); guarded engines stay behind the strangler where Python keeps
   curl_cffi. New crate = RAM line-item.
-- Phone builds: `cargo check -j4` default gate (light jobs), `cargo build -j2`
-  only to run (codegen is the LMK risk — never -j8); always under
-  `~/scripts/safe-build.sh`. Releases cross-built on PC
-  (`aarch64-linux-android` for phone, `aarch64-unknown-linux-musl` for router).
+- Phone builds: `JOBS=4 mise run check` default gate (light jobs),
+  `JOBS=2 mise run build` only to run (codegen is the LMK risk —
+  never -j8; `tools/cargo-run.sh` guards one-cargo + jobs).
+  Releases cross-built on PC (`mise run build-linux` / `build-android`)
 - Zig stays only as emergency fallback (core-only lenient-engine build) if Rust
   RSS misses 10 MB in measurement — never both at once.
 
@@ -165,8 +165,8 @@ general = ["wikipedia", "ddg"]  # shipped file adds it/science/news/
 ```
 
 ## 6. Build & verify
-- Phone (Termux): `safe-build.sh cargo check -j4` to iterate (0.8 s warm),
-  `safe-build.sh cargo build -j2` to run. Never -j8 (LMK kills the whole app).
+- All hosts: `mise run check` to iterate, `mise run build` to run
+  (phone caps: `JOBS=4` / `JOBS=2`, never -j8 — LMK kills the app).
   Phone pulls via `git pull` (own network + git client) — no manual syncs.
 - GitHub Actions (`.github/workflows/build.yml`, see `AGENTS.md` for the credit
   policy): `cargo check` gate on every push; ONE release job (x86_64 +

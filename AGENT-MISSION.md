@@ -21,7 +21,7 @@ behind the strangler; native ports only verified-clean endpoints until told othe
 ## Iron rules (violations = failed run)
 
 1. Sync-only Rust. No new crate without a RAM line-item in PLAN.md §3.
-2. `safe-build.sh cargo check -j4` to iterate; `cargo build -j2` only to run.
+2. `JOBS=4 mise run check` to iterate; `JOBS=2 mise run build` only to run.
    One cargo at a time per `target/`. Never -j8. On build failure KEEP
    `build.log` until root-caused (2026-10-14 lesson: log was deleted, cause lost).
 3. JSON keys byte-exact per `agentic/CONTRACT.md` — run
@@ -35,8 +35,8 @@ behind the strangler; native ports only verified-clean endpoints until told othe
    the server uses MBs): keep the server STOPPED during builds unless testing;
    prefer `check` over `build` (10x less pressure); release/LTO builds on PC
    ONLY, never on-phone; never `cargo clean` casually (forces cold rebuild =
-   peak RAM + 4 minutes); glance at `free -m` before big builds, abort if
-   MemAvailable <300 MB (`safe-build.sh` enforces this). If LMK kills happen:
+   peak RAM + 4 minutes); glance at `free -m` before big builds (manual —
+   abort if MemAvailable <300 MB). If LMK kills happen:
    drop to -j1, preserve logs, report — do not retry harder.
 8. Repo is github.com/ayayushsharma/native-searxng (already pushed); commit per
    engine (`engines: add <name> + fixtures + gate green`). Sync = `git pull/push`

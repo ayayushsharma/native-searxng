@@ -22,8 +22,9 @@ Binding companions: `AGENT-MISSION.md` (mission loop + stop triggers),
 
 ## Phone rules (non-negotiable)
 
-- Iterate: `~/scripts/safe-build.sh cargo check -j4`. Run: `cargo build -j2`.
-  Never `-j8`. One cargo at a time. Server STOPPED during builds.
+- Iterate: `JOBS=4 mise run check`. Run: `JOBS=2 mise run build`.
+  Never `-j8` (override via `JOBS=`). One cargo at a time
+  (`tools/cargo-run.sh` enforces via lock). Server STOPPED during builds.
 - Fixture-first: ≤5 live queries per engine, then offline. Live loops risk
   a home-IP ban — top ban-risk of the whole run.
 - `check.py` gate per engine, one commit per engine, push checkpoints.
